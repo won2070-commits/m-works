@@ -3667,7 +3667,15 @@ window.gotoStep = gotoStep; // 잠금 카드의 onclick 용
 <script>
 // PWA 설치 지원 — http/https에서만 (file:// 단일 파일에서는 건너뜀)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.update(); // 앱을 열 때마다 새 버전 확인
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update(); });
+  }).catch(() => {});
+  let swRefreshed = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (swRefreshed) return; swRefreshed = true;
+    location.reload(); // 새 버전이 준비되면 자동으로 한 번 새로고침해 즉시 적용
+  });
 }
 </script>
 </body>

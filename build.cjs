@@ -19,9 +19,9 @@ for (const [name, code] of [['prompts.js', prompts], ['app.js', app]]) {
 }
 
 // 주의: 치환 문자열의 $ 패턴($&, $` 등) 해석을 막기 위해 반드시 함수 치환을 쓴다
-html = html.replace('<link rel="stylesheet" href="style.css">', () => '<style>\n' + css + '\n</style>');
-html = html.replace('<script src="prompts.js"></script>', () => '<script>\n' + prompts + '\n</script>');
-html = html.replace('<script src="app.js"></script>', () => '<script>\n' + app + '\n</script>');
+html = html.replace(/<link rel="stylesheet" href="style\.css(?:\?[^"]*)?">/, () => '<style>\n' + css + '\n</style>');
+html = html.replace(/<script src="prompts\.js(?:\?[^"]*)?"><\/script>/, () => '<script>\n' + prompts + '\n</script>');
+html = html.replace(/<script src="app\.js(?:\?[^"]*)?"><\/script>/, () => '<script>\n' + app + '\n</script>');
 html = html.replace('<title>말씀공방 — 들리는 설교, 끌리는 설교</title>',
   '<title>말씀공방 — 들리는 설교, 끌리는 설교</title>\n<!-- 단일 실행 파일 빌드: ' + new Date().toISOString().slice(0, 10) + ' · 원본 소스는 말씀공방/ 폴더 -->');
 
