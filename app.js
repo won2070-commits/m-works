@@ -604,8 +604,8 @@ function renderHome(m) {
   const recent = DB.projects.slice(0, 5);
   m.innerHTML = `
     <div style="text-align:center; padding:40px 0 30px">
-      <div class="logo-mark" style="width:96px;height:96px;margin:0 auto 18px">${LOGO_SVG}</div>
-      <h1 style="font-size:2.6rem;font-weight:340;letter-spacing:-0.03em">M.Works</h1>
+      <div class="logo-mark" style="width:72px;height:72px;margin:0 auto 14px">${LOGO_SVG}</div>
+      <h1 style="font-size:2rem;font-weight:340;letter-spacing:-0.03em">M.Works</h1>
       <p style="color:var(--ink-soft);margin-top:6px">설교자를 위한 설교 작성 5단계</p>
       <div class="btn-row" style="justify-content:center;margin-top:44px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
