@@ -29,7 +29,24 @@ function defaultRules() {
 - 존댓말 구어체("…습니다")로 쓴다.
 - 설교 마지막에 적용 찬송 2곡(고른 이유 한 줄씩)과 마무리 기도문을 반드시 넣는다.
 - 확인되지 않은 통계·인용·예화는 쓰지 않는다. 불확실하면 "(확인 필요)"를 붙인다.
-- 첫 문장과 마지막 문장은 설교자가 직접 고쳐 쓸 것을 전제로, 담백하게 시작하고 담백하게 닫는다.`;
+- 첫 문장과 마지막 문장은 설교자가 직접 고쳐 쓸 것을 전제로, 담백하게 시작하고 담백하게 닫는다.
+
+[MS 워드 설교문 양식 — 실제 설교 원고(dodo 설교문·최근 원고)에서 추출한 기준. Word 내보내기에 자동 적용됨]
+- 글꼴: 고딕 계열(맑은 고딕 / Apple SD Gothic Neo / 굴림)
+- 본문: 13pt, 줄간격 1.8
+- 소제목: 14pt 굵게
+- 대지·큰 제목: 18pt 굵게
+- 설교 제목: 24pt 굵게
+- 핵심 문장은 굵게 강조하고, 한 문단은 2~4문장으로 짧게 끊는다
+- 성경 인용은 별도 문단으로 들여 쓴다`;
+}
+/* MS 워드 내보내기 서식 — 위 양식 그대로 */
+function wordCss() {
+  return `body{font-family:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo","굴림",sans-serif;font-size:13pt;line-height:1.8;}
+ h1{font-size:24pt;font-weight:bold} h2{font-size:18pt;font-weight:bold;margin-top:20pt} h3{font-size:14pt;font-weight:bold}
+ blockquote{margin-left:20pt;padding-left:10pt;border-left:3pt solid #b0b0b0;color:#333}
+ .pause-mark{color:#a4443a;font-weight:bold} .stress-mark{background:#f6e7bf}
+ .eye-mark{color:#2e7d4f;font-weight:bold} .note-mark{background:#e7ecf6;color:#3d5a80} .breath-mark{color:#2e7d4f;font-weight:bold}`;
 }
 /* 클로드 프로젝트에서 가져온 참조 프롬프트 — 사용자가 프롬프트 서재에서 계속 다듬는다 */
 function defaultRefPrompts() {
@@ -1776,7 +1793,7 @@ function renderClinic(m) {
   }));
   m.querySelectorAll('[data-rsave]').forEach(b => b.addEventListener('click', () => {
     const r = DB.reports[+b.dataset.rsave];
-    const doc = `<html xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>body{font-family:"바탕",serif;font-size:11.5pt;line-height:1.8}</style></head><body>${mdToHtml(r.md)}</body></html>`;
+    const doc = `<html xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>${wordCss()}</style></head><body>${mdToHtml(r.md)}</body></html>`;
     saveFileAs('설교피드백_' + r.title.replace(/[\\/:*?"<>|]/g, '') + '.doc', doc, 'application/msword', 'Word 문서');
   }));
   m.querySelectorAll('[data-rdel]').forEach(b => b.addEventListener('click', () => {
@@ -2157,11 +2174,7 @@ function doExport(p, kind) {
     const doc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8"><title>${esc(name)}</title>
 <style>
- body{font-family:"바탕","Batang",serif;font-size:12pt;line-height:1.9;}
- h1{font-size:18pt} h2{font-size:14pt;margin-top:20pt} h3{font-size:12.5pt}
- blockquote{border-left:3pt solid #b08d3e;padding-left:10pt;color:#1f3d2b}
- .pause-mark{color:#a4443a;font-weight:bold} .stress-mark{background:#f6e7bf}
- .eye-mark{color:#38664a;font-weight:bold} .note-mark{background:#e7ecf6;color:#3d5a80}
+ ${wordCss()}
 </style></head><body>${inner}</body></html>`;
     saveFileAs(name + '.doc', doc, 'application/msword', 'Word 문서');
   } else if (kind === 'txt') {
