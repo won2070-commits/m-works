@@ -476,11 +476,8 @@ $('#btn-menu').addEventListener('click', () => document.body.classList.toggle('n
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-new').addEventListener('click', newProject);
 $('#btn-archive').addEventListener('click', () => { curView = 'archive'; render(); });
-$('#btn-nav-archive').addEventListener('click', () => { curView = 'archive'; render(); });
-$('#btn-nav-forms').addEventListener('click', () => { curView = 'forms'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-clinic').addEventListener('click', () => { curView = 'clinic'; render(); });
-$('#btn-nav-prompts').addEventListener('click', () => { curView = 'prompts'; render(); });
 $('#btn-nav-rules').addEventListener('click', openRules);
 $('#btn-nav-import').addEventListener('click', openImport);
 $('#btn-nav-settings').addEventListener('click', openSettings);
@@ -2263,7 +2260,7 @@ function openSettings() {
     $('#set-ai-status').textContent = '확인 중…';
     await fetchStatus(true); updStatus();
   });
-  body.querySelector('#set-prompts').addEventListener('click', openPromptManager);
+  body.querySelector('#set-prompts').addEventListener('click', () => { closeModal(); curView = 'prompts'; render(); });
 }
 /* 프롬프트 관리(관리자) */
 function openPromptManager() {
