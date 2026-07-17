@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=20">
+<link rel="apple-touch-icon" href="icon-192.png?v=21">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -623,7 +623,6 @@ body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea
     </div>
   </div>
   <div id="save-status" class="save-status" title="자동 저장 상태">—</div>
-  <button class="icon-btn top-tool" id="top-materials" title="자료 서랍" aria-label="자료 서랍"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 7h6"/></svg></button>
   <button class="icon-btn top-tool" id="top-settings" title="설정" aria-label="설정"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 009 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.56-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.56V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.51 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9c.06.32.1.66.1 1a1.7 1.7 0 001.56 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1z"/></svg></button>
 </header>
 
@@ -644,6 +643,7 @@ body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea
     <div class="nav-footer">
       <button class="nav-link" id="btn-save"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>저장</button>
       <button class="nav-link" id="btn-export"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>내보내기</button>
+      <button class="nav-link" id="btn-nav-materials"><svg class="nav-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 7h6"/></svg>자료 서랍</button>
       <button class="nav-link" id="btn-nav-exit"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>나가기</button>
       <div class="ai-badge" id="ai-badge">AI 연결 확인 중…</div>
       <div class="app-ver" id="app-ver"></div>
@@ -1616,7 +1616,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v20 · 2026-07-17';
+const APP_VERSION = 'v21 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1831,7 +1831,7 @@ $('#nav-backdrop').addEventListener('click', () => document.body.classList.remov
 // 메뉴 안 어떤 버튼이든 누르면 (휴대폰에서) 서랍을 닫는다
 $('#sidenav').addEventListener('click', e => { if (e.target.closest('button, li')) document.body.classList.remove('nav-open'); });
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
-$('#top-materials').addEventListener('click', () => { curView = 'materials'; render(); });
+$('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-exit').addEventListener('click', () => {
   syncEditor(); save(true);
   sessionStorage.removeItem('mworks_unlock'); // 다음에 열 때 비밀번호 다시 묻기
@@ -1940,7 +1940,7 @@ function renderHome(m) {
   const recent = DB.projects.slice(0, 5);
   m.innerHTML = `
     <div style="text-align:center; padding:40px 0 30px">
-      <h1 style="font-size:2.1rem;font-weight:700;letter-spacing:0.02em;margin-bottom:6px">Message Works</h1>
+      <h1 style="font-size:2.1rem;font-weight:700;letter-spacing:0.02em;margin-bottom:6px;font-style:italic">Message Works</h1>
       <p style="color:var(--ink-soft);margin-top:6px;font-size:1.08rem">설교자를 위한 설교 작성 5단계</p>
       <div class="btn-row" style="justify-content:center;margin-top:70px;margin-bottom:56px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>

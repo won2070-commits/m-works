@@ -370,7 +370,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v20 · 2026-07-17';
+const APP_VERSION = 'v21 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -585,7 +585,7 @@ $('#nav-backdrop').addEventListener('click', () => document.body.classList.remov
 // 메뉴 안 어떤 버튼이든 누르면 (휴대폰에서) 서랍을 닫는다
 $('#sidenav').addEventListener('click', e => { if (e.target.closest('button, li')) document.body.classList.remove('nav-open'); });
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
-$('#top-materials').addEventListener('click', () => { curView = 'materials'; render(); });
+$('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-exit').addEventListener('click', () => {
   syncEditor(); save(true);
   sessionStorage.removeItem('mworks_unlock'); // 다음에 열 때 비밀번호 다시 묻기
@@ -694,7 +694,7 @@ function renderHome(m) {
   const recent = DB.projects.slice(0, 5);
   m.innerHTML = `
     <div style="text-align:center; padding:40px 0 30px">
-      <h1 style="font-size:2.1rem;font-weight:700;letter-spacing:0.02em;margin-bottom:6px">Message Works</h1>
+      <h1 style="font-size:2.1rem;font-weight:700;letter-spacing:0.02em;margin-bottom:6px;font-style:italic">Message Works</h1>
       <p style="color:var(--ink-soft);margin-top:6px;font-size:1.08rem">설교자를 위한 설교 작성 5단계</p>
       <div class="btn-row" style="justify-content:center;margin-top:70px;margin-bottom:56px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
