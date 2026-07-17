@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=17">
+<link rel="apple-touch-icon" href="icon-192.png?v=18">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -642,7 +642,6 @@ body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea
       <button class="nav-link" id="btn-save"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>저장</button>
       <button class="nav-link" id="btn-export"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>내보내기</button>
       <button class="nav-link" id="btn-nav-settings"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 009 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.56-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.56V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.51 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9c.06.32.1.66.1 1a1.7 1.7 0 001.56 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1z"/></svg>설정</button>
-      <button class="nav-link" id="btn-nav-help"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.4 2.4 0 114.8.6c0 1.4-1.9 1.9-1.9 3.2M12.4 16.5h.01"/></svg>도움말</button>
       <button class="nav-link" id="btn-nav-exit"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>나가기</button>
       <div class="ai-badge" id="ai-badge">AI 연결 확인 중…</div>
       <div class="app-ver" id="app-ver"></div>
@@ -1615,7 +1614,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v17 · 2026-07-17';
+const APP_VERSION = 'v18 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1826,7 +1825,6 @@ $('#btn-nav-exit').addEventListener('click', () => {
   }, 250);
 });
 $('#btn-nav-settings').addEventListener('click', openSettings);
-$('#btn-nav-help').addEventListener('click', openManual);
 $('#btn-back').addEventListener('click', goBack);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);

@@ -370,7 +370,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v17 · 2026-07-17';
+const APP_VERSION = 'v18 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -581,7 +581,6 @@ $('#btn-nav-exit').addEventListener('click', () => {
   }, 250);
 });
 $('#btn-nav-settings').addEventListener('click', openSettings);
-$('#btn-nav-help').addEventListener('click', openManual);
 $('#btn-back').addEventListener('click', goBack);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);
