@@ -183,7 +183,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   margin-bottom: 8px; font-size: .72rem; font-family: var(--mono);
   letter-spacing: .08em; text-transform: uppercase; color: var(--ink); opacity: .78;
 }
-.step-title { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
+.step-title { font-size: 1.9rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; color: #222; }
 .step-desc { color: var(--ink); font-weight: 400; font-size: .94rem; margin-bottom: 28px; max-width: 640px; }
 
 .card {
@@ -534,7 +534,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   /* 펀치홀·상태바를 피해 상단바를 아래로 내림 */
   #topbar { gap: 6px; padding: calc(16px + env(safe-area-inset-top, 0px)) 12px 12px; }
   #main { padding: 20px 16px 70px; }
-  .step-title { font-size: 1.8rem; }
+  .step-title { font-size: 1.55rem; }
   .form-grid { grid-template-columns: 1fr; }
   .compare { grid-template-columns: 1fr; }
   #editor { padding: 24px 20px; }
