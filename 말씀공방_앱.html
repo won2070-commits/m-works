@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=15">
+<link rel="apple-touch-icon" href="icon-192.png?v=16">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1615,7 +1615,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v15 · 2026-07-17';
+const APP_VERSION = 'v16 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1917,9 +1917,9 @@ function renderHome(m) {
   const recent = DB.projects.slice(0, 5);
   m.innerHTML = `
     <div style="text-align:center; padding:40px 0 30px">
-      <h1 style="font-size:2.1rem;font-weight:700;letter-spacing:0.02em;margin-bottom:6px">M.Works</h1>
+      <h1 style="font-size:2.1rem;font-weight:700;letter-spacing:0.02em;margin-bottom:6px">Message Works</h1>
       <p style="color:var(--ink-soft);margin-top:6px;font-size:1.08rem">설교자를 위한 설교 작성 5단계</p>
-      <div class="btn-row" style="justify-content:center;margin-top:44px;margin-bottom:56px">
+      <div class="btn-row" style="justify-content:center;margin-top:70px;margin-bottom:56px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
         <button class="btn btn-ghost" id="home-import"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>설교 가져오기</button>
         <button class="btn btn-ghost" id="home-archive"><svg class="btn-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 002 2h10a2 2 0 002-2V9M10 13h4"/></svg>보관함</button>
