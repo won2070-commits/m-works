@@ -1142,6 +1142,7 @@ function snapshot(p, label) {
   touch(p);
 }
 async function generateSermon(p, regen) {
+  toast('자료 서랍에 넣어둔 내용들을 활용해 설교문을 작성합니다.', 4500);
   const c = p.central, i = p.inputs;
   const targetMin = $('#s3-min') ? (+$('#s3-min').value || i.targetMin) : i.targetMin;
   i.targetMin = targetMin;
