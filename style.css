@@ -238,6 +238,14 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   padding: 8px 12px; border: 1px solid var(--hairline); border-radius: var(--r-md);
   margin-bottom: 6px; font-size: .84rem; background: var(--canvas);
 }
+.paste-row { display: flex; gap: 8px; margin-top: 10px; }
+.paste-row textarea {
+  flex: 1; min-height: 60px; padding: 10px 12px;
+  border: 1px solid var(--hairline); border-radius: var(--r-md); line-height: 1.5;
+}
+.paste-row textarea:focus { outline: none; border-color: var(--ink); }
+.paste-row .btn { align-self: flex-end; }
+#btn-back { display: block; }
 
 /* 본문 후보 카드 */
 .cand {
@@ -500,6 +508,13 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   #editor-toolbar { top: 0; }
   #rehearsal-text { font-size: 1.4rem; }
   .card, .cand, .fcard { border-radius: var(--r-md); }
+  /* 휴대폰 가독성 */
+  .dropzone { flex-direction: column; gap: 8px; padding: 18px 12px; font-size: .82rem; }
+  .paste-row { flex-direction: column; }
+  .paste-row .btn { align-self: stretch; }
+  .step-desc { font-size: .92rem; }
+  .proj-toolbar { flex-direction: column; }
+  .btn { padding: 12px 20px; }
 }
 
 /* ───────── 인쇄 ───────── */

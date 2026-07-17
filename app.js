@@ -499,8 +499,10 @@ function formName(key) { const f = allForms().find(f => f.key === key); return f
 $('#btn-menu').addEventListener('click', () => document.body.classList.toggle('nav-open'));
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-new').addEventListener('click', newProject);
+$('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-rules').addEventListener('click', openRules);
 $('#btn-nav-settings').addEventListener('click', openSettings);
+$('#btn-back').addEventListener('click', goBack);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);
 $$('#step-nav li').forEach(li => li.addEventListener('click', () => {
@@ -549,9 +551,35 @@ function restoreProject(id) {
   DB.projects.unshift(p); save(true); render(); toast('복원했습니다.');
 }
 
+/* ═══════════════════ 뒤로 가기 ═══════════════════ */
+const viewHistory = [];
+let _lastViewKey = null, _lastViewState = null, _restoringView = false;
+function trackView() {
+  const state = { view: curView, step: curStep, id: curId };
+  const key = state.view + '|' + state.step + '|' + state.id;
+  if (!_restoringView && _lastViewKey && _lastViewKey !== key) {
+    viewHistory.push(_lastViewState);
+    if (viewHistory.length > 40) viewHistory.shift();
+  }
+  _restoringView = false;
+  _lastViewKey = key; _lastViewState = state;
+  const bb = $('#btn-back');
+  if (bb) bb.style.opacity = viewHistory.length ? '1' : '.3';
+}
+function goBack() {
+  syncEditor();
+  if (!viewHistory.length) { curView = 'home'; render(); return; }
+  const s = viewHistory.pop();
+  _restoringView = true;
+  curView = s.view; curStep = s.step;
+  if (s.id && DB.projects.find(p => p.id === s.id)) curId = s.id;
+  render();
+}
+
 /* ═══════════════════ 렌더 라우터 ═══════════════════ */
 function render() {
   refreshChrome();
+  trackView();
   const m = $('#main');
   document.body.classList.remove('fullscreen-editor');
   if (curView === 'archive') return renderArchive(m);
@@ -629,18 +657,7 @@ function renderStep0(m, p) {
         <div class="field full"><label>반드시 포함할 목회적 강조점</label><textarea id="f-emphasis">${esc(i.emphasis)}</textarea></div>
         <div class="field full"><label>피해야 할 표현·신학적 오해</label><textarea id="f-avoid">${esc(i.avoid)}</textarea></div>
         <div class="field full"><label>설교자의 개인 경험·메모 <span class="opt">(여기 적은 것만 실제 경험으로 원고에 씁니다)</span></label><textarea id="f-personal">${esc(i.personal)}</textarea></div>
-        <div class="field full"><label>참고 자료 넣기 <span class="opt">— 파일·사진을 끌어다 놓거나, 한글·워드 내용을 붙여넣으세요. 설교 작성 때 적절한 자리에 활용됩니다.</span></label>
-          <div id="ref-drop" class="dropzone">
-            <svg class="nav-ico" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
-            <span>여기에 자료를 끌어다 놓으세요 (또는 클릭해서 파일 선택)<br><small>텍스트·마크다운·사진·PDF — 사진과 PDF는 AI가 내용을 읽어 저장합니다</small></span>
-            <input id="ref-file" type="file" multiple accept=".txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <textarea id="ref-paste" style="flex:1;min-height:60px" placeholder="한글(HWP)·워드 등에서 복사한 자료를 여기 붙여넣고 → 담기"></textarea>
-            <button class="btn btn-ghost btn-sm" id="ref-paste-add" style="align-self:flex-end">담기</button>
-          </div>
-          <div id="ref-list" style="margin-top:10px">${renderRefList()}</div>
-        </div>
+        <div class="field full"><label>참고 자료 메모</label><textarea id="f-refs">${esc(i.refs)}</textarea></div>
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" id="f-next">저장하고 1단계 본문 찾기 →</button>
@@ -653,42 +670,23 @@ function renderStep0(m, p) {
     i.date = $('#f-date').value; i.targetMin = +$('#f-target').value || 25;
     i.season = $('#f-season').value.trim(); i.series = $('#f-series').value.trim();
     i.relation = $('#f-relation').value.trim(); i.emphasis = $('#f-emphasis').value.trim();
-    i.avoid = $('#f-avoid').value.trim(); i.personal = $('#f-personal').value.trim();
+    i.avoid = $('#f-avoid').value.trim(); i.personal = $('#f-personal').value.trim(); i.refs = $('#f-refs').value.trim();
     p.title = p.title || i.topic;
     touch(p);
   };
-  m.querySelectorAll('input,textarea').forEach(el => { if (el.id !== 'ref-paste') el.addEventListener('change', grab); });
+  m.querySelectorAll('input,textarea').forEach(el => el.addEventListener('change', grab));
   $('#f-next').addEventListener('click', () => {
     grab();
     if (!i.topic || !i.reason || !i.needs || !i.audience || !i.purpose) { toast('필수 항목(주제·이유·필요·청중·목적)을 채워 주세요.'); return; }
     gotoStep(1);
   });
-  bindRefDrop();
 }
 
-/* ── 참고 자료 넣기: 드롭존 + 붙여넣기 + 목록 (자료는 설교 작성 때 활용) ── */
-function renderRefList() {
-  if (!DB.materials.length) return '<p style="font-size:.78rem;opacity:.6;margin:4px 0 0">담긴 자료가 없습니다.</p>';
-  return DB.materials.map(x => `
-    <div class="ref-item">
-      <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span>
-      <b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.title)}</b>
-      <span style="font-size:.7rem;opacity:.55">${x.content.length.toLocaleString()}자</span>
-      <button class="btn btn-danger btn-sm" data-refdel="${x.id}">삭제</button>
-    </div>`).join('');
-}
-function refreshRefList() {
-  const el = $('#ref-list');
-  if (el) { el.innerHTML = renderRefList(); bindRefDelete(); }
-}
-function bindRefDelete() {
-  $$('#ref-list [data-refdel]').forEach(b => b.addEventListener('click', () => {
-    if (confirm('이 자료를 삭제할까요?')) { DB.materials = DB.materials.filter(x => x.id !== b.dataset.refdel); save(true); refreshRefList(); }
-  }));
-}
+/* ── 자료 서랍 드롭존: 끌어다 놓기 + 붙여넣기 (자료는 설교 작성 때 곳곳에 인용) ── */
 function addRefMaterial(type, title, content) {
   DB.materials.unshift({ id: uid(), type, title: title.slice(0, 60), content: String(content).slice(0, 12000), tags: '', createdAt: Date.now() });
-  save(true); refreshRefList();
+  save(true);
+  if (curView === 'materials') render();
 }
 async function ingestRefFile(f) {
   const name = f.name.replace(/\.[^.]+$/, '');
@@ -728,7 +726,6 @@ function bindRefDrop() {
     $('#ref-paste').value = '';
     toast('붙여넣은 자료를 담았습니다.');
   });
-  bindRefDelete();
 }
 
 /* ═══════════════════ 1단계: 본문 찾기 ═══════════════════ */
@@ -1051,7 +1048,7 @@ function renderStep3(m, p) {
       <h4 style="margin-top:16px">자료 서랍에서 넣을 자료 <span class="opt" style="font-weight:400;font-size:.74rem">— 선택한 자료를 AI가 적절한 자리에 반영합니다</span></h4>
       <div class="checklist" id="s3-mats">
         ${DB.materials.map(x => `<label><input type="checkbox" data-mat="${x.id}" checked> <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span> ${esc(x.title)}</label>`).join('')}
-      </div>` : `<p class="ai-note">📎 <b>기본 정보 → 참고 자료 넣기</b>에 예화·통계·자료를 담아 두면, 초안을 만들 때 골라 반영할 수 있습니다.</p>`}
+      </div>` : `<p class="ai-note">🗄 <b>자료 서랍</b>(왼쪽 메뉴)에 예화·통계·자료를 담아 두면, 설교문 곳곳에 인용해 활용합니다.</p>`}
       <p class="ai-note">📏 <b>나의 작성 규칙</b>이 자동 적용됩니다 — 적용 찬송 2곡(이유 포함)과 기도문이 원고 끝에 함께 작성됩니다.</p>
       <div class="btn-row">
         <button class="btn btn-primary" id="s3-gen" ${aiConnected() ? '' : 'disabled'}>설교문 초안 작성 🤖 (2~4분 소요)</button>
@@ -1110,7 +1107,7 @@ function renderStep3(m, p) {
         <div class="btn-row">
           <button class="btn btn-primary btn-sm" id="s3-weave" ${aiConnected() && DB.materials.length ? '' : 'disabled'}>선택한 자료를 원고에 녹이기 🤖</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">파일에서 자료 추가 (.txt .md)<input id="s3-matfile" type="file" accept=".txt,.md,.text" style="display:none"></label>
-          <button class="btn btn-ghost btn-sm" id="s3-matgo">참고 자료 넣기로 가기</button>
+          <button class="btn btn-ghost btn-sm" id="s3-matgo">자료 서랍 열기</button>
         </div>
       </div>
       <div class="card">
@@ -1263,7 +1260,7 @@ function bindEditor(p) {
     fr.readAsText(f);
   });
   const matGo = $('#s3-matgo');
-  if (matGo) matGo.addEventListener('click', () => gotoStep(0));
+  if (matGo) matGo.addEventListener('click', () => { curView = 'materials'; render(); });
   const snapBtn = $('#s3-snap');
   if (snapBtn) snapBtn.addEventListener('click', () => { syncEditor(); snapshot(p, '수동 저장'); render(); toast('버전을 저장했습니다.'); });
   const regenBtn = $('#s3-regen');
@@ -1737,9 +1734,21 @@ function renderMaterials(m) {
   m.innerHTML = `
     <div class="step-head">MATERIALS</div>
     <h1 class="step-title">자료 서랍</h1>
-    <p class="step-desc">예화·통계·간증·인용·메모를 모아 두는 서랍입니다. 설교문 초안을 만들 때 원하는 자료를 골라 넣으면, AI가 가장 적절한 자리에 자연스럽게 반영합니다.</p>
+    <p class="step-desc">예화·통계·간증·인용·메모를 모아 두는 서랍입니다. 여기 담긴 자료는 설교문 작성 때 AI가 필요한 곳곳에 인용해 활용합니다.</p>
     <div class="card">
-      <h3>새 자료 넣기</h3>
+      <h3>자료 담기 — 끌어다 놓기 · 붙여넣기</h3>
+      <div id="ref-drop" class="dropzone">
+        <svg class="nav-ico" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
+        <span>여기에 자료를 끌어다 놓으세요 (또는 클릭해서 파일 선택)<br><small>텍스트·마크다운은 바로 담고, 사진·PDF는 AI가 내용을 읽어 담습니다</small></span>
+        <input id="ref-file" type="file" multiple accept=".txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
+      </div>
+      <div class="paste-row">
+        <textarea id="ref-paste" placeholder="한글(HWP)·워드 등에서 복사한 자료를 여기 붙여넣고 → 담기"></textarea>
+        <button class="btn btn-ghost btn-sm" id="ref-paste-add">담기</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>직접 적어 넣기</h3>
       <div class="form-grid">
         <div class="field"><label>종류</label><select id="mat-type">${MAT_TYPES.map(t => `<option>${t}</option>`).join('')}</select></div>
         <div class="field"><label>제목 *</label><input id="mat-title" placeholder="예: 등대지기 이야기"></div>
@@ -1758,6 +1767,7 @@ function renderMaterials(m) {
   });
   $('#mat-q').addEventListener('input', e => { $('#mat-list').innerHTML = renderMatList(e.target.value); bindMatList(); });
   bindMatList();
+  bindRefDrop();
 }
 function renderMatList(q) {
   let list = DB.materials;
