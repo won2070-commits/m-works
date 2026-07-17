@@ -498,6 +498,15 @@ $('#nav-backdrop').addEventListener('click', () => document.body.classList.remov
 $('#sidenav').addEventListener('click', e => { if (e.target.closest('button, li')) document.body.classList.remove('nav-open'); });
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
+$('#btn-nav-archive').addEventListener('click', () => { curView = 'archive'; render(); });
+$('#btn-nav-exit').addEventListener('click', () => {
+  syncEditor(); save(true);
+  window.close();
+  // 브라우저가 창 닫기를 막으면 홈으로 돌아가며 안내
+  setTimeout(() => {
+    if (!window.closed) { curView = 'home'; render(); toast('저장했습니다. 창(탭)을 닫으면 앱이 종료됩니다.'); }
+  }, 300);
+});
 $('#btn-nav-settings').addEventListener('click', openSettings);
 $('#btn-back').addEventListener('click', goBack);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
