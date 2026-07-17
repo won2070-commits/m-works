@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=22">
+<link rel="apple-touch-icon" href="icon-192.png?v=23">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1616,7 +1616,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v22 · 2026-07-17';
+const APP_VERSION = 'v23 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1939,7 +1939,7 @@ function render() {
 function renderHome(m) {
   const recent = DB.projects.slice(0, 5);
   m.innerHTML = `
-    <div style="text-align:center; padding:40px 0 30px">
+    <div style="text-align:center; padding:14px 0 30px">
       <h1 style="font-size:2.4rem;font-weight:700;letter-spacing:0.02em;margin-bottom:6px;font-style:italic">Message Works</h1>
       <p style="color:var(--ink-soft);margin-top:6px;font-size:1.08rem">설교자를 위한 설교 작성 5단계</p>
       <div class="btn-row" style="justify-content:center;margin-top:70px;margin-bottom:56px">
