@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=16">
+<link rel="apple-touch-icon" href="icon-192.png?v=17">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1615,7 +1615,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v16 · 2026-07-17';
+const APP_VERSION = 'v17 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1657,7 +1657,14 @@ if (DB.settings.appPass && sessionStorage.getItem('mworks_unlock') !== '1') show
 function openManual() {
   modal('사용 설명서 — M.Works ' + APP_VERSION, `
     <div style="font-size:.9rem;line-height:1.75">
-    <h4 style="margin-top:0">1. 다섯 단계 흐름</h4>
+    <h4 style="margin-top:0">Message Works 란?</h4>
+    <ul style="margin:0 0 6px 18px">
+      <li>"메시지를 만드는 곳"</li>
+      <li>"메시지 제작소"</li>
+      <li>"메시지 연구소"</li>
+    </ul>
+    <p>즉, <b>"메시지를 만들어 내는 작업장"</b>이라는 의미를 가집니다.</p>
+    <h4>1. 다섯 단계 흐름</h4>
     <p>왼쪽의 <b>새 설교 시작</b>을 눌러 기본 정보(주제·대상·목적·날짜)를 적고 아래 순서로 진행합니다.</p>
     <p>① <b>본문 찾기</b> — 주제를 넣으면 AI가 본문 5곳을 추천합니다. 마음에 없으면 요청사항을 적고 추가 추천을 받으세요. 확정하면 본문 전문을 성경에서 복사해 붙여넣습니다.<br>
     ② <b>중심사상</b> — 본문을 로빈슨 12단계로 분석해 한 문장 중심사상을 세웁니다.<br>
