@@ -369,6 +369,8 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
+const APP_VERSION = 'v10 · 2026-07-17';
+(() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
         <rect x="4" y="4" width="72" height="72" rx="18" fill="#FFC000"/>
         <text x="40" y="52" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
@@ -1589,6 +1591,10 @@ function renderStep5(m, p) {
   $('#s5-breaths').addEventListener('click', () => getBreaths(p));
   const brIns = $('#s5-br-insert');
   if (brIns) brIns.addEventListener('click', () => insertBreathMarks(p));
+  const gsView = $('#s5-gs-view');
+  if (gsView) gsView.addEventListener('click', () => openMarkedScript(p, 'gestures'));
+  const brView = $('#s5-br-view');
+  if (brView) brView.addEventListener('click', () => openMarkedScript(p, 'breaths'));
   $('#s5-rehearse').addEventListener('click', () => startRehearsal(p));
   $('#s5-eval').addEventListener('change', e => { r.selfEval = e.target.value; touch(p); });
   $$('#main [data-chk]').forEach(cb => cb.addEventListener('change', () => { r.checklist[cb.dataset.chk] = cb.checked; touch(p); }));
@@ -1631,7 +1637,8 @@ function renderGestures(g) {
         <span><b>속도</b> ${esc(x.pace)}</span><span><b>멈춤</b> ${esc(x.pauseSec)}초</span>
       </div>
       <div style="font-size:.8rem;color:var(--ink-soft);margin-top:6px">이유 — ${esc(x.why)}</div>
-    </div>`).join('');
+    </div>`).join('') +
+    '<div class="btn-row"><button class="btn btn-primary btn-sm" id="s5-gs-view">📄 원고에서 위치 보기</button></div>';
 }
 /* 쉼·멈춤 자리 */
 function renderBreaths(b) {
@@ -1645,7 +1652,7 @@ function renderBreaths(b) {
         ${x.posture ? `<div style="font-size:.78rem;margin-top:4px"><b style="display:inline;opacity:1">포즈</b> ${esc(x.posture)}</div>` : ''}
         <div style="font-size:.76rem;opacity:.85;margin-top:2px">${esc(x.why)}</div>
       </div>`).join('')}
-    <div class="btn-row"><button class="btn btn-primary btn-sm" id="s5-br-insert">원고에 ∕·⏸ 표시 자동 삽입</button>
+    <div class="btn-row"><button class="btn btn-primary btn-sm" id="s5-br-insert">원고에 ∕·⏸ 표시 자동 삽입</button><button class="btn btn-ghost btn-sm" id="s5-br-view">📄 원고에서 위치 보기</button>
     <span style="font-size:.74rem;opacity:.858">삽입 후 3단계 편집기와 리허설 모드에 표시됩니다</span></div>`;
 }
 async function getBreaths(p) {
@@ -1689,6 +1696,75 @@ function insertBreathMarks(p) {
   p.draft.html = div.innerHTML;
   touch(p); render();
   toast(ok + '곳에 표시를 삽입했습니다.' + (ok < marks.length ? ' (' + (marks.length - ok) + '곳은 문장을 찾지 못했습니다)' : ''));
+}
+/* ── 원고 위치 보기: 제스처·쉼멈춤을 본문에 표시하고, 표시를 누르면 옆에 설명 ── */
+const CIRC = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
+function markScriptHtml(html, items, spanFor) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const norm = t => t.replace(/\s+/g, ' ').trim();
+  let found = 0;
+  items.forEach((it, i) => {
+    const tail = norm(it.sentence || '').slice(-24);
+    if (tail.length < 6) return;
+    const walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const t = norm(node.textContent);
+      if (t.indexOf(tail) < 0) continue;
+      const rawIdx = node.textContent.indexOf(tail.slice(-8));
+      if (rawIdx < 0) break;
+      const cut = rawIdx + 8;
+      const rest = node.textContent.slice(cut);
+      node.textContent = node.textContent.slice(0, cut);
+      const tmp = document.createElement('span');
+      tmp.innerHTML = spanFor(it, i);
+      const el = tmp.firstChild;
+      const after = document.createTextNode(rest);
+      node.parentNode.insertBefore(el, node.nextSibling);
+      node.parentNode.insertBefore(after, el.nextSibling);
+      found++;
+      break;
+    }
+  });
+  return { html: div.innerHTML, found };
+}
+function openMarkedScript(p, type) {
+  const isG = type === 'gestures';
+  const items = isG ? ((p.rehearsal.gestures && p.rehearsal.gestures.gestures) || [])
+                    : ((p.rehearsal.breaths && p.rehearsal.breaths.marks) || []);
+  if (!items.length) { toast('먼저 추천을 받아 주세요.'); return; }
+  const res = markScriptHtml(p.draft.html, items, (it, i) =>
+    isG ? `<button class="gmark" data-mi="${i}" title="누르면 설명이 나옵니다">🖐${CIRC[i] || (i + 1)}</button>`
+        : `<button class="gmark bmark" data-mi="${i}" title="누르면 설명이 나옵니다">${it.kind === '멈춤' ? '⏸' + (it.seconds || 2) + '초' : '∕'}${CIRC[i] || ''}</button>`);
+  const body = modal(isG ? '제스처 위치 — 설교 원고' : '쉼·멈춤 위치 — 설교 원고', `
+    <p style="font-size:.8rem;color:var(--ink-soft);margin-bottom:10px">본문 속 주황/남색 표시를 누르면 오른쪽에 설명이 나옵니다. (${res.found}/${items.length}곳 표시됨)</p>
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+      <div class="stream-preview" id="ms-text" style="flex:2;min-width:260px;max-height:56vh;overflow:auto">${res.html}</div>
+      <div id="ms-side" style="flex:1;min-width:200px"><p style="font-size:.84rem;color:var(--ink-soft)">👈 본문의 표시를 눌러 보세요.</p></div>
+    </div>`);
+  body.querySelectorAll('.gmark').forEach(el => el.addEventListener('click', () => {
+    body.querySelectorAll('.gmark.on').forEach(x => x.classList.remove('on'));
+    el.classList.add('on');
+    const i = +el.dataset.mi, it = items[i];
+    $('#ms-side').innerHTML = isG ? `
+      <div class="gesture" style="margin:0">
+        <div class="g-sent">${CIRC[i] || ''} "${esc(it.sentence)}" <span class="badge">${esc(it.position || '')}</span></div>
+        <div style="font-size:.9rem;margin:6px 0"><b>${esc(it.gesture)}</b></div>
+        <div class="g-grid">
+          <span><b>손</b> ${esc(it.hands)}</span><span><b>몸</b> ${esc(it.body)}</span>
+          <span><b>시선</b> ${esc(it.eyes)}</span><span><b>표정</b> ${esc(it.face)}</span>
+          <span><b>속도</b> ${esc(it.pace)}</span><span><b>멈춤</b> ${esc(it.pauseSec)}초</span>
+        </div>
+        <div style="font-size:.8rem;color:var(--ink-soft);margin-top:6px">이유 — ${esc(it.why)}</div>
+      </div>` : `
+      <div class="fb-item" style="background:${it.kind === '멈춤' ? 'var(--lilac)' : 'var(--mint)'};margin:0">
+        <b>${it.kind === '멈춤' ? '⏸ 멈춤 ' + esc(it.seconds) + '초' : '∕ 쉼'}</b>
+        "${esc(it.sentence)}"
+        ${it.posture ? `<div style="font-size:.8rem;margin-top:4px"><b>포즈</b> ${esc(it.posture)}</div>` : ''}
+        <div style="font-size:.78rem;opacity:.85;margin-top:4px">${esc(it.why)}</div>
+      </div>`;
+  }));
 }
 async function getFeedback(p) {
   try {
@@ -2242,7 +2318,9 @@ function openExport() {
       <label><input type="checkbox" id="ex-central" checked> 중심사상</label>
       <label><input type="checkbox" id="ex-passage"> 본문 전문</label>
       <label><input type="checkbox" id="ex-draft" checked> 설교문</label>
-      <label><input type="checkbox" id="ex-marks"> 강세·멈춤·시선 표시 유지</label>
+      <label><input type="checkbox" id="ex-marks"> 강세·시선 표시 유지</label>
+      <label><input type="checkbox" id="ex-bmarks" checked> 쉼·멈춤 표시 (∕·⏸)</label>
+      <label><input type="checkbox" id="ex-gmarks"> 제스처 위치 표시 (🖐①)</label>
       <label><input type="checkbox" id="ex-memo"> 강단 메모 유지</label>
       <label><input type="checkbox" id="ex-gestures"> 제스처 제안</label>
       <label><input type="checkbox" id="ex-feedback"> 피드백 요약</label>
@@ -2261,12 +2339,30 @@ function openExport() {
 }
 function buildExportHtml(p, opt) {
   const c = p.central || {};
-  let draftHtml = p.draft.html || '';
-  const div = document.createElement('div'); div.innerHTML = draftHtml;
-  if (!opt.marks) div.querySelectorAll('.pause-mark,.eye-mark').forEach(el => el.remove());
+  const div = document.createElement('div'); div.innerHTML = p.draft.html || '';
+  if (!opt.marks) div.querySelectorAll('.eye-mark').forEach(el => el.remove());
   if (!opt.marks) div.querySelectorAll('.stress-mark').forEach(el => { el.replaceWith(...el.childNodes); });
   if (!opt.memo) div.querySelectorAll('.note-mark').forEach(el => el.remove());
-  draftHtml = div.innerHTML;
+  // 쉼·멈춤 표시: 체크 해제 시 제거, 체크 시(원고에 없으면) 분석 결과로 삽입
+  if (!opt.bmarks) div.querySelectorAll('.breath-mark,.pause-mark').forEach(el => el.remove());
+  else {
+    const bm = (p.rehearsal.breaths && p.rehearsal.breaths.marks) || [];
+    if (bm.length && !div.querySelector('.breath-mark,.pause-mark')) {
+      div.innerHTML = markScriptHtml(div.innerHTML, bm, it => it.kind === '멈춤'
+        ? '<span class="pause-mark">⏸' + (it.seconds || 2) + '초</span>' : '<span class="breath-mark">∕</span>').html;
+    }
+  }
+  // 제스처 위치 표시(🖐①) + 표시 안내
+  let gLegend = '';
+  if (opt.gmarks) {
+    const gs = (p.rehearsal.gestures && p.rehearsal.gestures.gestures) || [];
+    if (gs.length) {
+      div.innerHTML = markScriptHtml(div.innerHTML, gs, (it, i) => '<b>🖐' + (CIRC[i] || (i + 1)) + '</b>').html;
+      gLegend = '<hr><h2>제스처 표시 안내</h2>' + gs.map((g, i) =>
+        `<p><b>🖐${CIRC[i] || (i + 1)}</b> ${esc(g.gesture)} — 손: ${esc(g.hands)} / 시선: ${esc(g.eyes)} / 멈춤: ${esc(g.pauseSec)}초 · ${esc(g.why)}</p>`).join('');
+    }
+  }
+  const draftHtml = div.innerHTML;
   let html = '';
   // 예시 원고 머리 양식: 제목(14pt 굵게) → 본문 장절(굵게) → 날짜·시리즈(굵게)
   if (opt.title) {
@@ -2277,7 +2373,7 @@ function buildExportHtml(p, opt) {
   }
   if (opt.central && c.homiletical) html += `<p><b>중심사상: ${esc(c.homiletical)}</b></p>`;
   if (opt.passage && p.passage.text) html += `<blockquote>${esc(p.passage.text).replace(/\n/g, '<br>')}</blockquote>`;
-  if (opt.draft) html += '<hr>' + draftHtml;
+  if (opt.draft) { html += '<hr>' + draftHtml; if (gLegend) html += gLegend; }
   if (opt.gestures && p.rehearsal.gestures) {
     html += '<hr><h2>제스처 제안</h2>' + (p.rehearsal.gestures.gestures || []).map(g =>
       `<p><b>"${esc(g.sentence)}"</b> (${esc(g.position)})<br>${esc(g.gesture)} — 손: ${esc(g.hands)} / 시선: ${esc(g.eyes)} / 멈춤: ${esc(g.pauseSec)}초</p>`).join('');
@@ -2293,6 +2389,7 @@ function grabExportOpts() {
     title: $('#ex-title').checked, central: $('#ex-central').checked,
     passage: $('#ex-passage').checked, draft: $('#ex-draft').checked,
     marks: $('#ex-marks').checked, memo: $('#ex-memo').checked,
+    bmarks: $('#ex-bmarks').checked, gmarks: $('#ex-gmarks').checked,
     gestures: $('#ex-gestures').checked, feedback: $('#ex-feedback').checked,
   };
 }
@@ -2312,11 +2409,17 @@ function doExport(p, kind) {
   } else if (kind === 'md') {
     saveFileAs(name + '.md', htmlToMd(inner), 'text/markdown', '마크다운');
   } else if (kind === 'print' || kind === 'print-large') {
-    closeModal();
-    document.body.classList.toggle('print-large', kind === 'print-large');
-    const p2 = cur();
-    if (curView !== 'step' || curStep !== 3) { curView = 'step'; curStep = 3; render(); }
-    setTimeout(() => { window.print(); document.body.classList.remove('print-large'); }, 300);
+    const w = window.open('', '_blank');
+    if (!w) { toast('팝업이 차단되어 인쇄 창을 열 수 없습니다. 브라우저에서 팝업을 허용해 주세요.', 5000); return; }
+    const large = kind === 'print-large';
+    w.document.write('<html><head><meta charset="utf-8"><title>' + esc(name) + '</title><style>' +
+      'body{font-family:"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#000;background:#fff;max-width:760px;margin:24px auto;line-height:1.8;font-size:' + (large ? '20pt' : '12pt') + ';padding:0 16px}' +
+      'h1{font-size:' + (large ? '27pt' : '16pt') + ';margin-bottom:6px} h2{font-size:' + (large ? '22pt' : '13pt') + ';margin:16px 0 6px}' +
+      'p{margin:0 0 4px} blockquote{border-left:3px solid #888;margin:12px 0;padding:4px 14px}' +
+      '.pause-mark,.breath-mark{font-weight:700} .stress-mark{font-weight:700;text-decoration:underline} .eye-mark{font-weight:700} .note-mark{background:#eee;padding:0 4px}' +
+      '</style></head><body>' + inner + '</body></html>');
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 400);
     return;
   }
 }

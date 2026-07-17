@@ -560,3 +560,13 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   body.print-large #editor { font-size: 17pt; line-height: 2.1; }
   body { background: #fff; }
 }
+
+/* 원고 위치 표시(제스처·쉼멈춤) */
+.gmark {
+  display: inline-block; background: var(--fin); color: #fff; border: none;
+  border-radius: 6px; padding: 1px 7px; font-size: .78rem; font-weight: 700;
+  margin: 0 3px; cursor: pointer; vertical-align: baseline; line-height: 1.5;
+}
+.gmark.bmark { background: var(--navy); }
+.gmark.on { outline: 2.5px solid var(--ink); outline-offset: 1px; }
+.app-ver { font-size: .64rem; font-family: var(--mono); letter-spacing: .04em; color: var(--ink); opacity: .55; padding: 4px 12px 0; }
