@@ -372,8 +372,8 @@ async function callAIJson(key, slots, opts = {}) {
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
         <rect x="4" y="4" width="72" height="72" rx="18" fill="#FFC000"/>
         <text x="40" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
-        <rect x="52" y="52" width="44" height="44" rx="12" fill="#FF5600" stroke="#ffffff" stroke-width="3"/>
-        <text x="74" y="83" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="800" text-anchor="middle" fill="#ffffff">W</text>
+        <rect x="48" y="42" width="44" height="44" rx="12" fill="#FF5600" stroke="#ffffff" stroke-width="3"/>
+        <text x="70" y="73" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="800" text-anchor="middle" fill="#000000">W</text>
 </svg>`;
 
 /* ═══════════════════ 공통 UI ═══════════════════ */
