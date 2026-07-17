@@ -27,7 +27,7 @@ function load() {
 function defaultRules() {
   return `- 문장은 짧게. 한 문장에 한 생각. 귀에는 되감기 버튼이 없다.
 - 존댓말 구어체("…습니다")로 쓴다.
-- 설교 마지막에 적용 찬송 2곡(고른 이유 한 줄씩)과 마무리 기도문을 반드시 넣는다.
+- 설교 마지막에 적용 찬양과 마무리 기도문을 반드시 넣는다. 찬양은 성도들이 즐겨 부르는 잘 알려진 최근 가스펠을 우선 2곡, 적합하다면 새찬송가 찬송도 1~2곡 더한다(각각 고른 이유 한 줄씩).
 - 설교문·기도문·찬양 뒤에, 이 설교의 중심내용과 궤를 같이하는 서적 2권을 추천한다. 각 책마다 추천 이유를 간략히 밝히고, 책 내용을 약 A4 두 페이지 분량으로 요약해 붙인다. 실제 존재하는 책만 추천하며, 불확실한 정보에는 "(확인 필요)"를 붙인다.
 - 확인되지 않은 통계·인용·예화는 쓰지 않는다. 불확실하면 "(확인 필요)"를 붙인다.
 - 첫 문장과 마지막 문장은 설교자가 직접 고쳐 쓸 것을 전제로, 담백하게 시작하고 담백하게 닫는다.
@@ -1033,6 +1033,7 @@ const PARTIAL_REQUESTS = [
   '복음적 연결 점검', '결론 다시 작성', '결론 압축', '촌철살인의 한 문장 5개',
   '전체 분량 늘리기', '전체 분량 줄이기', '목표 시간에 맞게 조절',
   'AI 냄새 제거', '설교자의 기존 문체에 맞게 수정',
+  '추천 도서 내용을 설교문에 추가 (책 제목 + A4 2쪽 요약)',
 ];
 function renderStep3(m, p) {
   if (!p.central.done) {
@@ -1325,12 +1326,17 @@ async function weaveMaterials(p) {
 }
 async function partialRewrite(p, request) {
   syncEditor();
+  // 짧은 메뉴 이름을 상세 지시로 확장
+  let fullRequest = request;
+  if (request.includes('추천 도서')) {
+    fullRequest = '이 설교의 중심내용과 궤를 같이하는, 실제 존재하는 책 2권을 "## 추천 도서" 섹션으로 작성하라. 각 책마다 ①제목·저자 ②추천 이유(2~3문장) ③책 내용 요약(각각 약 A4 두 페이지, 3,000자 안팎 — 핵심 논지·구조·이 설교와 만나는 지점 중심). 존재가 불확실한 책은 추천하지 말고, 세부 정보가 불확실하면 "(확인 필요)"를 붙여라. 원고 끝에 붙일 수 있는 형태로 섹션 전체만 출력하라.';
+  }
   try {
     const out = await callAI('partial', {
       homiletical: p.central.homiletical, ref: p.passage.ref,
       needs: p.inputs.needs, purpose: p.inputs.purpose,
       rules: DB.settings.rules,
-      draft: draftText(), request,
+      draft: draftText(), request: fullRequest,
     }, { label: '"' + request + '" 작업 중…' });
     const body = modal('부분 재작성 — ' + request, `
       <p style="font-size:.82rem;color:var(--ink-soft)">다른 부분은 바꾸지 않았습니다. 아래 결과를 검토하고 원하는 방식으로 반영하세요.</p>
