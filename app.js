@@ -446,7 +446,7 @@ function progressOf(p) {
 }
 function refreshChrome() {
   const p = cur();
-  $('#top-title').textContent = p ? (p.title || p.inputs.topic || '제목 없는 설교') : 'M-WORKS';
+  $('#top-title').textContent = p ? (p.title || p.inputs.topic || '제목 없는 설교') : 'M-Works';
   const DOC_ICO = '<svg class="nav-ico" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V7l-5-5z"/><path d="M14 2v5h5M9 13h6M9 17h4"/></svg>';
   $('#nav-project-title').innerHTML = p
     ? DOC_ICO + '<span>' + esc(p.title || p.inputs.topic || '제목 없음') + '</span>'
@@ -499,7 +499,6 @@ function formName(key) { const f = allForms().find(f => f.key === key); return f
 $('#btn-menu').addEventListener('click', () => document.body.classList.toggle('nav-open'));
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-new').addEventListener('click', newProject);
-$('#btn-archive').addEventListener('click', () => { curView = 'archive'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-clinic').addEventListener('click', () => { curView = 'clinic'; render(); });
 $('#btn-nav-rules').addEventListener('click', openRules);
@@ -574,8 +573,8 @@ function renderHome(m) {
   m.innerHTML = `
     <div style="text-align:center; padding:40px 0 30px">
       <div class="logo-mark" style="width:96px;height:96px;margin:0 auto 18px">${LOGO_SVG}</div>
-      <h1 style="font-size:2.6rem;font-weight:340;letter-spacing:-0.03em">M-WORKS</h1>
-      <p style="color:var(--ink-soft);margin-top:6px">들리는 설교, 끌리는 설교 — 본문에서 강단까지 다섯 걸음</p>
+      <h1 style="font-size:2.6rem;font-weight:340;letter-spacing:-0.03em">M-Works</h1>
+      <p style="color:var(--ink-soft);margin-top:6px">설교자를 위한 설교 작성 5단계</p>
       <div class="btn-row" style="justify-content:center;margin-top:24px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
         <button class="btn btn-ghost" id="home-import"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>설교 가져오기</button>
@@ -1905,7 +1904,7 @@ function openRules() {
 
 /* ═══════════════════ 가져오기 (파일·사진·유튜브) ═══════════════════ */
 function openImport() {
-  const body = modal('가져오기 — 예전 설교를 M-WORKS로', `
+  const body = modal('가져오기 — 예전 설교를 M-Works로', `
     <p style="font-size:.84rem;opacity:.855">파일·사진·유튜브 영상·붙여넣기로 기존 설교를 가져오면 새 프로젝트가 만들어지고, 형식 변환·부분 재작성·피드백 등 모든 기능을 그대로 쓸 수 있습니다.</p>
     <div class="chip-row" style="margin-top:14px">
       <label class="chip" style="cursor:pointer">📄 텍스트 파일 (.txt .md)<input id="im-file" type="file" accept=".txt,.md,.text" style="display:none"></label>
