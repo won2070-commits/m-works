@@ -446,11 +446,6 @@ function progressOf(p) {
 }
 function refreshChrome() {
   const p = cur();
-  $('#top-title').textContent = p ? (p.title || p.inputs.topic || '제목 없는 설교') : 'M-Works';
-  const DOC_ICO = '<svg class="nav-ico" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V7l-5-5z"/><path d="M14 2v5h5M9 13h6M9 17h4"/></svg>';
-  $('#nav-project-title').innerHTML = p
-    ? DOC_ICO + '<span>' + esc(p.title || p.inputs.topic || '제목 없음') + '</span>'
-    : DOC_ICO + '<span>프로젝트 없음</span>';
   $$('#step-nav li').forEach(li => {
     const s = +li.dataset.step;
     li.classList.toggle('active', curView === 'step' && curStep === s);
@@ -500,7 +495,6 @@ $('#btn-menu').addEventListener('click', () => document.body.classList.toggle('n
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-new').addEventListener('click', newProject);
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
-$('#btn-nav-rules').addEventListener('click', openRules);
 $('#btn-nav-settings').addEventListener('click', openSettings);
 $('#btn-back').addEventListener('click', goBack);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
@@ -611,7 +605,7 @@ function renderHome(m) {
       <h3>다섯 걸음</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;text-align:center">
         ${[['① 본문 찾기', 'var(--lime)'], ['② 중심 사상', 'var(--mint)'], ['③ 설교 작성', 'var(--lilac)'], ['④ 형식 결정', 'var(--cream)'], ['⑤ 연습하기', 'var(--pink)']]
-          .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:18px 8px;font-size:1.08rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}
+          .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:14px 8px;font-size:1rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}
       </div>
       <p class="ai-note" style="margin-top:14px"><b>설교자의 AI 사용 5원칙</b> — ① 주해·배경·논리 점검·형식 변환은 맡기라 ② 첫 문장과 마지막 문장은 내 손으로 ③ AI의 이야기를 내 경험처럼 말하지 말라 ④ AI가 준 정보는 반드시 검증하라 ⑤ 묵상과 기도는 위임 불가.</p>
     </div>
@@ -2339,6 +2333,7 @@ function openSettings() {
     <div class="btn-row">
       <button class="btn btn-gold" id="set-save">설정 저장</button>
       <button class="btn btn-ghost" id="set-recheck">AI 연결 다시 확인</button>
+      <button class="btn btn-ghost" id="set-rules">📏 나의 작성 규칙</button>
       <button class="btn btn-ghost" id="set-prompts">프롬프트 관리 (고급)</button>
     </div>
     <p class="ai-note"><b>개인정보</b> — 모든 설교 데이터는 이 컴퓨터의 브라우저에만 저장됩니다. AI 호출 시 해당 프로젝트의 입력 내용만 Anthropic 서버로 전송됩니다.</p>`);
@@ -2368,6 +2363,7 @@ function openSettings() {
     $('#set-ai-status').textContent = '확인 중…';
     await fetchStatus(true); updStatus();
   });
+  body.querySelector('#set-rules').addEventListener('click', openRules);
   body.querySelector('#set-prompts').addEventListener('click', () => { closeModal(); curView = 'prompts'; render(); });
 }
 /* 프롬프트 관리(관리자) */

@@ -78,7 +78,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   flex: 1; text-align: center; font-size: .84rem; font-weight: 400;
   color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.save-status { font-size: .66rem; font-family: var(--mono); letter-spacing: .04em; color: var(--ink); opacity: .75; min-width: 88px; text-align: right; }
+.save-status { font-size: .66rem; font-family: var(--mono); letter-spacing: .04em; color: var(--ink); opacity: .75; min-width: 88px; text-align: right; margin-left: auto; }
 .top-actions { display: flex; gap: 8px; align-items: center; }
 .top-btn {
   background: var(--canvas); color: var(--ink);
@@ -562,12 +562,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
       <strong>M-Works</strong>
     </div>
   </div>
-  <div id="top-title" class="top-title" title="현재 설교 제목">새 설교</div>
   <div id="save-status" class="save-status" title="자동 저장 상태">—</div>
-  <div class="top-actions">
-    <button id="btn-save" class="top-btn" title="지금 저장">💾 저장</button>
-    <button id="btn-export" class="top-btn" title="문서 내보내기">📄 내보내기</button>
-  </div>
 </header>
 
 <div id="layout">
@@ -575,7 +570,6 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   <!-- ───────── 왼쪽 내비 ───────── -->
   <nav id="sidenav">
     <button id="btn-new" class="new-btn">＋ 새 설교 시작</button>
-    <div class="nav-project" id="nav-project-title">프로젝트 없음</div>
     <ol id="step-nav" class="step-nav">
       <li data-step="0"><span class="num">📋</span><span class="lbl">기본 정보</span><span class="chk"></span></li>
       <li data-step="1"><span class="num">1</span><span class="lbl">본문 찾기</span><span class="chk"></span></li>
@@ -588,7 +582,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
     <div class="nav-progress-label" id="nav-progress-label">진행률 0%</div>
     <div class="nav-footer">
       <button class="nav-link" id="btn-nav-materials"><svg class="nav-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 7h6"/></svg>자료 서랍</button>
-      <button class="nav-link" id="btn-nav-rules"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M9 3v18M9 8h-3M9 13h-3M9 18h-3"/></svg>나의 작성 규칙</button>
+      <button class="nav-link" id="btn-save"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>저장</button>
+      <button class="nav-link" id="btn-export"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>내보내기</button>
       <button class="nav-link" id="btn-nav-settings"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 009 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.56-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.56V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.51 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9c.06.32.1.66.1 1a1.7 1.7 0 001.56 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1z"/></svg>설정</button>
       <div class="ai-badge" id="ai-badge">AI 연결 확인 중…</div>
     </div>
@@ -1618,11 +1613,6 @@ function progressOf(p) {
 }
 function refreshChrome() {
   const p = cur();
-  $('#top-title').textContent = p ? (p.title || p.inputs.topic || '제목 없는 설교') : 'M-Works';
-  const DOC_ICO = '<svg class="nav-ico" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V7l-5-5z"/><path d="M14 2v5h5M9 13h6M9 17h4"/></svg>';
-  $('#nav-project-title').innerHTML = p
-    ? DOC_ICO + '<span>' + esc(p.title || p.inputs.topic || '제목 없음') + '</span>'
-    : DOC_ICO + '<span>프로젝트 없음</span>';
   $$('#step-nav li').forEach(li => {
     const s = +li.dataset.step;
     li.classList.toggle('active', curView === 'step' && curStep === s);
@@ -1672,7 +1662,6 @@ $('#btn-menu').addEventListener('click', () => document.body.classList.toggle('n
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-new').addEventListener('click', newProject);
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
-$('#btn-nav-rules').addEventListener('click', openRules);
 $('#btn-nav-settings').addEventListener('click', openSettings);
 $('#btn-back').addEventListener('click', goBack);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
@@ -1783,7 +1772,7 @@ function renderHome(m) {
       <h3>다섯 걸음</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;text-align:center">
         ${[['① 본문 찾기', 'var(--lime)'], ['② 중심 사상', 'var(--mint)'], ['③ 설교 작성', 'var(--lilac)'], ['④ 형식 결정', 'var(--cream)'], ['⑤ 연습하기', 'var(--pink)']]
-          .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:18px 8px;font-size:1.08rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}
+          .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:14px 8px;font-size:1rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}
       </div>
       <p class="ai-note" style="margin-top:14px"><b>설교자의 AI 사용 5원칙</b> — ① 주해·배경·논리 점검·형식 변환은 맡기라 ② 첫 문장과 마지막 문장은 내 손으로 ③ AI의 이야기를 내 경험처럼 말하지 말라 ④ AI가 준 정보는 반드시 검증하라 ⑤ 묵상과 기도는 위임 불가.</p>
     </div>
@@ -3511,6 +3500,7 @@ function openSettings() {
     <div class="btn-row">
       <button class="btn btn-gold" id="set-save">설정 저장</button>
       <button class="btn btn-ghost" id="set-recheck">AI 연결 다시 확인</button>
+      <button class="btn btn-ghost" id="set-rules">📏 나의 작성 규칙</button>
       <button class="btn btn-ghost" id="set-prompts">프롬프트 관리 (고급)</button>
     </div>
     <p class="ai-note"><b>개인정보</b> — 모든 설교 데이터는 이 컴퓨터의 브라우저에만 저장됩니다. AI 호출 시 해당 프로젝트의 입력 내용만 Anthropic 서버로 전송됩니다.</p>`);
@@ -3540,6 +3530,7 @@ function openSettings() {
     $('#set-ai-status').textContent = '확인 중…';
     await fetchStatus(true); updStatus();
   });
+  body.querySelector('#set-rules').addEventListener('click', openRules);
   body.querySelector('#set-prompts').addEventListener('click', () => { closeModal(); curView = 'prompts'; render(); });
 }
 /* 프롬프트 관리(관리자) */
