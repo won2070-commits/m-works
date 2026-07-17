@@ -586,3 +586,6 @@ body.gothic-ui, body.gothic-ui button, body.gothic-ui input, body.gothic-ui text
 body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea, body.serif-ui select {
   font-family: "Apple Myungjo", "Nanum Myeongjo", "Noto Serif KR", "AppleMyungjo", serif;
 }
+
+/* 화면 밝기 오버레이 */
+#bright-ov { position: fixed; inset: 0; pointer-events: none; z-index: 99999; background: transparent; }

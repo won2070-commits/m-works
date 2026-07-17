@@ -113,7 +113,7 @@ function normalize(d) {
   d.settings = Object.assign({
     translation: '개역개정', cpm: 300, model: 'sonnet', apiKey: '',
     style: '', targetMin: 25, editorSize: 17, rules: defaultRules(),
-    fontScale: 100, fontFace: 'basic', appPass: '',
+    fontScale: 100, fontFace: 'basic', appPass: '', theme: 'white', brightness: 100,
   }, d.settings || {});
   d.projects = Array.isArray(d.projects) ? d.projects : [];
   d.customForms = Array.isArray(d.customForms) ? d.customForms : [];
@@ -370,13 +370,23 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v24 · 2026-07-17';
+const APP_VERSION = 'v25 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
   document.documentElement.style.fontSize = Math.round(17 * (DB.settings.fontScale || 100) / 100) + 'px';
   document.body.classList.toggle('serif-ui', DB.settings.fontFace === 'serif');
   document.body.classList.toggle('gothic-ui', DB.settings.fontFace === 'gothic');
+  // 화면 색상(테마)
+  const themes = { white: '#ffffff', ivory: '#faf6ee', mint: '#f3f8f4', lilac: '#f7f5fc' };
+  document.documentElement.style.setProperty('--canvas', themes[DB.settings.theme] || '#ffffff');
+  // 화면 밝기 — 화면 전체에 얇은 명암 막을 씌운다
+  let ov = document.getElementById('bright-ov');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'bright-ov'; document.body.appendChild(ov); }
+  const b = DB.settings.brightness || 100;
+  if (b < 100) ov.style.background = 'rgba(0,0,0,' + ((100 - b) / 100).toFixed(2) + ')';
+  else if (b > 100) ov.style.background = 'rgba(255,255,255,' + ((b - 100) / 100).toFixed(2) + ')';
+  else ov.style.background = 'transparent';
 }
 applyDisplay();
 /* ── 앱 잠금(비밀번호) ── */
@@ -2562,6 +2572,16 @@ function openSettings() {
           <option value="gothic" ${s.fontFace === 'gothic' ? 'selected' : ''}>고딕 (맑은 고딕 계열)</option>
           <option value="serif" ${s.fontFace === 'serif' ? 'selected' : ''}>명조 (세리프)</option>
         </select></div>
+      <div class="field"><label>화면 색상 (테마)</label>
+        <select id="set-theme">
+          <option value="white" ${s.theme === 'white' || !s.theme ? 'selected' : ''}>화이트 (기본)</option>
+          <option value="ivory" ${s.theme === 'ivory' ? 'selected' : ''}>아이보리 (따뜻한 종이색)</option>
+          <option value="mint" ${s.theme === 'mint' ? 'selected' : ''}>연민트 (차분한 초록빛)</option>
+          <option value="lilac" ${s.theme === 'lilac' ? 'selected' : ''}>연라일락 (은은한 보랏빛)</option>
+        </select></div>
+      <div class="field"><label>화면 밝기 — <span id="set-bright-val">${s.brightness || 100}%</span></label>
+        <input type="range" id="set-bright" min="70" max="115" step="5" value="${s.brightness || 100}">
+        <div class="hint">낮추면 눈이 편하고, 높이면 더 환해집니다. 움직이면 바로 화면에 적용됩니다.</div></div>
       <div class="field full"><label>앱 잠금</label>
         <div class="btn-row" style="margin-top:4px">
           <button class="btn btn-ghost btn-sm" id="set-pass">🔒 ${s.appPass ? '비밀번호 변경' : '비밀번호 걸기'}</button>
@@ -2599,12 +2619,21 @@ function openSettings() {
     s.translation = $('#set-trans').value; s.cpm = +$('#set-cpm').value || 300;
     s.targetMin = +$('#set-target').value || 25; s.style = $('#set-style').value.trim();
     s.fontScale = +$('#set-fscale').value || 100; s.fontFace = $('#set-fface').value;
+    s.theme = $('#set-theme').value; s.brightness = +$('#set-bright').value || 100;
     applyDisplay();
     save(true); fetchStatus(); closeModal(); toast('설정을 저장했습니다.');
   });
   body.querySelector('#set-recheck').addEventListener('click', async () => {
     $('#set-ai-status').textContent = '확인 중…';
     await fetchStatus(true); updStatus();
+  });
+  body.querySelector('#set-bright').addEventListener('input', e => {
+    DB.settings.brightness = +e.target.value;
+    $('#set-bright-val').textContent = e.target.value + '%';
+    applyDisplay();
+  });
+  body.querySelector('#set-theme').addEventListener('change', e => {
+    DB.settings.theme = e.target.value; applyDisplay();
   });
   body.querySelector('#set-rules').addEventListener('click', openRules);
   body.querySelector('#set-manual').addEventListener('click', () => { closeModal(); openManual(); });
