@@ -584,7 +584,7 @@ function renderHome(m) {
     <div class="card">
       <h3>다섯 걸음</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;text-align:center">
-        ${[['① 본문 찾기<br><small>니즈가 만나는 본문</small>', 'var(--lime)'], ['② 중심사상<br><small>로빈슨의 두 질문</small>', 'var(--mint)'], ['③ 설교 작성<br><small>깎아서 짓는 원고</small>', 'var(--lilac)'], ['④ 형식 결정<br><small>그릇을 고른다</small>', 'var(--cream)'], ['⑤ 연습하기<br><small>입으로 옮긴다</small>', 'var(--pink)']]
+        ${[['① 본문 찾기', 'var(--lime)'], ['② 중심사상', 'var(--mint)'], ['③ 설교 작성', 'var(--lilac)'], ['④ 형식 결정', 'var(--cream)'], ['⑤ 연습하기', 'var(--pink)']]
           .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:16px 8px;font-size:.9rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}
       </div>
       <p class="ai-note" style="margin-top:14px"><b>설교자의 AI 사용 5원칙</b> — ① 주해·배경·논리 점검·형식 변환은 맡기라 ② 첫 문장과 마지막 문장은 내 손으로 ③ AI의 이야기를 내 경험처럼 말하지 말라 ④ AI가 준 정보는 반드시 검증하라 ⑤ 묵상과 기도는 위임 불가.</p>
