@@ -499,8 +499,6 @@ function formName(key) { const f = allForms().find(f => f.key === key); return f
 $('#btn-menu').addEventListener('click', () => document.body.classList.toggle('nav-open'));
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-new').addEventListener('click', newProject);
-$('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
-$('#btn-nav-clinic').addEventListener('click', () => { curView = 'clinic'; render(); });
 $('#btn-nav-rules').addEventListener('click', openRules);
 $('#btn-nav-settings').addEventListener('click', openSettings);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
@@ -584,8 +582,8 @@ function renderHome(m) {
     <div class="card">
       <h3>다섯 걸음</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;text-align:center">
-        ${[['① 본문 찾기', 'var(--lime)'], ['② 중심사상', 'var(--mint)'], ['③ 설교 작성', 'var(--lilac)'], ['④ 형식 결정', 'var(--cream)'], ['⑤ 연습하기', 'var(--pink)']]
-          .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:16px 8px;font-size:.9rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}
+        ${[['① 본문 찾기', 'var(--lime)'], ['② 중심 사상', 'var(--mint)'], ['③ 설교 작성', 'var(--lilac)'], ['④ 형식 결정', 'var(--cream)'], ['⑤ 연습하기', 'var(--pink)']]
+          .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:18px 8px;font-size:1.08rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}
       </div>
       <p class="ai-note" style="margin-top:14px"><b>설교자의 AI 사용 5원칙</b> — ① 주해·배경·논리 점검·형식 변환은 맡기라 ② 첫 문장과 마지막 문장은 내 손으로 ③ AI의 이야기를 내 경험처럼 말하지 말라 ④ AI가 준 정보는 반드시 검증하라 ⑤ 묵상과 기도는 위임 불가.</p>
     </div>
@@ -631,7 +629,18 @@ function renderStep0(m, p) {
         <div class="field full"><label>반드시 포함할 목회적 강조점</label><textarea id="f-emphasis">${esc(i.emphasis)}</textarea></div>
         <div class="field full"><label>피해야 할 표현·신학적 오해</label><textarea id="f-avoid">${esc(i.avoid)}</textarea></div>
         <div class="field full"><label>설교자의 개인 경험·메모 <span class="opt">(여기 적은 것만 실제 경험으로 원고에 씁니다)</span></label><textarea id="f-personal">${esc(i.personal)}</textarea></div>
-        <div class="field full"><label>참고 자료 메모</label><textarea id="f-refs">${esc(i.refs)}</textarea></div>
+        <div class="field full"><label>참고 자료 넣기 <span class="opt">— 파일·사진을 끌어다 놓거나, 한글·워드 내용을 붙여넣으세요. 설교 작성 때 적절한 자리에 활용됩니다.</span></label>
+          <div id="ref-drop" class="dropzone">
+            <svg class="nav-ico" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
+            <span>여기에 자료를 끌어다 놓으세요 (또는 클릭해서 파일 선택)<br><small>텍스트·마크다운·사진·PDF — 사진과 PDF는 AI가 내용을 읽어 저장합니다</small></span>
+            <input id="ref-file" type="file" multiple accept=".txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <textarea id="ref-paste" style="flex:1;min-height:60px" placeholder="한글(HWP)·워드 등에서 복사한 자료를 여기 붙여넣고 → 담기"></textarea>
+            <button class="btn btn-ghost btn-sm" id="ref-paste-add" style="align-self:flex-end">담기</button>
+          </div>
+          <div id="ref-list" style="margin-top:10px">${renderRefList()}</div>
+        </div>
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" id="f-next">저장하고 1단계 본문 찾기 →</button>
@@ -644,16 +653,82 @@ function renderStep0(m, p) {
     i.date = $('#f-date').value; i.targetMin = +$('#f-target').value || 25;
     i.season = $('#f-season').value.trim(); i.series = $('#f-series').value.trim();
     i.relation = $('#f-relation').value.trim(); i.emphasis = $('#f-emphasis').value.trim();
-    i.avoid = $('#f-avoid').value.trim(); i.personal = $('#f-personal').value.trim(); i.refs = $('#f-refs').value.trim();
+    i.avoid = $('#f-avoid').value.trim(); i.personal = $('#f-personal').value.trim();
     p.title = p.title || i.topic;
     touch(p);
   };
-  m.querySelectorAll('input,textarea').forEach(el => el.addEventListener('change', grab));
+  m.querySelectorAll('input,textarea').forEach(el => { if (el.id !== 'ref-paste') el.addEventListener('change', grab); });
   $('#f-next').addEventListener('click', () => {
     grab();
     if (!i.topic || !i.reason || !i.needs || !i.audience || !i.purpose) { toast('필수 항목(주제·이유·필요·청중·목적)을 채워 주세요.'); return; }
     gotoStep(1);
   });
+  bindRefDrop();
+}
+
+/* ── 참고 자료 넣기: 드롭존 + 붙여넣기 + 목록 (자료는 설교 작성 때 활용) ── */
+function renderRefList() {
+  if (!DB.materials.length) return '<p style="font-size:.78rem;opacity:.6;margin:4px 0 0">담긴 자료가 없습니다.</p>';
+  return DB.materials.map(x => `
+    <div class="ref-item">
+      <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span>
+      <b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.title)}</b>
+      <span style="font-size:.7rem;opacity:.55">${x.content.length.toLocaleString()}자</span>
+      <button class="btn btn-danger btn-sm" data-refdel="${x.id}">삭제</button>
+    </div>`).join('');
+}
+function refreshRefList() {
+  const el = $('#ref-list');
+  if (el) { el.innerHTML = renderRefList(); bindRefDelete(); }
+}
+function bindRefDelete() {
+  $$('#ref-list [data-refdel]').forEach(b => b.addEventListener('click', () => {
+    if (confirm('이 자료를 삭제할까요?')) { DB.materials = DB.materials.filter(x => x.id !== b.dataset.refdel); save(true); refreshRefList(); }
+  }));
+}
+function addRefMaterial(type, title, content) {
+  DB.materials.unshift({ id: uid(), type, title: title.slice(0, 60), content: String(content).slice(0, 12000), tags: '', createdAt: Date.now() });
+  save(true); refreshRefList();
+}
+async function ingestRefFile(f) {
+  const name = f.name.replace(/\.[^.]+$/, '');
+  if (/\.(txt|md|text)$/i.test(f.name) || f.type.startsWith('text/')) {
+    const fr = new FileReader();
+    fr.onload = () => { addRefMaterial('메모', name, fr.result); toast('"' + name + '" 을 담았습니다.'); };
+    fr.readAsText(f);
+  } else if (f.type.startsWith('image/') || f.type === 'application/pdf') {
+    toast('"' + name + '" 내용을 AI가 읽는 중… (1~3분)', 5000);
+    const fr = new FileReader();
+    fr.onload = async () => {
+      try {
+        const j = await (await fetch('/api/ocr', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: String(fr.result).split(',')[1], mime: f.type, model: DB.settings.model }) })).json();
+        if (j.error) return toast('⚠ ' + j.error, 6000);
+        addRefMaterial('메모', name, j.text);
+        toast('"' + name + '" 내용을 읽어 담았습니다.');
+      } catch (e) { toast('⚠ 인식 실패: ' + e.message, 6000); }
+    };
+    fr.readAsDataURL(f);
+  } else {
+    toast('한글(HWP)·워드 파일은 내용을 복사해서 붙여넣기 칸에 넣어 주세요.', 5000);
+  }
+}
+function bindRefDrop() {
+  const dz = $('#ref-drop'); if (!dz) return;
+  const fi = $('#ref-file');
+  dz.addEventListener('click', () => fi.click());
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+  dz.addEventListener('drop', e => { Array.from(e.dataTransfer.files || []).forEach(ingestRefFile); });
+  fi.addEventListener('change', e => { Array.from(e.target.files || []).forEach(ingestRefFile); fi.value = ''; });
+  const pasteAdd = $('#ref-paste-add');
+  pasteAdd.addEventListener('click', () => {
+    const t = $('#ref-paste').value.trim();
+    if (t.length < 5) return toast('붙여넣은 내용이 없습니다.');
+    addRefMaterial('메모', t.split('\n')[0].slice(0, 30), t);
+    $('#ref-paste').value = '';
+    toast('붙여넣은 자료를 담았습니다.');
+  });
+  bindRefDelete();
 }
 
 /* ═══════════════════ 1단계: 본문 찾기 ═══════════════════ */
@@ -976,7 +1051,7 @@ function renderStep3(m, p) {
       <h4 style="margin-top:16px">자료 서랍에서 넣을 자료 <span class="opt" style="font-weight:400;font-size:.74rem">— 선택한 자료를 AI가 적절한 자리에 반영합니다</span></h4>
       <div class="checklist" id="s3-mats">
         ${DB.materials.map(x => `<label><input type="checkbox" data-mat="${x.id}" checked> <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span> ${esc(x.title)}</label>`).join('')}
-      </div>` : `<p class="ai-note">🗄 <b>자료 서랍</b>에 예화·통계·간증·메모를 넣어 두면, 초안을 만들 때 골라 반영할 수 있습니다. (왼쪽 메뉴 → 자료 서랍)</p>`}
+      </div>` : `<p class="ai-note">📎 <b>기본 정보 → 참고 자료 넣기</b>에 예화·통계·자료를 담아 두면, 초안을 만들 때 골라 반영할 수 있습니다.</p>`}
       <p class="ai-note">📏 <b>나의 작성 규칙</b>이 자동 적용됩니다 — 적용 찬송 2곡(이유 포함)과 기도문이 원고 끝에 함께 작성됩니다.</p>
       <div class="btn-row">
         <button class="btn btn-primary" id="s3-gen" ${aiConnected() ? '' : 'disabled'}>설교문 초안 작성 🤖 (2~4분 소요)</button>
@@ -1035,7 +1110,7 @@ function renderStep3(m, p) {
         <div class="btn-row">
           <button class="btn btn-primary btn-sm" id="s3-weave" ${aiConnected() && DB.materials.length ? '' : 'disabled'}>선택한 자료를 원고에 녹이기 🤖</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">파일에서 자료 추가 (.txt .md)<input id="s3-matfile" type="file" accept=".txt,.md,.text" style="display:none"></label>
-          <button class="btn btn-ghost btn-sm" id="s3-matgo">자료 서랍 열기</button>
+          <button class="btn btn-ghost btn-sm" id="s3-matgo">참고 자료 넣기로 가기</button>
         </div>
       </div>
       <div class="card">
@@ -1188,7 +1263,7 @@ function bindEditor(p) {
     fr.readAsText(f);
   });
   const matGo = $('#s3-matgo');
-  if (matGo) matGo.addEventListener('click', () => { curView = 'materials'; render(); });
+  if (matGo) matGo.addEventListener('click', () => gotoStep(0));
   const snapBtn = $('#s3-snap');
   if (snapBtn) snapBtn.addEventListener('click', () => { syncEditor(); snapshot(p, '수동 저장'); render(); toast('버전을 저장했습니다.'); });
   const regenBtn = $('#s3-regen');
