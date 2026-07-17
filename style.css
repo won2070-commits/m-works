@@ -18,6 +18,7 @@
   --navy: #1f1d3d;
   --magenta: #ff3d8b;
   --success: #1ea64a;
+  --fin: #ff5600;          /* Fin Orange — AI 전용 악센트 (AI CTA·배지에만) */
   --r-xs: 2px;
   --r-sm: 6px;
   --r-md: 8px;
@@ -212,6 +213,10 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 .btn-danger { background: var(--canvas); border: 1px solid var(--hairline); color: var(--magenta); }
 .btn-danger:hover { border-color: var(--magenta); }
 .btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+/* AI 실행 버튼 — Fin Orange 악센트 (🤖 버튼에 자동 적용) */
+.btn-ai { background-color: #ff5600 !important; background-image: none !important; color: #fff !important; border: none !important; }
+.btn-ai:hover { filter: brightness(1.07); }
+.ai-badge.ok { background: rgba(255,86,0,.1); color: var(--fin); }
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
 .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
 .chip {

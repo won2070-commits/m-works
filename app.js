@@ -2397,6 +2397,13 @@ function openPromptManager() {
   body.querySelector('#pm-back').addEventListener('click', openSettings);
 }
 
+/* ═══════════════════ AI 버튼 색 (Fin Orange) ═══════════════════ */
+// 🤖 표시가 있는 버튼 = AI 실행 버튼 → Fin Orange 악센트 자동 적용
+function paintAiButtons() {
+  $$('.btn').forEach(b => { if (b.textContent.includes('🤖')) b.classList.add('btn-ai'); });
+}
+new MutationObserver(paintAiButtons).observe(document.body, { childList: true, subtree: true });
+
 /* ═══════════════════ 시작 ═══════════════════ */
 window.gotoStep = gotoStep; // 잠금 카드의 onclick 용
 (function init() {
