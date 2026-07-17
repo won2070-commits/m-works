@@ -1,0 +1,15 @@
+{
+  "name": "M-WORKS — 들리는 설교, 끌리는 설교",
+  "short_name": "M-WORKS",
+  "description": "본문에서 강단까지 다섯 걸음 — 설교 준비 작업실",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
