@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>M-Works — 들리는 설교, 끌리는 설교</title>
+<title>M.Works — 들리는 설교, 끌리는 설교</title>
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="M-Works">
+<meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
@@ -66,16 +66,16 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   background: var(--canvas); color: var(--ink);
   border-bottom: 1px solid var(--hairline);
   padding: calc(10px + env(safe-area-inset-top, 0px)) 20px 10px; position: sticky; top: 0; z-index: 50;
-  min-height: 66px;
+  min-height: 76px;
 }
 .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
 .logo-mark {
-  width: 48px; height: 48px; border-radius: 12px;
+  width: 58px; height: 58px; border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
 }
 .logo-mark svg { width: 100%; height: 100%; display: block; }
 .logo-text { display: flex; flex-direction: column; justify-content: center; line-height: 1.1; }
-.logo-text strong { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+.logo-text strong { font-size: 1.95rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
 .top-title {
   flex: 1; text-align: center; font-size: .84rem; font-weight: 400;
   color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -539,8 +539,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   .top-title { display: none; }
   .save-status { display: none; }
   .logo-text span { display: none; }
-  .logo-text strong { font-size: 1.2rem; }
-  .logo-mark { width: 40px; height: 40px; border-radius: 10px; }
+  .logo-text strong { font-size: 1.35rem; }
+  .logo-mark { width: 46px; height: 46px; border-radius: 11px; }
   .top-btn { white-space: nowrap; padding: 6px 12px; }
   /* 펀치홀·상태바를 피해 상단바를 아래로 내림 */
   #topbar { gap: 6px; padding: calc(16px + env(safe-area-inset-top, 0px)) 12px 12px; }
@@ -573,7 +573,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 }
 
 </style>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%23FFC000'/><text x='50' y='64' font-size='52' font-weight='700' letter-spacing='-2' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><text x='50' y='84' font-size='10' letter-spacing='3' text-anchor='middle' fill='%23000000' opacity='.7' font-family='Menlo,monospace'>WORKS</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%23FFC000'/><text x='50' y='64' font-size='52' font-weight='700' letter-spacing='-2' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><text x='50' y='84' font-size='10' text-anchor='middle' textLength='44' lengthAdjust='spacing' fill='%23000000' opacity='.7' font-family='Menlo,monospace'>WORKS</text></svg>">
 </head>
 <body>
 
@@ -583,14 +583,14 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   <button id="btn-back" class="icon-btn" title="뒤로 가기" aria-label="뒤로 가기"><svg class="nav-ico" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M15 19l-7-7 7-7"/></svg></button>
   <div class="logo" id="logo">
     <div class="logo-mark">
-      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M-Works 로고">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
         <rect width="100" height="100" rx="24" fill="#FFC000"/>
         <text x="50" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="50" font-weight="700" letter-spacing="-2" text-anchor="middle" fill="#000000">M</text>
-        <text x="50" y="83" font-family="Menlo, 'SF Mono', monospace" font-size="10" letter-spacing="3" text-anchor="middle" fill="#000000" opacity=".7">WORKS</text>
+        <text x="50" y="83" font-family="Menlo, 'SF Mono', monospace" font-size="10" text-anchor="middle" textLength="44" lengthAdjust="spacing" fill="#000000" opacity=".7">WORKS</text>
       </svg>
     </div>
     <div class="logo-text">
-      <strong>M-Works</strong>
+      <strong>M.Works</strong>
     </div>
   </div>
   <div id="save-status" class="save-status" title="자동 저장 상태">—</div>
@@ -1584,10 +1584,10 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M-Works 로고">
+const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
   <rect width="100" height="100" rx="24" fill="#FFC000"/>
   <text x="50" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="50" font-weight="700" letter-spacing="-2" text-anchor="middle" fill="#000000">M</text>
-  <text x="50" y="83" font-family="Menlo, 'SF Mono', monospace" font-size="10" letter-spacing="3" text-anchor="middle" fill="#000000" opacity=".7">WORKS</text>
+  <text x="50" y="83" font-family="Menlo, 'SF Mono', monospace" font-size="10" text-anchor="middle" textLength="44" lengthAdjust="spacing" fill="#000000" opacity=".7">WORKS</text>
 </svg>`;
 
 /* ═══════════════════ 공통 UI ═══════════════════ */
@@ -1812,7 +1812,7 @@ function renderHome(m) {
   m.innerHTML = `
     <div style="text-align:center; padding:40px 0 30px">
       <div class="logo-mark" style="width:96px;height:96px;margin:0 auto 18px">${LOGO_SVG}</div>
-      <h1 style="font-size:2.6rem;font-weight:340;letter-spacing:-0.03em">M-Works</h1>
+      <h1 style="font-size:2.6rem;font-weight:340;letter-spacing:-0.03em">M.Works</h1>
       <p style="color:var(--ink-soft);margin-top:6px">설교자를 위한 설교 작성 5단계</p>
       <div class="btn-row" style="justify-content:center;margin-top:44px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
@@ -3223,7 +3223,7 @@ function openRules() {
 
 /* ═══════════════════ 가져오기 (파일·사진·유튜브) ═══════════════════ */
 function openImport() {
-  const body = modal('가져오기 — 예전 설교를 M-Works로', `
+  const body = modal('가져오기 — 예전 설교를 M.Works로', `
     <p style="font-size:.84rem;opacity:.855">파일·사진·유튜브 영상·붙여넣기로 기존 설교를 가져오면 새 프로젝트가 만들어지고, 형식 변환·부분 재작성·피드백 등 모든 기능을 그대로 쓸 수 있습니다.</p>
     <div class="chip-row" style="margin-top:14px">
       <label class="chip" style="cursor:pointer">📄 텍스트 파일 (.txt .md)<input id="im-file" type="file" accept=".txt,.md,.text" style="display:none"></label>
