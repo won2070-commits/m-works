@@ -19,6 +19,7 @@
   --magenta: #ff3d8b;
   --success: #1ea64a;
   --fin: #ff5600;          /* Fin Orange — AI 전용 악센트 (AI CTA·배지에만) */
+  --gold: #FFC000;         /* Lamborghini Gold — Primary CTA 악센트 */
   --r-xs: 2px;
   --r-sm: 6px;
   --r-md: 8px;
@@ -134,6 +135,12 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   font-size: .74rem; font-weight: 600;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+/* 새 설교 시작(첫 항목) — Primary CTA 골드 */
+.step-nav li[data-step="0"] { background: var(--gold); color: #000; font-weight: 700; }
+.step-nav li[data-step="0"]:hover { filter: brightness(1.05); background: var(--gold); }
+.step-nav li[data-step="0"].active { background: var(--gold); color: #000; }
+.step-nav li[data-step="0"] .num { background: rgba(0,0,0,.14); color: #000; }
+.step-nav li[data-step="0"].active .num { background: rgba(0,0,0,.14) !important; color: #000; }
 /* 단계별 파스텔 번호 */
 .step-nav li[data-step="1"] .num { background: var(--lime); }
 .step-nav li[data-step="2"] .num { background: var(--mint); }
@@ -206,7 +213,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 }
 .btn:active { transform: scale(0.96); }
 .btn-primary { background: var(--ink); color: #fff; }
-.btn-gold { background: var(--ink); color: #fff; }
+.btn-gold { background: var(--gold); color: #000; font-weight: 700; }
+.btn-gold:hover { filter: brightness(1.05); }
 .btn-ghost { background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink); }
 .btn-ghost:hover { border-color: var(--ink); }
 .btn-sm { padding: 8px 15px; font-size: .8rem; }

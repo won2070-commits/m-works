@@ -597,7 +597,7 @@ function renderHome(m) {
       <p style="color:var(--ink-soft);margin-top:6px">설교자를 위한 설교 작성 5단계</p>
       <div class="btn-row" style="justify-content:center;margin-top:44px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
-        <button class="btn btn-ghost" id="home-import"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>설교 가져오기</button>
+        <button class="btn btn-gold" id="home-import"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>설교 가져오기</button>
         <button class="btn btn-ghost" id="home-archive"><svg class="btn-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 002 2h10a2 2 0 002-2V9M10 13h4"/></svg>보관함</button>
       </div>
     </div>
