@@ -498,7 +498,6 @@ $('#nav-backdrop').addEventListener('click', () => document.body.classList.remov
 $('#sidenav').addEventListener('click', e => { if (e.target.closest('button, li')) document.body.classList.remove('nav-open'); });
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
-$('#btn-nav-archive').addEventListener('click', () => { curView = 'archive'; render(); });
 $('#btn-nav-exit').addEventListener('click', () => {
   syncEditor(); save(true);
   window.close();
