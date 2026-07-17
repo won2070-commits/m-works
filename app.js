@@ -426,7 +426,10 @@ function progressOf(p) {
 function refreshChrome() {
   const p = cur();
   $('#top-title').textContent = p ? (p.title || p.inputs.topic || '제목 없는 설교') : 'M-WORKS';
-  $('#nav-project-title').textContent = p ? '📖 ' + (p.title || p.inputs.topic || '제목 없음') : '프로젝트 없음';
+  const DOC_ICO = '<svg class="nav-ico" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M14 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V7l-5-5z"/><path d="M14 2v5h5M9 13h6M9 17h4"/></svg>';
+  $('#nav-project-title').innerHTML = p
+    ? DOC_ICO + '<span>' + esc(p.title || p.inputs.topic || '제목 없음') + '</span>'
+    : DOC_ICO + '<span>프로젝트 없음</span>';
   $$('#step-nav li').forEach(li => {
     const s = +li.dataset.step;
     li.classList.toggle('active', curView === 'step' && curStep === s);

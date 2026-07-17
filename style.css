@@ -112,9 +112,11 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 .nav-project {
   font-size: .7rem; font-family: var(--mono); letter-spacing: .03em;
   color: var(--ink); opacity: .78; padding: 2px 8px 12px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   border-bottom: 1px solid var(--hairline); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 7px;
 }
+.nav-project span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-project .nav-ico { flex-shrink: 0; opacity: .8; }
 .step-nav { list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .step-nav li {
   display: flex; align-items: center; gap: 10px;
