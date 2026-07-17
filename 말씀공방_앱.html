@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=12">
+<link rel="apple-touch-icon" href="icon-192.png?v=13">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -68,7 +68,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   padding: calc(10px + env(safe-area-inset-top, 0px)) 20px 10px; position: sticky; top: 0; z-index: 50;
   min-height: 76px;
 }
-.logo { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-left: 28px; }
+.logo { display: flex; align-items: center; gap: 18px; cursor: pointer; margin-left: 28px; }
 .logo-lockup { height: 72px; width: auto; display: block; }
 .logo-mark {
   width: 62px; height: 62px; border-radius: 15px;
@@ -1615,7 +1615,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v12 · 2026-07-17';
+const APP_VERSION = 'v13 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
