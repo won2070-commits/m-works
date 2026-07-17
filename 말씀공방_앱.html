@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>M-WORKS — 들리는 설교, 끌리는 설교</title>
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="M-WORKS">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -3447,6 +3453,12 @@ window.gotoStep = gotoStep; // 잠금 카드의 onclick 용
   window.addEventListener('beforeunload', () => { syncEditor(); save(true); });
 })();
 
+</script>
+<script>
+// PWA 설치 지원 — http/https에서만 (file:// 단일 파일에서는 건너뜀)
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
