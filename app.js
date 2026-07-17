@@ -348,9 +348,10 @@ async function callAIJson(key, slots, opts = {}) {
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M-WORKS 로고">
-  <rect width="100" height="100" rx="24" fill="#c5b0f4"/>
-  <text x="50" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="50" font-weight="700" letter-spacing="-2" text-anchor="middle" fill="#000000">M</text>
-  <text x="50" y="83" font-family="Menlo, 'SF Mono', monospace" font-size="10" letter-spacing="3" text-anchor="middle" fill="#000000" opacity=".6">WORKS</text>
+  <defs><linearGradient id="hm-blurple" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5865f2"/><stop offset="1" stop-color="#ec48bd"/></linearGradient></defs>
+  <rect width="100" height="100" rx="26" fill="url(#hm-blurple)"/>
+  <text x="50" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="50" font-weight="800" letter-spacing="-2" text-anchor="middle" fill="#ffffff">M</text>
+  <text x="50" y="83" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="10" letter-spacing="3" text-anchor="middle" fill="#ffffff" opacity=".8">WORKS</text>
 </svg>`;
 
 /* ═══════════════════ 공통 UI ═══════════════════ */
@@ -1291,10 +1292,10 @@ function renderStep4(m, p) {
   $$('#main [data-conv]').forEach(b => b.addEventListener('click', () => convertFormat(p, b.dataset.conv)));
 }
 const FORM_GROUPS = [
-  ['deductive', '연역적 형식', '중심사상을 앞에 두고 설명해 내려간다', 'var(--mint)'],
-  ['inductive', '귀납적 형식', '질문과 이야기에서 출발해 중심사상에 도달한다', 'var(--lilac)'],
-  ['practical', '실전 틀', '검증된 설득의 순서', 'var(--cream)'],
-  ['custom', '내 형식', '직접 만든 형식', 'var(--lime)'],
+  ['deductive', '연역적 형식', '중심사상을 앞에 두고 설명해 내려간다', '#5865f2'],
+  ['inductive', '귀납적 형식', '질문과 이야기에서 출발해 중심사상에 도달한다', '#ec48bd'],
+  ['practical', '실전 틀', '검증된 설득의 순서', '#00b0f4'],
+  ['custom', '내 형식', '직접 만든 형식', '#35ed7e'],
 ];
 function renderFormGroups(p, fits) {
   const fcard = f => `
@@ -1639,7 +1640,7 @@ function htmlToParas(html) {
 
 /* ═══════════════════ 자료 서랍 ═══════════════════ */
 const MAT_TYPES = ['예화', '통계', '간증', '인용', '메모'];
-const MAT_COLORS = { '예화': 'var(--cream)', '통계': 'var(--mint)', '간증': 'var(--pink)', '인용': 'var(--lilac)', '메모': 'var(--lime)' };
+const MAT_COLORS = { '예화': 'rgba(88,101,242,.5)', '통계': 'rgba(0,176,244,.35)', '간증': 'rgba(236,72,189,.4)', '인용': 'rgba(124,58,237,.45)', '메모': 'rgba(255,255,255,.12)' };
 function renderMaterials(m) {
   m.innerHTML = `
     <div class="step-head">MATERIALS</div>
