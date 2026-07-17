@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=19">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="apple-touch-icon" href="icon-192.png?v=20">
+<link rel="stylesheet" href="style.css?v=20">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ffffff'/><rect x='4' y='4' width='72' height='72' rx='18' fill='%23FFC000'/><text x='40' y='52' transform='scale(1 1.2)' font-size='44' font-weight='800' text-anchor='middle' fill='%23ffffff' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><rect x='48' y='42' width='44' height='44' rx='12' fill='%23FF5600' stroke='%23ffffff' stroke-width='3'/><text x='70' y='62.7' transform='scale(1 1.2)' font-size='26' font-weight='800' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>W</text></svg>">
 </head>
 <body>
@@ -33,6 +33,8 @@
     </div>
   </div>
   <div id="save-status" class="save-status" title="자동 저장 상태">—</div>
+  <button class="icon-btn top-tool" id="top-materials" title="자료 서랍" aria-label="자료 서랍"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 7h6"/></svg></button>
+  <button class="icon-btn top-tool" id="top-settings" title="설정" aria-label="설정"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 009 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.56-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.56V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.51 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9c.06.32.1.66.1 1a1.7 1.7 0 001.56 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1z"/></svg></button>
 </header>
 
 <div id="layout">
@@ -50,10 +52,8 @@
     <div class="nav-progress"><div class="nav-progress-bar" id="nav-progress-bar"></div></div>
     <div class="nav-progress-label" id="nav-progress-label">진행률 0%</div>
     <div class="nav-footer">
-      <button class="nav-link" id="btn-nav-materials"><svg class="nav-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 7h6"/></svg>자료 서랍</button>
       <button class="nav-link" id="btn-save"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>저장</button>
       <button class="nav-link" id="btn-export"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>내보내기</button>
-      <button class="nav-link" id="btn-nav-settings"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 009 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.56-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.56V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.51 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9c.06.32.1.66.1 1a1.7 1.7 0 001.56 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1z"/></svg>설정</button>
       <button class="nav-link" id="btn-nav-exit"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>나가기</button>
       <div class="ai-badge" id="ai-badge">AI 연결 확인 중…</div>
       <div class="app-ver" id="app-ver"></div>
@@ -94,8 +94,8 @@
   </div>
 </div>
 
-<script src="prompts.js?v=19"></script>
-<script src="app.js?v=19"></script>
+<script src="prompts.js?v=20"></script>
+<script src="app.js?v=20"></script>
 <script>
 // PWA 설치 지원 — http/https에서만 (file:// 단일 파일에서는 건너뜀)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

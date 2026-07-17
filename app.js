@@ -370,7 +370,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v19 · 2026-07-17';
+const APP_VERSION = 'v20 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -585,7 +585,7 @@ $('#nav-backdrop').addEventListener('click', () => document.body.classList.remov
 // 메뉴 안 어떤 버튼이든 누르면 (휴대폰에서) 서랍을 닫는다
 $('#sidenav').addEventListener('click', e => { if (e.target.closest('button, li')) document.body.classList.remove('nav-open'); });
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
-$('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
+$('#top-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-exit').addEventListener('click', () => {
   syncEditor(); save(true);
   sessionStorage.removeItem('mworks_unlock'); // 다음에 열 때 비밀번호 다시 묻기
@@ -596,7 +596,7 @@ $('#btn-nav-exit').addEventListener('click', () => {
     if (!window.closed) location.replace('about:blank');
   }, 250);
 });
-$('#btn-nav-settings').addEventListener('click', openSettings);
+$('#top-settings').addEventListener('click', openSettings);
 $('#btn-back').addEventListener('click', goBack);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);

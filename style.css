@@ -85,6 +85,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 }
 .icon-btn:hover { background: var(--surface-soft); }
 .icon-btn:active { transform: scale(0.95); }
+.top-tool { color: var(--ink); opacity: .85; }
+.top-tool:hover { opacity: 1; }
 #btn-menu { display: none; color: var(--ink); }
 #nav-backdrop { display: none; }
 /* 산뜻한 파스텔 스트립 — 상단바 아래 시그니처 라인 */
