@@ -31,20 +31,24 @@ function defaultRules() {
 - 확인되지 않은 통계·인용·예화는 쓰지 않는다. 불확실하면 "(확인 필요)"를 붙인다.
 - 첫 문장과 마지막 문장은 설교자가 직접 고쳐 쓸 것을 전제로, 담백하게 시작하고 담백하게 닫는다.
 
-[MS 워드 설교문 양식 — 실제 설교 원고(dodo 설교문·최근 원고)에서 추출한 기준. Word 내보내기에 자동 적용됨]
-- 글꼴: 고딕 계열(맑은 고딕 / Apple SD Gothic Neo / 굴림)
-- 본문: 13pt, 줄간격 1.8
-- 소제목: 14pt 굵게
-- 대지·큰 제목: 18pt 굵게
-- 설교 제목: 24pt 굵게
-- 핵심 문장은 굵게 강조하고, 한 문단은 2~4문장으로 짧게 끊는다
-- 성경 인용은 별도 문단으로 들여 쓴다`;
+[MS 워드 설교문 양식 — 예시 원고('몸을 움직이면 삶이 움직인다.docx')와 동일. Word 내보내기에 자동 적용됨]
+- 글꼴: 맑은 고딕
+- 본문: 기본 크기(10pt), 양쪽 정렬
+- 설교 제목: 14pt 굵게 (그 아래 본문 장절 → 날짜·시리즈, 모두 굵게)
+- 한 문장 = 한 문단(한 줄). 문단 사이 여백 없음
+- 굵게는 핵심 문장에만 절제해서 사용
+- 대지·소제목도 본문 크기에 굵게만`;
 }
-/* MS 워드 내보내기 서식 — 위 양식 그대로 */
+/* MS 워드 내보내기 서식 — 예시 원고('몸을 움직이면 삶이 움직인다.docx')와 동일 */
 function wordCss() {
-  return `body{font-family:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo","굴림",sans-serif;font-size:13pt;line-height:1.8;}
- h1{font-size:24pt;font-weight:bold} h2{font-size:18pt;font-weight:bold;margin-top:20pt} h3{font-size:14pt;font-weight:bold}
- blockquote{margin-left:20pt;padding-left:10pt;border-left:3pt solid #b0b0b0;color:#333}
+  return `body{font-family:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif;font-size:10pt;line-height:1.15;}
+ p{margin:0;text-align:justify}
+ h1{font-size:14pt;font-weight:bold;margin:0 0 2pt 0;text-align:left}
+ h2{font-size:10pt;font-weight:bold;margin:10pt 0 0 0;text-align:left}
+ h3{font-size:10pt;font-weight:bold;margin:8pt 0 0 0;text-align:left}
+ blockquote{margin:4pt 0 4pt 16pt;padding:0;color:#333}
+ blockquote p{text-align:left}
+ hr{border:none;border-top:0.5pt solid #999;margin:8pt 0}
  .pause-mark{color:#a4443a;font-weight:bold} .stress-mark{background:#f6e7bf}
  .eye-mark{color:#2e7d4f;font-weight:bold} .note-mark{background:#e7ecf6;color:#3d5a80} .breath-mark{color:#2e7d4f;font-weight:bold}`;
 }
@@ -2144,8 +2148,14 @@ function buildExportHtml(p, opt) {
   if (!opt.memo) div.querySelectorAll('.note-mark').forEach(el => el.remove());
   draftHtml = div.innerHTML;
   let html = '';
-  if (opt.title) html += `<h1>${esc(p.title || p.inputs.topic)}</h1><p><b>본문</b> ${esc(p.passage.ref)} (${esc(DB.settings.translation)}) · ${esc(p.inputs.date || '')}</p>`;
-  if (opt.central && c.homiletical) html += `<p><b>중심사상</b> ${esc(c.homiletical)}</p>`;
+  // 예시 원고 머리 양식: 제목(14pt 굵게) → 본문 장절(굵게) → 날짜·시리즈(굵게)
+  if (opt.title) {
+    html += `<h1>${esc(p.title || p.inputs.topic)}</h1>`;
+    if (p.passage.ref) html += `<p><b>${esc(p.passage.ref)}</b></p>`;
+    const meta = [p.inputs.date, p.inputs.series].filter(Boolean).join(' ');
+    if (meta) html += `<p><b>${esc(meta)}</b></p>`;
+  }
+  if (opt.central && c.homiletical) html += `<p><b>중심사상: ${esc(c.homiletical)}</b></p>`;
   if (opt.passage && p.passage.text) html += `<blockquote>${esc(p.passage.text).replace(/\n/g, '<br>')}</blockquote>`;
   if (opt.draft) html += '<hr>' + draftHtml;
   if (opt.gestures && p.rehearsal.gestures) {
