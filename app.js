@@ -371,9 +371,9 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
         <rect x="4" y="4" width="72" height="72" rx="18" fill="#FFC000"/>
-        <text x="40" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
+        <text x="40" y="52" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
         <rect x="48" y="42" width="44" height="44" rx="12" fill="#FF5600" stroke="#ffffff" stroke-width="3"/>
-        <text x="70" y="73" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="800" text-anchor="middle" fill="#000000">W</text>
+        <text x="70" y="62.7" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="800" text-anchor="middle" fill="#000000">W</text>
 </svg>`;
 
 /* ═══════════════════ 공통 UI ═══════════════════ */
@@ -605,8 +605,10 @@ function renderHome(m) {
   const recent = DB.projects.slice(0, 5);
   m.innerHTML = `
     <div style="text-align:center; padding:40px 0 30px">
-      <div class="logo-mark" style="width:72px;height:72px;margin:0 auto 14px">${LOGO_SVG}</div>
-      <h1 style="font-size:2rem;font-weight:340;letter-spacing:-0.03em">M.Works</h1>
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px">
+        <div class="logo-mark" style="width:72px;height:72px">${LOGO_SVG}</div>
+        <h1 style="font-size:2rem;font-weight:340;letter-spacing:-0.03em">M.Works</h1>
+      </div>
       <p style="color:var(--ink-soft);margin-top:6px">설교자를 위한 설교 작성 5단계</p>
       <div class="btn-row" style="justify-content:center;margin-top:44px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
