@@ -72,9 +72,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   display: flex; align-items: center; justify-content: center;
 }
 .logo-mark svg { width: 100%; height: 100%; display: block; }
-.logo-text { display: flex; flex-direction: column; line-height: 1.12; }
-.logo-text strong { font-size: 1.02rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
-.logo-text span { font-size: .6rem; font-family: var(--mono); letter-spacing: .05em; color: var(--ink); opacity: .75; }
+.logo-text { display: flex; flex-direction: column; justify-content: center; line-height: 1.1; }
+.logo-text strong { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
 .top-title {
   flex: 1; text-align: center; font-size: .84rem; font-weight: 400;
   color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -528,7 +527,6 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
     </div>
     <div class="logo-text">
       <strong>M-WORKS</strong>
-      <span>들리는 설교, 끌리는 설교</span>
     </div>
   </div>
   <div id="top-title" class="top-title" title="현재 설교 제목">새 설교</div>
@@ -537,7 +535,6 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
     <button id="btn-archive" class="top-btn" title="보관함 열기">📚 보관함</button>
     <button id="btn-save" class="top-btn" title="지금 저장">💾 저장</button>
     <button id="btn-export" class="top-btn" title="문서 내보내기">📄 내보내기</button>
-    <button id="btn-settings" class="icon-btn" title="설정">⚙️</button>
   </div>
 </header>
 
@@ -1627,7 +1624,6 @@ $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials';
 $('#btn-nav-clinic').addEventListener('click', () => { curView = 'clinic'; render(); });
 $('#btn-nav-rules').addEventListener('click', openRules);
 $('#btn-nav-settings').addEventListener('click', openSettings);
-$('#btn-settings').addEventListener('click', openSettings);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);
 $$('#step-nav li').forEach(li => li.addEventListener('click', () => {

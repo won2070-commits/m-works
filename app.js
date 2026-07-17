@@ -483,7 +483,6 @@ $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials';
 $('#btn-nav-clinic').addEventListener('click', () => { curView = 'clinic'; render(); });
 $('#btn-nav-rules').addEventListener('click', openRules);
 $('#btn-nav-settings').addEventListener('click', openSettings);
-$('#btn-settings').addEventListener('click', openSettings);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);
 $$('#step-nav li').forEach(li => li.addEventListener('click', () => {
