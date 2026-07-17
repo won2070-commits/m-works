@@ -370,9 +370,9 @@ async function callAIJson(key, slots, opts = {}) {
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
-  <rect width="100" height="100" rx="24" fill="#FFC000"/>
-  <text x="50" y="65" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="57" font-weight="700" letter-spacing="-2" text-anchor="middle" fill="#000000">M</text>
-  <text x="50" y="83" font-family="Menlo, 'SF Mono', monospace" font-size="10" text-anchor="middle" textLength="44" lengthAdjust="spacing" fill="#000000" opacity=".7">WORKS</text>
+        <rect x="1.5" y="1.5" width="97" height="97" rx="23" fill="#ffffff" stroke="#e6e6e6" stroke-width="3"/>
+        <text x="39" y="61" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="-2" text-anchor="middle" fill="#FFC000">M</text>
+        <text x="61" y="79" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="-2" text-anchor="middle" fill="#FF5600">W</text>
 </svg>`;
 
 /* ═══════════════════ 공통 UI ═══════════════════ */
