@@ -151,11 +151,11 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 /* 새 설교 시작(첫 항목) — 라일락으로 구별 */
-.step-nav li[data-step="0"] { background: var(--lilac); color: #000; font-weight: 700; }
-.step-nav li[data-step="0"]:hover { filter: brightness(1.04); background: var(--lilac); }
-.step-nav li[data-step="0"].active { background: var(--lilac); color: #000; }
-.step-nav li[data-step="0"] .num { background: rgba(0,0,0,.12); color: #000; }
-.step-nav li[data-step="0"].active .num { background: rgba(0,0,0,.12) !important; color: #000; }
+.step-nav li[data-step="0"] { background: var(--navy); color: #fff; font-weight: 700; }
+.step-nav li[data-step="0"]:hover { filter: brightness(1.25); background: var(--navy); }
+.step-nav li[data-step="0"].active { background: var(--navy); color: #fff; }
+.step-nav li[data-step="0"] .num { background: rgba(255,255,255,.2); color: #fff; }
+.step-nav li[data-step="0"].active .num { background: rgba(255,255,255,.2) !important; color: #fff; }
 /* 단계별 파스텔 번호 */
 .step-nav li[data-step="1"] .num { background: var(--lime); }
 .step-nav li[data-step="2"] .num { background: var(--mint); }
@@ -230,8 +230,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 .btn-primary { background: var(--ink); color: #fff; }
 .btn-gold { background: var(--ink); color: #fff; }
 /* 새 설교 시작(홈) — 라일락으로 구별 */
-#home-new { background: var(--lilac) !important; color: #000 !important; font-weight: 700; }
-#home-new:hover { filter: brightness(1.04); }
+#home-new { background: var(--navy) !important; color: #fff !important; font-weight: 700; }
+#home-new:hover { filter: brightness(1.3); }
 .btn-ghost { background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink); }
 .btn-ghost:hover { border-color: var(--ink); }
 .btn-sm { padding: 8px 15px; font-size: .8rem; }
@@ -541,7 +541,8 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   .save-status { display: none; }
   .logo-text span { display: none; }
   .logo { margin-left: 4px; }
-  .logo-lockup { height: 54px; }
+  .logo-mark { width: 48px; height: 48px; border-radius: 12px; }
+  .logo-text strong { font-size: 1.3rem; }
   .top-btn { white-space: nowrap; padding: 6px 12px; }
   /* 펀치홀·상태바를 피해 상단바를 아래로 내림 */
   #topbar { gap: 6px; padding: calc(16px + env(safe-area-inset-top, 0px)) 12px 12px; }
@@ -583,13 +584,17 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   <button id="btn-menu" class="icon-btn" title="메뉴" aria-label="메뉴 열기">☰</button>
   <button id="btn-back" class="icon-btn" title="뒤로 가기" aria-label="뒤로 가기"><svg class="nav-ico" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M15 19l-7-7 7-7"/></svg></button>
   <div class="logo" id="logo">
-    <svg class="logo-lockup" viewBox="0 0 188 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
-      <rect x="4" y="4" width="72" height="72" rx="18" fill="#FFC000"/>
-      <text x="40" y="52" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
-      <rect x="48" y="42" width="44" height="44" rx="12" fill="#FF5600" stroke="#ffffff" stroke-width="3"/>
-      <text x="70" y="62.7" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="800" text-anchor="middle" fill="#000000">W</text>
-      <text x="97" y="62.7" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="31" font-weight="800" text-anchor="start" fill="#000000">orks</text>
-    </svg>
+    <div class="logo-mark">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
+        <rect x="4" y="4" width="72" height="72" rx="18" fill="#FFC000"/>
+        <text x="40" y="52" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
+        <rect x="48" y="42" width="44" height="44" rx="12" fill="#FF5600" stroke="#ffffff" stroke-width="3"/>
+        <text x="70" y="62.7" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="800" text-anchor="middle" fill="#000000">W</text>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <strong>M.Works</strong>
+    </div>
   </div>
   <div id="save-status" class="save-status" title="자동 저장 상태">—</div>
 </header>
@@ -1715,11 +1720,12 @@ $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-exit').addEventListener('click', () => {
   syncEditor(); save(true);
+  // 완전 종료: 창 닫기 시도 → 막히면 빈 화면으로 이탈
+  window.open('', '_self');
   window.close();
-  // 브라우저가 창 닫기를 막으면 홈으로 돌아가며 안내
   setTimeout(() => {
-    if (!window.closed) { curView = 'home'; render(); toast('저장했습니다. 창(탭)을 닫으면 앱이 종료됩니다.'); }
-  }, 300);
+    if (!window.closed) location.replace('about:blank');
+  }, 250);
 });
 $('#btn-nav-settings').addEventListener('click', openSettings);
 $('#btn-back').addEventListener('click', goBack);
@@ -1819,12 +1825,17 @@ function renderHome(m) {
   const recent = DB.projects.slice(0, 5);
   m.innerHTML = `
     <div style="text-align:center; padding:40px 0 30px">
-      <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px">
-        <div class="logo-mark" style="width:72px;height:72px">${LOGO_SVG}</div>
-        <h1 style="font-size:2rem;font-weight:340;letter-spacing:-0.03em">M.Works</h1>
+      <div style="display:flex;justify-content:center;margin-bottom:10px">
+        <svg viewBox="0 0 188 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고" style="height:88px">
+        <rect x="4" y="4" width="72" height="72" rx="18" fill="#FFC000"/>
+        <text x="40" y="52" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
+        <rect x="48" y="42" width="44" height="44" rx="12" fill="#FF5600" stroke="#ffffff" stroke-width="3"/>
+        <text x="70" y="62.7" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="800" text-anchor="middle" fill="#000000">W</text>
+        <text x="97" y="62.7" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="31" font-weight="800" text-anchor="start" fill="#000000">orks</text>
+      </svg>
       </div>
       <p style="color:var(--ink-soft);margin-top:6px">설교자를 위한 설교 작성 5단계</p>
-      <div class="btn-row" style="justify-content:center;margin-top:44px">
+      <div class="btn-row" style="justify-content:center;margin-top:44px;margin-bottom:56px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
         <button class="btn btn-ghost" id="home-import"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>설교 가져오기</button>
         <button class="btn btn-ghost" id="home-archive"><svg class="btn-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 002 2h10a2 2 0 002-2V9M10 13h4"/></svg>보관함</button>
