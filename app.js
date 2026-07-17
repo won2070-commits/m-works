@@ -368,10 +368,10 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M-WORKS 로고">
-  <rect width="100" height="100" rx="24" fill="#c5b0f4"/>
-  <text x="50" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="50" font-weight="700" letter-spacing="-2" text-anchor="middle" fill="#000000">M</text>
-  <text x="50" y="83" font-family="Menlo, 'SF Mono', monospace" font-size="10" letter-spacing="3" text-anchor="middle" fill="#000000" opacity=".6">WORKS</text>
+const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M-Works 로고">
+  <rect width="100" height="100" rx="24" fill="#ff5600"/>
+  <text x="50" y="63" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="50" font-weight="700" letter-spacing="-2" text-anchor="middle" fill="#ffffff">M</text>
+  <text x="50" y="83" font-family="Menlo, 'SF Mono', monospace" font-size="10" letter-spacing="3" text-anchor="middle" fill="#ffffff" opacity=".85">WORKS</text>
 </svg>`;
 
 /* ═══════════════════ 공통 UI ═══════════════════ */
@@ -595,7 +595,7 @@ function renderHome(m) {
       <div class="logo-mark" style="width:96px;height:96px;margin:0 auto 18px">${LOGO_SVG}</div>
       <h1 style="font-size:2.6rem;font-weight:340;letter-spacing:-0.03em">M-Works</h1>
       <p style="color:var(--ink-soft);margin-top:6px">설교자를 위한 설교 작성 5단계</p>
-      <div class="btn-row" style="justify-content:center;margin-top:24px">
+      <div class="btn-row" style="justify-content:center;margin-top:44px">
         <button class="btn btn-gold" id="home-new"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>새 설교 시작</button>
         <button class="btn btn-ghost" id="home-import"><svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>설교 가져오기</button>
         <button class="btn btn-ghost" id="home-archive"><svg class="btn-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 002 2h10a2 2 0 002-2V9M10 13h4"/></svg>보관함</button>

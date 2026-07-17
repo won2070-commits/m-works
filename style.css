@@ -250,7 +250,14 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 }
 .paste-row textarea:focus { outline: none; border-color: var(--ink); }
 .paste-row .btn { align-self: flex-end; }
-#btn-back { display: block; }
+/* 뒤로 가기 — 언제나 보이는 원형 버튼 (없으면 홈으로) */
+#btn-back {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; padding: 0;
+  border: 1px solid var(--hairline); border-radius: var(--r-full);
+  background: var(--canvas); opacity: 1 !important;
+}
+#btn-back:hover { border-color: var(--ink); background: var(--surface-soft); }
 
 /* 본문 후보 카드 */
 .cand {
