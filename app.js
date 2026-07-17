@@ -370,9 +370,10 @@ async function callAIJson(key, slots, opts = {}) {
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
-        <rect x="1.5" y="1.5" width="97" height="97" rx="23" fill="#ffffff" stroke="#e6e6e6" stroke-width="3"/>
-        <text x="39" y="61" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="-2" text-anchor="middle" fill="#FFC000">M</text>
-        <text x="61" y="79" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="800" letter-spacing="-2" text-anchor="middle" fill="#FF5600">W</text>
+        <rect x="4" y="4" width="72" height="72" rx="18" fill="#FFC000"/>
+        <text x="40" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
+        <rect x="52" y="52" width="44" height="44" rx="12" fill="#FF5600" stroke="#ffffff" stroke-width="3"/>
+        <text x="74" y="83" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="800" text-anchor="middle" fill="#ffffff">W</text>
 </svg>`;
 
 /* ═══════════════════ 공통 UI ═══════════════════ */
