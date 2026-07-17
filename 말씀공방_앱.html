@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=13">
+<link rel="apple-touch-icon" href="icon-192.png?v=14">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -140,9 +140,9 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   font-size: .88rem; font-weight: 400; color: var(--ink); transition: background .15s;
 }
 .step-nav li:hover { background: var(--surface-soft); }
-.step-nav li.active { background: var(--ink); color: #fff; font-weight: 500; }
+.step-nav li.active { background: var(--lime); color: #000; font-weight: 700; }
 .step-nav li.done .chk::after { content: "✓"; color: var(--success); font-weight: 700; }
-.step-nav li.active .chk::after { color: var(--lime); }
+.step-nav li.active .chk::after { color: var(--success); }
 .step-nav li.locked { opacity: .35; cursor: not-allowed; }
 .step-nav .num {
   width: 23px; height: 23px; border-radius: var(--r-full);
@@ -162,7 +162,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 .step-nav li[data-step="3"] .num { background: var(--lilac); }
 .step-nav li[data-step="4"] .num { background: var(--cream); }
 .step-nav li[data-step="5"] .num { background: var(--pink); }
-.step-nav li.active .num { background: #fff !important; color: var(--ink); }
+.step-nav li.active .num { background: #fff !important; color: #000; }
 .step-nav .lbl { flex: 1; }
 .nav-progress {
   height: 5px; background: var(--hairline-soft); border-radius: 3px;
@@ -1615,7 +1615,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v13 · 2026-07-17';
+const APP_VERSION = 'v14 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1934,7 +1934,7 @@ function renderHome(m) {
       </div>
     </div>
     <div class="card">
-      <h3>다섯 걸음</h3>
+      <h3>설교 작성 5단계</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;text-align:center">
         ${[['① 본문 찾기', 'var(--lime)'], ['② 중심 사상', 'var(--mint)'], ['③ 설교 작성', 'var(--lilac)'], ['④ 형식 결정', 'var(--cream)'], ['⑤ 연습하기', 'var(--pink)']]
           .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:14px 8px;font-size:1rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}

@@ -370,7 +370,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v13 · 2026-07-17';
+const APP_VERSION = 'v14 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -689,7 +689,7 @@ function renderHome(m) {
       </div>
     </div>
     <div class="card">
-      <h3>다섯 걸음</h3>
+      <h3>설교 작성 5단계</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;text-align:center">
         ${[['① 본문 찾기', 'var(--lime)'], ['② 중심 사상', 'var(--mint)'], ['③ 설교 작성', 'var(--lilac)'], ['④ 형식 결정', 'var(--cream)'], ['⑤ 연습하기', 'var(--pink)']]
           .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:14px 8px;font-size:1rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}

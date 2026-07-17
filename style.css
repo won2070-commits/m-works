@@ -127,9 +127,9 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   font-size: .88rem; font-weight: 400; color: var(--ink); transition: background .15s;
 }
 .step-nav li:hover { background: var(--surface-soft); }
-.step-nav li.active { background: var(--ink); color: #fff; font-weight: 500; }
+.step-nav li.active { background: var(--lime); color: #000; font-weight: 700; }
 .step-nav li.done .chk::after { content: "✓"; color: var(--success); font-weight: 700; }
-.step-nav li.active .chk::after { color: var(--lime); }
+.step-nav li.active .chk::after { color: var(--success); }
 .step-nav li.locked { opacity: .35; cursor: not-allowed; }
 .step-nav .num {
   width: 23px; height: 23px; border-radius: var(--r-full);
@@ -149,7 +149,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 .step-nav li[data-step="3"] .num { background: var(--lilac); }
 .step-nav li[data-step="4"] .num { background: var(--cream); }
 .step-nav li[data-step="5"] .num { background: var(--pink); }
-.step-nav li.active .num { background: #fff !important; color: var(--ink); }
+.step-nav li.active .num { background: #fff !important; color: #000; }
 .step-nav .lbl { flex: 1; }
 .nav-progress {
   height: 5px; background: var(--hairline-soft); border-radius: 3px;
