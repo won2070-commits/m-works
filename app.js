@@ -370,7 +370,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v27 · 2026-07-17';
+const APP_VERSION = 'v28 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -441,7 +441,8 @@ function openManual() {
     <p>⑤ <b>연습하기</b> — 피드백·제스처·쉼멈춤 추천을 받고, <b>📄 원고에서 위치 보기</b>로 본문 속 표시(🖐①·∕·⏸)를 확인합니다. 표시를 누르면 옆에 설명이 나옵니다. 리허설 모드로 시간을 재세요.</p>
 
     <h4>2. AI 연결</h4>
-    <p>설정에서 Anthropic API 키를 넣거나, 이 컴퓨터에서 claude 로그인이 되어 있으면 자동 연결됩니다. 왼쪽 아래 배지에서 연결 상태를 확인하세요.</p>
+    <p>가장 쉬운 방법: 설정의 <b>간편 연결</b>에 교회 비밀번호를 넣고 [🔑 연결]을 누르면 끝입니다. 휴대폰·태블릿 등 어느 기기든 한 번만 하면 됩니다.</p>
+    <p>그 외에 Anthropic API 키를 직접 넣거나, 이 컴퓨터에서 claude 로그인이 되어 있으면 자동 연결됩니다. 왼쪽 아래 배지에서 연결 상태를 확인하세요.</p>
     <p>설교문 생성은 처음 1~3분간 조용히 구상한 뒤 글이 흐르기 시작합니다.</p>
 
     <h4>3. 자료 서랍</h4>
@@ -2541,7 +2542,15 @@ function openSettings() {
     <h4 style="margin-top:0">AI 연결</h4>
     <div id="set-ai-status" class="fb-item">확인 중…</div>
     <div class="field" style="margin-top:10px">
-      <label>Anthropic API 키 <span class="opt">(이 브라우저에만 저장되며, AI 호출에만 사용됩니다)</span></label>
+      <label>간편 연결 <span class="opt">(교회 비밀번호만 넣으면 연결 — 다른 기기에서 이 방법을 쓰세요)</span></label>
+      <div style="display:flex;gap:8px">
+        <input id="set-proxy-pass" type="password" placeholder="연결 비밀번호" style="flex:1" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="set-proxy-go">🔑 연결</button>
+      </div>
+      <div class="hint">한 번 연결하면 이 기기에 저장되어 계속 사용됩니다.</div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Anthropic API 키 직접 입력 <span class="opt">(이 브라우저에만 저장되며, AI 호출에만 사용됩니다)</span></label>
       <input id="set-key" type="password" value="${esc(s.apiKey)}" placeholder="sk-ant-...  (선택 사항)">
       <div class="hint">키가 없어도, 이 컴퓨터의 터미널에서 <b>claude</b> 를 실행해 로그인돼 있으면 자동으로 연결됩니다.</div>
     </div>
@@ -2625,6 +2634,28 @@ function openSettings() {
   body.querySelector('#set-recheck').addEventListener('click', async () => {
     $('#set-ai-status').textContent = '확인 중…';
     await fetchStatus(true); updStatus();
+  });
+  body.querySelector('#set-proxy-go').addEventListener('click', async () => {
+    const pw = $('#set-proxy-pass').value.trim();
+    if (!pw) { toast('비밀번호를 입력해 주세요.'); return; }
+    if (!(window.crypto && crypto.subtle)) { toast('이 환경에서는 간편 연결을 쓸 수 없습니다. API 키를 직접 입력해 주세요.', 5000); return; }
+    const btn = $('#set-proxy-go'); btn.disabled = true; btn.textContent = '연결 중…';
+    try {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+      const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+      const res = await fetch('https://hansung-tsj.netlify.app/.netlify/functions/mworks-key', {
+        method: 'POST', headers: { 'x-auth': hash },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) { toast('비밀번호가 다릅니다.'); }
+      else if (res.status === 503) { toast('서버에 API 키가 아직 등록되지 않았습니다. 관리자(Netlify 환경변수) 설정이 필요합니다.', 6000); }
+      else if (res.ok && data.key) {
+        s.apiKey = data.key; $('#set-key').value = data.key;
+        save(true); await fetchStatus(true); updStatus();
+        toast('연결되었습니다! 이제 이 기기에서 AI를 쓸 수 있습니다.');
+      } else { toast('연결에 실패했습니다. 인터넷 연결을 확인해 주세요.', 5000); }
+    } catch (e) { toast('연결 실패: ' + e.message, 5000); }
+    btn.disabled = false; btn.textContent = '🔑 연결';
   });
   body.querySelector('#set-bright').addEventListener('input', e => {
     DB.settings.brightness = +e.target.value;
