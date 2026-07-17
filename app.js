@@ -493,6 +493,9 @@ function formName(key) { const f = allForms().find(f => f.key === key); return f
 
 /* ═══════════════════ 내비 이벤트 ═══════════════════ */
 $('#btn-menu').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+$('#nav-backdrop').addEventListener('click', () => document.body.classList.remove('nav-open'));
+// 메뉴 안 어떤 버튼이든 누르면 (휴대폰에서) 서랍을 닫는다
+$('#sidenav').addEventListener('click', e => { if (e.target.closest('button, li')) document.body.classList.remove('nav-open'); });
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-settings').addEventListener('click', openSettings);

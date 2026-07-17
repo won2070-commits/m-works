@@ -65,17 +65,17 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   display: flex; align-items: center; gap: 14px;
   background: var(--canvas); color: var(--ink);
   border-bottom: 1px solid var(--hairline);
-  padding: 8px 20px; position: sticky; top: 0; z-index: 50;
-  min-height: 56px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 20px 10px; position: sticky; top: 0; z-index: 50;
+  min-height: 66px;
 }
-.logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
 .logo-mark {
-  width: 38px; height: 38px; border-radius: 10px;
+  width: 48px; height: 48px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
 }
 .logo-mark svg { width: 100%; height: 100%; display: block; }
 .logo-text { display: flex; flex-direction: column; justify-content: center; line-height: 1.1; }
-.logo-text strong { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+.logo-text strong { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
 .top-title {
   flex: 1; text-align: center; font-size: .84rem; font-weight: 400;
   color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -98,6 +98,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 .icon-btn:hover { background: var(--surface-soft); }
 .icon-btn:active { transform: scale(0.95); }
 #btn-menu { display: none; color: var(--ink); }
+#nav-backdrop { display: none; }
 /* 산뜻한 파스텔 스트립 — 상단바 아래 시그니처 라인 */
 #topbar::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px;
@@ -194,7 +195,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   margin-bottom: 8px; font-size: .72rem; font-family: var(--mono);
   letter-spacing: .08em; text-transform: uppercase; color: var(--ink); opacity: .78;
 }
-.step-title { font-size: 2.3rem; font-weight: 340; letter-spacing: -0.03em; margin-bottom: 8px; }
+.step-title { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
 .step-desc { color: var(--ink); font-weight: 400; font-size: .94rem; margin-bottom: 28px; max-width: 640px; }
 
 .card {
@@ -524,17 +525,25 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   #layout { grid-template-columns: 1fr; }
   #sidenav {
     position: fixed; top: 0; left: 0; bottom: 0; width: 260px; z-index: 100;
-    transform: translateX(-100%); transition: transform .25s; padding-top: 70px;
+    transform: translateX(-100%); transition: transform .25s;
+    padding-top: calc(88px + env(safe-area-inset-top, 0px));
     border-right: 1px solid var(--hairline); background: var(--canvas);
   }
   body.nav-open #sidenav { transform: translateX(0); box-shadow: 4px 0 30px rgba(0,0,0,.15); }
-  #btn-menu { display: block; }
+  body.nav-open #nav-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 99;
+    background: rgba(0,0,0,.28);
+  }
+  #btn-menu { display: block; font-size: 1.25rem; padding: 8px 10px; }
+  #btn-back { font-size: 1.15rem; padding: 8px 10px; }
   .top-title { display: none; }
   .save-status { display: none; }
   .logo-text span { display: none; }
-  .logo-text strong { font-size: .92rem; }
+  .logo-text strong { font-size: 1.2rem; }
+  .logo-mark { width: 40px; height: 40px; border-radius: 10px; }
   .top-btn { white-space: nowrap; padding: 6px 12px; }
-  #topbar { gap: 6px; padding: 8px 12px; }
+  /* 펀치홀·상태바를 피해 상단바를 아래로 내림 */
+  #topbar { gap: 6px; padding: calc(16px + env(safe-area-inset-top, 0px)) 12px 12px; }
   #main { padding: 20px 16px 70px; }
   .step-title { font-size: 1.8rem; }
   .form-grid { grid-template-columns: 1fr; }
@@ -609,6 +618,9 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
       <div class="ai-badge" id="ai-badge">AI 연결 확인 중…</div>
     </div>
   </nav>
+
+  <!-- 휴대폰에서 메뉴 열렸을 때 바깥 터치로 닫는 배경 -->
+  <div id="nav-backdrop"></div>
 
   <!-- ───────── 중앙 작업 영역 ───────── -->
   <main id="main"><!-- app.js 가 렌더링 --></main>
@@ -1696,6 +1708,9 @@ function formName(key) { const f = allForms().find(f => f.key === key); return f
 
 /* ═══════════════════ 내비 이벤트 ═══════════════════ */
 $('#btn-menu').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+$('#nav-backdrop').addEventListener('click', () => document.body.classList.remove('nav-open'));
+// 메뉴 안 어떤 버튼이든 누르면 (휴대폰에서) 서랍을 닫는다
+$('#sidenav').addEventListener('click', e => { if (e.target.closest('button, li')) document.body.classList.remove('nav-open'); });
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-settings').addEventListener('click', openSettings);
