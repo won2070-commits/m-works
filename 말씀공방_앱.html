@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=10">
+<link rel="apple-touch-icon" href="icon-192.png?v=11">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -584,6 +584,20 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 .gmark.on { outline: 2.5px solid var(--ink); outline-offset: 1px; }
 .app-ver { font-size: .64rem; font-family: var(--mono); letter-spacing: .04em; color: var(--ink); opacity: .55; padding: 4px 12px 0; }
 
+/* 앱 잠금 화면 */
+#app-lock {
+  position: fixed; inset: 0; z-index: 10000; background: var(--canvas);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.lock-box { padding: 30px; }
+/* 글자체 선택 */
+body.gothic-ui, body.gothic-ui button, body.gothic-ui input, body.gothic-ui textarea, body.gothic-ui select {
+  font-family: "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", sans-serif;
+}
+body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea, body.serif-ui select {
+  font-family: "Apple Myungjo", "Nanum Myeongjo", "Noto Serif KR", "AppleMyungjo", serif;
+}
+
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ffffff'/><rect x='4' y='4' width='72' height='72' rx='18' fill='%23FFC000'/><text x='40' y='52' transform='scale(1 1.2)' font-size='44' font-weight='800' text-anchor='middle' fill='%23ffffff' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><rect x='48' y='42' width='44' height='44' rx='12' fill='%23FF5600' stroke='%23ffffff' stroke-width='3'/><text x='70' y='62.7' transform='scale(1 1.2)' font-size='26' font-weight='800' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>W</text></svg>">
 </head>
@@ -628,6 +642,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
       <button class="nav-link" id="btn-save"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>저장</button>
       <button class="nav-link" id="btn-export"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>내보내기</button>
       <button class="nav-link" id="btn-nav-settings"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 009 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.56-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.56V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.51 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9c.06.32.1.66.1 1a1.7 1.7 0 001.56 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1z"/></svg>설정</button>
+      <button class="nav-link" id="btn-nav-help"><svg class="nav-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.4 2.4 0 114.8.6c0 1.4-1.9 1.9-1.9 3.2M12.4 16.5h.01"/></svg>도움말</button>
       <button class="nav-link" id="btn-nav-exit"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>나가기</button>
       <div class="ai-badge" id="ai-badge">AI 연결 확인 중…</div>
       <div class="app-ver" id="app-ver"></div>
@@ -1343,6 +1358,7 @@ function normalize(d) {
   d.settings = Object.assign({
     translation: '개역개정', cpm: 300, model: 'sonnet', apiKey: '',
     style: '', targetMin: 25, editorSize: 17, rules: defaultRules(),
+    fontScale: 100, fontFace: 'basic', appPass: '',
   }, d.settings || {});
   d.projects = Array.isArray(d.projects) ? d.projects : [];
   d.customForms = Array.isArray(d.customForms) ? d.customForms : [];
@@ -1599,8 +1615,69 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v10 · 2026-07-17';
+const APP_VERSION = 'v11 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
+/* ── 화면 글자 크기·글자체 ── */
+function applyDisplay() {
+  document.documentElement.style.fontSize = Math.round(17 * (DB.settings.fontScale || 100) / 100) + 'px';
+  document.body.classList.toggle('serif-ui', DB.settings.fontFace === 'serif');
+  document.body.classList.toggle('gothic-ui', DB.settings.fontFace === 'gothic');
+}
+applyDisplay();
+/* ── 앱 잠금(비밀번호) ── */
+const encPass = pw => btoa(unescape(encodeURIComponent('mw:' + pw)));
+function showLock() {
+  const ov = document.createElement('div');
+  ov.id = 'app-lock';
+  ov.innerHTML = `
+    <div class="lock-box">
+      <div class="logo-mark" style="width:76px;height:76px;margin:0 auto 14px">${LOGO_SVG}</div>
+      <h2 style="margin-bottom:4px">M.Works</h2>
+      <p style="font-size:.85rem;color:var(--ink-soft);margin-bottom:16px">비밀번호를 입력해 주세요</p>
+      <input type="password" id="lock-pw" autocomplete="off" style="text-align:center;font-size:1.2rem;padding:10px;border:1.5px solid var(--hairline);border-radius:10px;width:220px">
+      <div style="margin-top:14px"><button class="btn btn-primary" id="lock-go">열기</button></div>
+    </div>`;
+  document.body.appendChild(ov);
+  const tryGo = () => {
+    if (encPass(document.getElementById('lock-pw').value) === DB.settings.appPass) {
+      sessionStorage.setItem('mworks_unlock', '1');
+      ov.remove();
+    } else {
+      toast('비밀번호가 다릅니다.');
+      document.getElementById('lock-pw').value = '';
+      document.getElementById('lock-pw').focus();
+    }
+  };
+  document.getElementById('lock-go').addEventListener('click', tryGo);
+  document.getElementById('lock-pw').addEventListener('keydown', e => { if (e.key === 'Enter') tryGo(); });
+  setTimeout(() => document.getElementById('lock-pw').focus(), 100);
+}
+if (DB.settings.appPass && sessionStorage.getItem('mworks_unlock') !== '1') showLock();
+/* ── 사용 설명서 ── */
+function openManual() {
+  modal('사용 설명서 — M.Works ' + APP_VERSION, `
+    <div style="font-size:.9rem;line-height:1.75">
+    <h4 style="margin-top:0">1. 다섯 단계 흐름</h4>
+    <p>왼쪽의 <b>새 설교 시작</b>을 눌러 기본 정보(주제·대상·목적·날짜)를 적고 아래 순서로 진행합니다.</p>
+    <p>① <b>본문 찾기</b> — 주제를 넣으면 AI가 본문 5곳을 추천합니다. 마음에 없으면 요청사항을 적고 추가 추천을 받으세요. 확정하면 본문 전문을 성경에서 복사해 붙여넣습니다.<br>
+    ② <b>중심사상</b> — 본문을 로빈슨 12단계로 분석해 한 문장 중심사상을 세웁니다.<br>
+    ③ <b>설교 작성</b> — [🤖 설교문 작성]을 누르면 나의 작성 규칙·자료 서랍을 반영해 초안을 씁니다. 초안이 생기면 아래 <b>부분 재작성 메뉴</b>(제목 다시, 예화 추가, 추천 도서 추가 등)가 열립니다.<br>
+    ④ <b>형식 결정</b> — 연역·귀납·4페이지 등 9가지 형식으로 바꿔보고 마음에 들면 승인합니다.<br>
+    ⑤ <b>연습하기</b> — 피드백·제스처·쉼멈춤 추천을 받고, <b>📄 원고에서 위치 보기</b>로 본문 속 표시(🖐①·∕·⏸)를 확인합니다. 표시를 누르면 옆에 설명이 나옵니다. 리허설 모드로 시간을 재세요.</p>
+    <h4>2. AI 연결</h4>
+    <p>설정에서 Anthropic API 키를 넣거나, 이 컴퓨터에서 claude 로그인이 되어 있으면 자동 연결됩니다. 왼쪽 아래 배지에서 연결 상태를 확인하세요. 설교문 생성은 처음 1~3분간 조용히 구상한 뒤 글이 흐르기 시작합니다.</p>
+    <h4>3. 자료 서랍</h4>
+    <p>왼쪽 메뉴 <b>자료 서랍</b>에 예화·통계·간증·인용을 넣어 두면(파일을 끌어다 놓아도 됨) 설교문 작성 때 자동으로 곳곳에 인용됩니다. 3단계의 자료 투입 카드로 이미 쓴 원고에 녹일 수도 있습니다.</p>
+    <h4>4. 내보내기·인쇄</h4>
+    <p>왼쪽 <b>내보내기</b>에서 Word(.doc)·텍스트·인쇄를 선택합니다. 체크박스로 <b>쉼·멈춤 표시(∕·⏸)</b>와 <b>제스처 위치 표시(🖐①)</b>의 포함 여부를 정할 수 있습니다. Word 양식은 나의 작성 규칙의 원고 양식(맑은 고딕 10pt, 한 문장 한 줄)을 따릅니다.</p>
+    <h4>5. 저장·백업</h4>
+    <p>모든 데이터는 이 기기 브라우저에 자동 저장됩니다(서버 전송 없음). 보관함의 <b>전체 백업(JSON)</b>으로 파일 백업을 권장합니다. 기기를 바꿀 때 이 파일을 가져오기 하면 됩니다.</p>
+    <h4>6. 업데이트·버전</h4>
+    <p>왼쪽 아래에 현재 버전(예: ${APP_VERSION})이 표시됩니다. 새 버전이 배포되면 앱을 열 때 자동으로 확인해 한 번 새로고침하며 적용됩니다.</p>
+    <h4>7. 비밀번호 잠금</h4>
+    <p>설정 → <b>🔒 비밀번호 걸기</b>로 앱을 열 때 비밀번호를 묻게 할 수 있습니다. 이 기기에만 저장되므로 잊지 않게 메모해 두세요. <b>나가기</b>를 누르면 다음에 열 때 다시 묻습니다.</p>
+    </div>`);
+}
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
         <rect x="4" y="4" width="72" height="72" rx="18" fill="#FFC000"/>
         <text x="40" y="52" transform="scale(1 1.2)" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#ffffff">M</text>
@@ -1733,6 +1810,7 @@ $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-exit').addEventListener('click', () => {
   syncEditor(); save(true);
+  sessionStorage.removeItem('mworks_unlock'); // 다음에 열 때 비밀번호 다시 묻기
   // 완전 종료: 창 닫기 시도 → 막히면 빈 화면으로 이탈
   window.open('', '_self');
   window.close();
@@ -1741,6 +1819,7 @@ $('#btn-nav-exit').addEventListener('click', () => {
   }, 250);
 });
 $('#btn-nav-settings').addEventListener('click', openSettings);
+$('#btn-nav-help').addEventListener('click', openManual);
 $('#btn-back').addEventListener('click', goBack);
 $('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);
@@ -3704,12 +3783,30 @@ function openSettings() {
         <div class="hint">보통 270~330. 시간 예측의 기준입니다.</div></div>
       <div class="field"><label>기본 목표 시간(분)</label><input id="set-target" type="number" value="${s.targetMin}" min="5" max="90"></div>
       <div class="field full"><label>기본 문체·어조</label><input id="set-style" value="${esc(s.style)}" placeholder="예: 따뜻한 존댓말 구어체, 단문 위주"></div>
+      <div class="field"><label>화면 글자 크기</label>
+        <select id="set-fscale">
+          ${[[90, '작게'], [100, '보통'], [112, '크게'], [125, '아주 크게']].map(([v, n]) => `<option value="${v}" ${(s.fontScale || 100) === v ? 'selected' : ''}>${n} (${v}%)</option>`).join('')}
+        </select></div>
+      <div class="field"><label>글자체</label>
+        <select id="set-fface">
+          <option value="basic" ${s.fontFace === 'basic' || !s.fontFace ? 'selected' : ''}>기본 (모던 산세리프)</option>
+          <option value="gothic" ${s.fontFace === 'gothic' ? 'selected' : ''}>고딕 (맑은 고딕 계열)</option>
+          <option value="serif" ${s.fontFace === 'serif' ? 'selected' : ''}>명조 (세리프)</option>
+        </select></div>
+      <div class="field full"><label>앱 잠금</label>
+        <div class="btn-row" style="margin-top:4px">
+          <button class="btn btn-ghost btn-sm" id="set-pass">🔒 ${s.appPass ? '비밀번호 변경' : '비밀번호 걸기'}</button>
+          ${s.appPass ? '<button class="btn btn-ghost btn-sm" id="set-pass-off">잠금 해제 (비밀번호 제거)</button>' : ''}
+        </div>
+        <div class="hint">앱을 열 때 비밀번호를 묻습니다. 이 기기에만 저장되며, 잊으면 풀 수 없으니 메모해 두세요.</div>
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn btn-gold" id="set-save">설정 저장</button>
       <button class="btn btn-ghost" id="set-recheck">AI 연결 다시 확인</button>
       <button class="btn btn-ghost" id="set-rules">📏 나의 작성 규칙</button>
       <button class="btn btn-ghost" id="set-prompts">프롬프트 관리 (고급)</button>
+      <button class="btn btn-ghost" id="set-manual">📖 사용 설명서</button>
     </div>
     <p class="ai-note"><b>개인정보</b> — 모든 설교 데이터는 이 컴퓨터의 브라우저에만 저장됩니다. AI 호출 시 해당 프로젝트의 입력 내용만 Anthropic 서버로 전송됩니다.</p>`);
   const updStatus = () => {
@@ -3732,6 +3829,8 @@ function openSettings() {
     s.apiKey = $('#set-key').value.trim(); s.model = $('#set-model').value;
     s.translation = $('#set-trans').value; s.cpm = +$('#set-cpm').value || 300;
     s.targetMin = +$('#set-target').value || 25; s.style = $('#set-style').value.trim();
+    s.fontScale = +$('#set-fscale').value || 100; s.fontFace = $('#set-fface').value;
+    applyDisplay();
     save(true); fetchStatus(); closeModal(); toast('설정을 저장했습니다.');
   });
   body.querySelector('#set-recheck').addEventListener('click', async () => {
@@ -3739,6 +3838,27 @@ function openSettings() {
     await fetchStatus(true); updStatus();
   });
   body.querySelector('#set-rules').addEventListener('click', openRules);
+  body.querySelector('#set-manual').addEventListener('click', () => { closeModal(); openManual(); });
+  body.querySelector('#set-pass').addEventListener('click', () => {
+    if (s.appPass) {
+      const cur = prompt('현재 비밀번호를 입력하세요');
+      if (cur === null) return;
+      if (encPass(cur) !== s.appPass) { toast('비밀번호가 다릅니다.'); return; }
+    }
+    const pw = prompt('새 비밀번호를 입력하세요 (4자 이상)');
+    if (pw === null) return;
+    if (pw.trim().length < 4) { toast('4자 이상으로 정해 주세요.'); return; }
+    s.appPass = encPass(pw.trim());
+    save(true); closeModal(); toast('비밀번호를 걸었습니다. 다음에 열 때부터 묻습니다.');
+  });
+  const passOff = body.querySelector('#set-pass-off');
+  if (passOff) passOff.addEventListener('click', () => {
+    const cur = prompt('현재 비밀번호를 입력하세요');
+    if (cur === null) return;
+    if (encPass(cur) !== s.appPass) { toast('비밀번호가 다릅니다.'); return; }
+    s.appPass = '';
+    save(true); closeModal(); toast('잠금을 해제했습니다.');
+  });
   body.querySelector('#set-prompts').addEventListener('click', () => { closeModal(); curView = 'prompts'; render(); });
 }
 /* 프롬프트 관리(관리자) */

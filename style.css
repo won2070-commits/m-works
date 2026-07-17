@@ -570,3 +570,17 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 .gmark.bmark { background: var(--navy); }
 .gmark.on { outline: 2.5px solid var(--ink); outline-offset: 1px; }
 .app-ver { font-size: .64rem; font-family: var(--mono); letter-spacing: .04em; color: var(--ink); opacity: .55; padding: 4px 12px 0; }
+
+/* 앱 잠금 화면 */
+#app-lock {
+  position: fixed; inset: 0; z-index: 10000; background: var(--canvas);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.lock-box { padding: 30px; }
+/* 글자체 선택 */
+body.gothic-ui, body.gothic-ui button, body.gothic-ui input, body.gothic-ui textarea, body.gothic-ui select {
+  font-family: "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", sans-serif;
+}
+body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea, body.serif-ui select {
+  font-family: "Apple Myungjo", "Nanum Myeongjo", "Noto Serif KR", "AppleMyungjo", serif;
+}
