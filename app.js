@@ -725,11 +725,17 @@ function renderHome(m) {
         <span class="badge">${esc(p.passage.ref || '본문 미정')}</span>
         <span class="mini-progress"><i style="width:${progressOf(p)}%"></i></span>
         <button class="btn btn-ghost btn-sm" data-open="${p.id}">열기</button>
+        <button class="btn btn-ghost btn-sm" data-trash="${p.id}" title="휴지통으로 (보관함에서 복원 가능)">🗑</button>
       </div>`).join('')}</div>` : ''}`;
   $('#home-new').addEventListener('click', newProject);
   $('#home-import').addEventListener('click', openImport);
   $('#home-archive').addEventListener('click', () => { curView = 'archive'; render(); });
   m.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openProject(b.dataset.open)));
+  m.querySelectorAll('[data-trash]').forEach(b => b.addEventListener('click', () => {
+    const p = DB.projects.find(x => x.id === b.dataset.trash);
+    const name = (p && (p.title || p.inputs.topic)) || '제목 없음';
+    if (confirm(`"${name}" 설교를 휴지통으로 옮길까요?\n(보관함 하단 휴지통에서 복원할 수 있어요)`)) trashProject(b.dataset.trash);
+  }));
 }
 
 /* ═══════════════════ 0단계: 기본 정보 ═══════════════════ */
