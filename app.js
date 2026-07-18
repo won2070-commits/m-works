@@ -901,6 +901,7 @@ function renderStep1(m, p) {
   $('#s1-confirm').addEventListener('click', () => {
     const ref = $('#s1-ref').value.trim();
     if (!ref) { toast('본문을 입력해 주세요.'); return; }
+    if (p.passage.ref && p.passage.ref !== ref) p.passage.text = '';   // 본문이 바뀌면 이전 전문 제거 (다른 구절이 남는 버그 방지)
     p.passage.ref = ref; p.passage.confirmed = true; touch(p); render();
     autoFillPassage(p);
   });
@@ -966,6 +967,7 @@ function bindCands(p) {
   }));
   $$('#s1-cands [data-pick]').forEach(b => b.addEventListener('click', () => {
     const c = p.passage.candidates[+b.dataset.pick];
+    if (p.passage.ref && p.passage.ref !== c.ref) p.passage.text = '';   // 본문이 바뀌면 이전 전문 제거
     p.passage.ref = c.ref; p.passage.genre = c.genre || ''; p.passage.confirmed = true;
     touch(p); render();
     autoFillPassage(p);
