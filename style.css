@@ -668,3 +668,18 @@ body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea
 .gn-fix { background: rgba(255,255,255,.6); border-radius: 6px; padding: 6px 9px; }
 .gn-dull + .gn-dull, .gn-idea + .gn-idea { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,.08); }
 .gn-idea b { font-size: .88rem; }
+
+/* 제스처 동작 그림 */
+.g-art {
+  display: flex; align-items: center; gap: 14px;
+  background: #fff; border: 1px solid var(--hairline); border-radius: var(--r-md);
+  padding: 12px 14px; margin: 8px 0 10px;
+}
+.g-art-fig { color: var(--ink); flex-shrink: 0; }
+.g-fig { width: 76px; height: 92px; display: block; }
+.g-art-sm .g-fig { width: 54px; height: 66px; }
+.g-art-sm { padding: 8px 12px; gap: 10px; }
+.g-art-cap { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.g-art-cap b { font-size: .92rem; letter-spacing: -0.02em; }
+.g-art-sm .g-art-cap b { font-size: .84rem; }
+.g-art-cap span { font-size: .76rem; opacity: .78; line-height: 1.5; }

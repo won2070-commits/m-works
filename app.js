@@ -416,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v40 · 2026-07-21';
+const APP_VERSION = 'v41 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -2052,12 +2052,79 @@ function renderFeedback(fb, p) {
       <div class="fb-item"><b>시간 조정</b>${esc(d.timeDiff || '—')}</div>
     </div>`;
 }
+/* ═══════════════════ 제스처 동작 그림 ═══════════════════ */
+/* 앱 안에 직접 그린 선화 — 인터넷 없이도 즉시 표시된다 */
+function gestureFigure(arms, extra) {
+  return `<svg viewBox="0 0 120 145" class="g-fig" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="60" cy="24" r="12.5"/>
+      <path d="M60 37v58"/>
+      <path d="M46 52h28"/>
+      <path d="M60 95l-13 34M60 95l13 34"/>
+      ${arms}
+    </g>
+    ${extra || ''}
+  </svg>`;
+}
+const HAND = (x, y) => `<circle cx="${x}" cy="${y}" r="5" fill="currentColor" stroke="none"/>`;
+const GESTURE_ART = {
+  open:    { label: '양팔 벌리기', tip: '품는 동작 — 초대·환영·모두를 향할 때',
+             svg: () => gestureFigure(`<path d="M46 52L26 44"/><path d="M74 52l20-8"/>` + HAND(22, 43) + HAND(98, 43)) },
+  oneUp:   { label: '한 손 들기', tip: '선언·강조 — 하나의 핵심을 세울 때',
+             svg: () => gestureFigure(`<path d="M74 52l12-14 4-22"/><path d="M46 52l-6 20 2 16"/>` + HAND(90, 14) + HAND(42, 90)) },
+  bothUp:  { label: '두 손 들기', tip: '찬양·높임 — 하나님을 향할 때',
+             svg: () => gestureFigure(`<path d="M46 52L32 30l-4-18"/><path d="M74 52l14-22 4-18"/>` + HAND(28, 10) + HAND(92, 10)) },
+  pray:    { label: '두 손 모으기', tip: '기도·간구 — 낮아지고 구할 때',
+             svg: () => gestureFigure(`<path d="M46 52L34 68l20 6"/><path d="M74 52l12 16-20 6"/>` + HAND(60, 75)) },
+  chest:   { label: '가슴에 손', tip: '진심·고백 — 나의 이야기를 꺼낼 때',
+             svg: () => gestureFigure(`<path d="M74 52l10 14-20 8"/><path d="M46 52l-6 20 2 16"/>` + HAND(60, 72) + HAND(42, 90)) },
+  point:   { label: '가리키기', tip: '지목·지금 여기 — 청중을 향해 짚을 때',
+             svg: () => gestureFigure(`<path d="M74 52l14 4 14-6"/><path d="M46 52l-6 20 2 16"/>` + HAND(100, 50) + `<path d="M106 50h9" stroke-width="3.4"/>` + HAND(42, 90)) },
+  fist:    { label: '주먹 쥐기', tip: '결단·힘 — 단호한 한 마디에',
+             svg: () => gestureFigure(`<path d="M74 52l12 10-4 -20"/><path d="M46 52l-6 20 2 16"/>` + `<rect x="74" y="26" width="17" height="15" rx="5" fill="currentColor" stroke="none"/>` + HAND(42, 90)) },
+  palmDown:{ label: '손바닥 아래로', tip: '진정·안정 — 흥분을 가라앉히고 낮출 때',
+             svg: () => gestureFigure(`<path d="M46 52L30 63"/><path d="M74 52l16 11"/>` + HAND(28, 64) + HAND(92, 64) + `<path d="M18 74h20M82 74h20" stroke-width="3"/>`) },
+  palmUp:  { label: '손바닥 위로', tip: '제시·초대 — 내어놓고 권할 때',
+             svg: () => gestureFigure(`<path d="M46 52L28 62"/><path d="M74 52l18 10"/>` + `<path d="M18 66q9 8 18 0M84 66q9 8 18 0" stroke-width="3.4"/>`) },
+  reach:   { label: '앞으로 내밀기', tip: '다가감 — 회중에게 건네줄 때',
+             svg: () => gestureFigure(`<path d="M46 52l-2 18"/><path d="M74 52l2 18"/>` + `<circle cx="44" cy="76" r="7" fill="currentColor" stroke="none"/><circle cx="76" cy="76" r="7" fill="currentColor" stroke="none"/>`) },
+  count:   { label: '손가락으로 세기', tip: '열거 — 첫째·둘째를 짚을 때',
+             svg: () => gestureFigure(`<path d="M74 52l12-6 2-12"/><path d="M46 52l-6 20 2 16"/>` + HAND(88, 33) + `<path d="M85 29V15M93 30V19" stroke-width="3"/>` + HAND(42, 90)) },
+  still:   { label: '가만히 서기', tip: '침묵·멈춤 — 말없이 여백을 둘 때',
+             svg: () => gestureFigure(`<path d="M46 52l-5 22 2 16"/><path d="M74 52l5 22-2 16"/>` + HAND(43, 92) + HAND(77, 92)) },
+};
+/* AI가 쓴 제스처 설명을 읽고 어울리는 그림을 고른다 */
+function gestureArtFor(x) {
+  const t = [x.gesture, x.hands, x.body, x.face].filter(Boolean).join(' ');
+  const has = (...ws) => ws.some(w => t.includes(w));
+  if (has('가만', '멈추', '멈춤', '정지', '침묵', '가만히')) return GESTURE_ART.still;
+  if (has('주먹', '움켜', '쥐고', '단호')) return GESTURE_ART.fist;
+  if (has('가리키', '지목', '손가락으로 청중', '짚')) return GESTURE_ART.point;
+  if (has('첫째', '둘째', '세', '손가락 두', '하나씩')) return GESTURE_ART.count;
+  if (has('가슴', '심장', '자기 몸', '가슴에')) return GESTURE_ART.chest;
+  if (has('기도', '모으', '합장', '두 손을 모')) return GESTURE_ART.pray;
+  if (has('두 손을 들', '양손을 들', '위로 들어', '높이 들', '찬양')) return GESTURE_ART.bothUp;
+  if (has('한 손을 들', '손을 들어', '들어 올')) return GESTURE_ART.oneUp;
+  if (has('아래로', '내리', '누르', '가라앉')) return GESTURE_ART.palmDown;
+  if (has('벌리', '펼치', '양팔', '품', '감싸', '넓게')) return GESTURE_ART.open;
+  if (has('내밀', '앞으로', '뻗', '건네')) return GESTURE_ART.reach;
+  if (has('손바닥', '위로', '펴')) return GESTURE_ART.palmUp;
+  return GESTURE_ART.open;
+}
+function gestureArtHtml(x, size) {
+  const a = gestureArtFor(x);
+  return `<div class="g-art ${size === 'sm' ? 'g-art-sm' : ''}">
+    <div class="g-art-fig">${a.svg()}</div>
+    <div class="g-art-cap"><b>${esc(a.label)}</b><span>${esc(a.tip)}</span></div>
+  </div>`;
+}
 function renderGestures(g) {
   const list = g.gestures || [];
   return `<h4 style="margin-top:18px">C. 제스처 제안 (${list.length}곳) <span class="opt" style="font-size:.75rem;font-weight:400">— 과장 없이, 의미를 돕는 동작만</span></h4>` +
     list.map(x => `
     <div class="gesture">
       <div class="g-sent">"${esc(x.sentence)}" <span class="badge">${esc(x.position)}</span></div>
+      ${gestureArtHtml(x, 'sm')}
       <div style="font-size:.9rem;margin-bottom:6px">${esc(x.gesture)}</div>
       <div class="g-grid">
         <span><b>손</b> ${esc(x.hands)}</span><span><b>몸</b> ${esc(x.body)}</span>
@@ -2179,6 +2246,7 @@ function openMarkedScript(p, type) {
     $('#ms-side').innerHTML = isG ? `
       <div class="gesture" style="margin:0">
         <div class="g-sent">${CIRC[i] || ''} "${esc(it.sentence)}" <span class="badge">${esc(it.position || '')}</span></div>
+        ${gestureArtHtml(it)}
         <div style="font-size:.9rem;margin:6px 0"><b>${esc(it.gesture)}</b></div>
         <div class="g-grid">
           <span><b>손</b> ${esc(it.hands)}</span><span><b>몸</b> ${esc(it.body)}</span>
