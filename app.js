@@ -388,7 +388,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v34 · 2026-07-21';
+const APP_VERSION = 'v35 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1251,6 +1251,10 @@ function renderStep3(m, p) {
       <div id="s3-stream"></div>
     </div>` : ''}
     <div id="editor-area" class="${hasDraft ? '' : 'hidden'}">
+      <div class="btn-row" style="margin:0 0 10px">
+        <button class="btn btn-ghost btn-sm" id="s3-backai" ${aiConnected() ? '' : 'disabled'}>🤖 AI 초안 작성으로 돌아가기</button>
+        <span style="font-size:.74rem;opacity:.75">지금 원고는 버전 기록에 안전하게 보관됩니다</span>
+      </div>
       <div id="editor-wrap">
         <div id="editor-toolbar">
           <button data-cmd="bold" title="굵게"><b>가</b></button>
@@ -1320,6 +1324,15 @@ function renderStep3(m, p) {
     </div>`;
   const gen = $('#s3-gen');
   if (gen) gen.addEventListener('click', () => generateSermon(p));
+  const backAi = $('#s3-backai');
+  if (backAi) backAi.addEventListener('click', () => {
+    if (!confirm('AI 초안 작성 화면으로 돌아갈까요?\n지금 원고는 버전 기록에 보관되어 언제든 되돌릴 수 있습니다.')) return;
+    syncEditor();
+    if (htmlToText(p.draft.html).trim().length > 0) snapshot(p, '직접 작성 원고 보관');
+    p.draft.html = '';
+    touch(p); render();
+    toast('AI 초안 작성으로 돌아왔습니다. 목표 시간과 자료를 고르고 [설교문 초안 작성]을 누르세요.');
+  });
   const blank = $('#s3-blank');
   if (blank) blank.addEventListener('click', () => {
     p.draft.html = `<h1>${esc(p.inputs.topic)}</h1><p><strong>본문</strong> ${esc(p.passage.ref)}</p><p><strong>중심사상</strong> ${esc(p.central.homiletical)}</p><h2>서론</h2><p></p><h2>본론</h2><p></p><h2>적용</h2><p></p><h2>결론</h2><p></p>`;
