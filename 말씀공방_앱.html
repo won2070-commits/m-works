@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=31">
+<link rel="apple-touch-icon" href="icon-192.png?v=32">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1457,7 +1457,7 @@ function getPrompt(key) {
     .map(r => ({ name: r.name, target: r.target, text: (r.text || '').replace(/\(여기에 클로드 프로젝트[^)]*\)/g, '').trim() }))
     .filter(r => r.target === key && r.text);
   if (refs.length) {
-    system += '\n\n[설교자의 세부 프롬프트 — 아래 지침도 함께 따르라]\n' +
+    system += '\n\n[설교자의 세부작성 프롬프트 — 아래 지침도 함께 따르라]\n' +
       refs.map(r => `《${r.name}》\n${r.text}`).join('\n\n');
   }
   return { system, user: ov.user || base.user, maxTokens: base.maxTokens, label: base.label };
@@ -1639,7 +1639,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v31 · 2026-07-21';
+const APP_VERSION = 'v32 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1736,12 +1736,40 @@ function openManual() {
     <p>이 기기에만 저장되므로 잊지 않게 메모해 두세요. <b>나가기</b>를 누르면 다음에 열 때 다시 묻습니다.</p>
 
     <h4>8. 프롬프트 체계 — 네 가지의 차이</h4>
-    <p>설정 → <b>🧩 프롬프트·세부 프롬프트</b>에 나오는 것들의 관계입니다.</p>
-    <p><b>① 프롬프트</b> — 각 단계별 작업에 필요한 <b>기본 지시문</b>입니다. 본문 추천·중심사상 분석·설교문 작성·FCF 찾기 등 AI 기능 하나마다 하나씩 있으며, 『들리는 설교, 끌리는 설교』의 방법론이 여기에 구현되어 있습니다. 하나의 프롬프트는 아래 ③+④ 두 부분으로 구성됩니다.</p>
-    <p><b>② 세부 프롬프트</b> — 기본 프롬프트 <b>외에 추가로 얹는 지시문</b>입니다. 각 단계 안에서 더 세부적인 필요를 규정합니다. 예: "본문 추천 — 이런 것들을 참조하라", "중심사상 — 이런 것을 하라". 적용 단계를 지정하면 그 단계의 프롬프트 뒤에 자동으로 결합됩니다. 무엇을 써도 앱이 망가지지 않는 안전한 자리입니다.</p>
-    <p><b>③ 시스템 지시</b> (프롬프트의 위 상자) — AI에게 "너는 누구이고 어떤 원칙으로 일하라"를 정하는 부분입니다. 역할·방법론·환각 금지·문체 원칙이 들어 있고, 매번 똑같이 적용됩니다. 비유하면 <b>직원의 근로계약서</b>입니다.</p>
-    <p><b>④ 사용자 프롬프트 틀</b> (프롬프트의 아래 상자) — 버튼을 누를 때마다 실제로 보내지는 <b>주문서의 양식</b>입니다. 안의 <code>{{주제}}</code> <code>{{본문}}</code> 같은 빈칸을 앱이 그 프로젝트의 실제 데이터로 채워 보냅니다. 비유하면 <b>매번 건네는 작업 주문서 양식</b>입니다.</p>
-    <p><b>권장 사용법</b> — ③④(프롬프트의 두 상자)는 웬만하면 손대지 마세요. 특히 <code>{{빈칸}}</code> 표기와 JSON 형식 부분이 틀어지면 버튼이 작동하지 않을 수 있습니다. 원하는 방향·취향·강조는 <b>② 세부 프롬프트</b>에, 설교문에 반드시 지켜질 사항은 <b>나의 작성 규칙</b>(설정 → 📏)에 쓰는 것이 바람직합니다. 기본 프롬프트를 고칠 때는 문장 표현만, 한 번에 하나씩 바꿔 시험하고, 이상해지면 [기본값 복원]으로 되돌리세요.</p>
+    <p>설정 → <b>🧩 설교작성·세부작성 프롬프트</b>에 나오는 것들의 관계입니다. <b>설교작성 프롬프트</b> 한 장 안에 <b>시스템 프롬프트(1부)</b>와 <b>작업주문 프롬프트(2부)</b>가 들어 있고, 그 위에 <b>세부작성 프롬프트</b>를 얹는 구조입니다.</p>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem;line-height:1.5">
+      <tr style="background:var(--surface-soft)">
+        <th style="border:1px solid var(--hairline);padding:7px 8px;text-align:left;white-space:nowrap">이름</th>
+        <th style="border:1px solid var(--hairline);padding:7px 8px;text-align:left">무엇인가</th>
+        <th style="border:1px solid var(--hairline);padding:7px 8px;text-align:left">언제 쓰이나</th>
+        <th style="border:1px solid var(--hairline);padding:7px 8px;text-align:left">고쳐도 되나</th>
+      </tr>
+      <tr>
+        <td style="border:1px solid var(--hairline);padding:7px 8px"><b>① 설교작성<br>프롬프트</b></td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">각 단계별 작업의 기본 지시서 전체. 기능마다 1장(본문 추천용·설교문 작성용…). 아래 ③+④ 두 부분의 묶음이며, 책의 방법론이 구현된 곳</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">그 단계의 🤖 버튼을 누를 때마다</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">원칙적으로 그대로 두기. 고치면 [기본값 복원] 가능</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid var(--hairline);padding:7px 8px"><b>② 세부작성<br>프롬프트</b></td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">①에 내가 덧붙이는 추가 지시(예: "본문 추천 — 이런 것을 참조하라"). 적용 단계를 지정하면 자동 결합</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">지정한 단계가 실행될 때</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px"><b>자유롭게</b> — 무엇을 써도 앱이 망가지지 않는 안전한 자리</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid var(--hairline);padding:7px 8px"><b>③ 시스템<br>프롬프트</b></td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">①의 1부. "너는 누구이고 어떤 원칙으로 일하라" — 역할·방법론·환각 금지·문체. 비유: 직원의 근로계약서</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">매번 똑같이 적용</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">웬만하면 그대로</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid var(--hairline);padding:7px 8px"><b>④ 작업주문<br>프롬프트</b></td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">①의 2부. 버튼을 누를 때마다 보내지는 주문서 양식. <code>{{주제}}</code> 같은 빈칸을 앱이 그 프로젝트의 실제 값으로 채움. 비유: 작업 주문서 양식</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">버튼을 누를 때마다 빈칸이 새로 채워짐</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">문장만. <code>{{빈칸}}</code>·JSON 형식은 지우면 작동 불능</td>
+      </tr>
+    </table></div>
+    <p style="margin-top:10px"><b>기억할 한 문장</b> — "지시서(①=③+④)는 앱의 것이니 두고, 나는 ② 세부작성 프롬프트에만 쓴다."</p>
     </div>`);
 }
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
@@ -3411,10 +3439,10 @@ function renderPromptLibrary(m) {
   m.innerHTML = `
     <div class="step-head">PROMPT LIBRARY</div>
     <h1 class="step-title">프롬프트 서재</h1>
-    <p class="step-desc"><b>프롬프트</b>는 각 단계별 작업에 필요한 기본 지시문이고, <b>세부 프롬프트</b>는 그 외에 추가로 얹는 지시문 — 각 단계 안에서 더 세부적인 필요를 규정합니다(예: 본문 추천 — 이런 것들을 참조하라 / 중심사상 — 이런 것을 하라). 세부 프롬프트에 적용 단계를 지정하면 그 단계의 프롬프트에 자동으로 결합됩니다.</p>
+    <p class="step-desc"><b>설교작성 프롬프트</b>는 각 단계별 작업의 기본 지시서(안에 <b>시스템 프롬프트</b>와 <b>작업주문 프롬프트</b> 두 부분이 있음)이고, <b>세부작성 프롬프트</b>는 그 위에 내가 덧붙이는 추가 지시입니다. 네 가지의 특성과 차이는 설정 → 사용 설명서 8번에 표로 정리되어 있습니다.</p>
 
     <div class="card">
-      <h3>세부 프롬프트 <span class="opt" style="font-weight:400;font-size:.76rem">— 각 단계 안의 세부 필요를 규정, 지정한 단계에 자동 결합됩니다</span></h3>
+      <h3>세부작성 프롬프트 <span class="opt" style="font-weight:400;font-size:.76rem">— 내가 덧붙이는 추가 지시. 지정한 단계에 자동 결합됩니다</span></h3>
       <div id="pl-refs">
         ${DB.refPrompts.map((r, i) => `
           <div class="fb-item" style="background:var(--surface-soft)">
@@ -3429,18 +3457,18 @@ function renderPromptLibrary(m) {
           </div>`).join('')}
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary btn-sm" id="pl-refsave">세부 프롬프트 저장</button>
-        <button class="btn btn-ghost btn-sm" id="pl-refadd">＋ 새 세부 프롬프트</button>
+        <button class="btn btn-primary btn-sm" id="pl-refsave">세부작성 프롬프트 저장</button>
+        <button class="btn btn-ghost btn-sm" id="pl-refadd">＋ 새 세부작성 프롬프트</button>
       </div>
       <p class="ai-note"><b>dodo 프롬프트</b>는 사용하시던 원문(『성경적 설교문 작성 프롬프트-dodo』)을 그대로 옮겨 심어 두었고, 설교문 작성에 이미 적용되고 있습니다. big idea·설교형식·honor는 클로드 프로젝트에서 복사해 붙여넣어 완성해 주세요.</p>
     </div>
 
     <div class="card">
-      <h3>프롬프트 <span class="opt" style="font-weight:400;font-size:.76rem">— 각 단계별 작업에 필요한 기본 지시문. 수정하면 이 브라우저에 저장됩니다</span></h3>
+      <h3>설교작성 프롬프트 <span class="opt" style="font-weight:400;font-size:.76rem">— 각 단계별 작업의 기본 지시서. 수정하면 이 브라우저에 저장됩니다</span></h3>
       <div class="field"><label>프롬프트 선택</label>
         <select id="pl-key">${keys.map(k => `<option value="${k}">${esc(window.MSGB_PROMPTS[k].label)} ${DB.promptOverrides[k] ? '(수정됨)' : ''}</option>`).join('')}</select></div>
-      <div class="field"><label>시스템 지시</label><textarea id="pl-system" style="min-height:110px;font-family:var(--mono);font-size:.74rem"></textarea></div>
-      <div class="field"><label>사용자 프롬프트 틀 <span class="opt">({{슬롯}}은 앱이 채우는 자리 — 지우지 마세요)</span></label><textarea id="pl-user" style="min-height:180px;font-family:var(--mono);font-size:.74rem"></textarea></div>
+      <div class="field"><label>시스템 프롬프트 <span class="opt">(1부 — 역할과 원칙)</span></label><textarea id="pl-system" style="min-height:110px;font-family:var(--mono);font-size:.74rem"></textarea></div>
+      <div class="field"><label>작업주문 프롬프트 <span class="opt">(2부 — 매번 보내는 주문서. {{빈칸}}은 앱이 채우는 자리, 지우지 마세요)</span></label><textarea id="pl-user" style="min-height:180px;font-family:var(--mono);font-size:.74rem"></textarea></div>
       <div class="btn-row">
         <button class="btn btn-primary btn-sm" id="pl-save">저장</button>
         <button class="btn btn-ghost btn-sm" id="pl-reset">기본값 복원</button>
@@ -3452,10 +3480,10 @@ function renderPromptLibrary(m) {
       if (n) { r.name = n.value.trim(); r.target = t.value; r.text = x.value; }
     });
   };
-  $('#pl-refsave').addEventListener('click', () => { grabRefs(); save(true); toast('세부 프롬프트를 저장했습니다. 지정한 단계에 적용됩니다.'); });
+  $('#pl-refsave').addEventListener('click', () => { grabRefs(); save(true); toast('세부작성 프롬프트를 저장했습니다. 지정한 단계에 적용됩니다.'); });
   $('#pl-refadd').addEventListener('click', () => { grabRefs(); DB.refPrompts.push({ id: uid(), name: '새 프롬프트', target: '', text: '' }); save(true); render(); });
   m.querySelectorAll('[data-rpdel]').forEach(b => b.addEventListener('click', () => {
-    if (confirm('이 세부 프롬프트를 삭제할까요?')) { grabRefs(); DB.refPrompts.splice(+b.dataset.rpdel, 1); save(true); render(); }
+    if (confirm('이 세부작성 프롬프트를 삭제할까요?')) { grabRefs(); DB.refPrompts.splice(+b.dataset.rpdel, 1); save(true); render(); }
   }));
   const loadK = () => {
     const k = $('#pl-key').value;
@@ -3933,7 +3961,7 @@ function openSettings() {
       <button class="btn btn-gold" id="set-save">설정 저장</button>
       <button class="btn btn-ghost" id="set-recheck">AI 연결 다시 확인</button>
       <button class="btn btn-ghost" id="set-rules">📏 나의 작성 규칙</button>
-      <button class="btn btn-ghost" id="set-prompts">🧩 프롬프트·세부 프롬프트</button>
+      <button class="btn btn-ghost" id="set-prompts">🧩 설교작성·세부작성 프롬프트</button>
       <button class="btn btn-ghost" id="set-manual">📖 사용 설명서</button>
     </div>
     <p class="ai-note"><b>개인정보</b> — 모든 설교 데이터는 이 컴퓨터의 브라우저에만 저장됩니다. AI 호출 시 해당 프로젝트의 입력 내용만 Anthropic 서버로 전송됩니다.</p>`);
@@ -4023,12 +4051,12 @@ function openSettings() {
 /* 프롬프트 관리(관리자) */
 function openPromptManager() {
   const keys = Object.keys(window.MSGB_PROMPTS);
-  const body = modal('프롬프트', `
+  const body = modal('설교작성 프롬프트', `
     <p style="font-size:.84rem;color:var(--ink-soft)">각 단계의 AI 지시문을 앱 재배포 없이 수정할 수 있습니다. 수정본은 이 브라우저에 저장되며, <b>기본값 복원</b>으로 언제든 되돌립니다. <code>{{슬롯}}</code> 표기는 앱이 자동으로 채우는 자리이므로 지우지 마세요.</p>
     <div class="field"><label>프롬프트 선택</label>
       <select id="pm-key">${keys.map(k => `<option value="${k}">${esc(window.MSGB_PROMPTS[k].label)} ${DB.promptOverrides[k] ? '(수정됨)' : ''}</option>`).join('')}</select></div>
-    <div class="field"><label>시스템 지시</label><textarea id="pm-system" style="min-height:120px;font-family:monospace;font-size:.78rem"></textarea></div>
-    <div class="field"><label>사용자 프롬프트 틀</label><textarea id="pm-user" style="min-height:200px;font-family:monospace;font-size:.78rem"></textarea></div>
+    <div class="field"><label>시스템 프롬프트 <span class="opt">(1부 — 역할과 원칙)</span></label><textarea id="pm-system" style="min-height:120px;font-family:monospace;font-size:.78rem"></textarea></div>
+    <div class="field"><label>작업주문 프롬프트 <span class="opt">(2부 — 주문서 양식)</span></label><textarea id="pm-user" style="min-height:200px;font-family:monospace;font-size:.78rem"></textarea></div>
     <div class="btn-row">
       <button class="btn btn-gold" id="pm-save">저장</button>
       <button class="btn btn-ghost" id="pm-reset">기본값 복원</button>
