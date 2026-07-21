@@ -416,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v38 · 2026-07-21';
+const APP_VERSION = 'v39 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1348,7 +1348,7 @@ function renderStep3(m, p) {
         </div>
       </div>
       <div class="card">
-        <h3>부분 재작성 <span class="opt" style="font-weight:400;font-size:.78rem">— 요청한 부분만 새로 씁니다. 결과를 보고 직접 반영 여부를 정합니다.</span></h3>
+        <h3>부분 재작성 <span class="opt" style="font-weight:400;font-size:.78rem">— 누르면 그 부분이 원고 안 제자리에 바로 반영됩니다. 되돌리기도 한 번에 됩니다.</span></h3>
         <div class="chip-row">${PARTIAL_REQUESTS.map(r => `<button class="chip" data-partial="${esc(r)}">${esc(r)}</button>`).join('')}</div>
       </div>
       <div class="card">
@@ -1624,6 +1624,82 @@ function applyTitle(p, title) {
   touch(p); closeModal(); render();
   toast('제목을 "' + title + '"(으)로 바꿨습니다.');
 }
+/* 부분 재작성 결과가 들어갈 자리 규칙 */
+const PARTIAL_PLACE = [
+  // 구체적인 규칙을 먼저 — '추천 도서…(책 제목…)'이 제목 규칙에 걸리지 않도록
+  { re: /추천 도서/, mode: 'end' },
+  { re: /배경 설명/, mode: 'before', heads: ['본문', '설명', '본론'] },
+  { re: /제목/, mode: 'title' },
+  { re: /서론/, mode: 'section', heads: ['서론', '도입'] },
+  { re: /결론|촌철살인/, mode: 'section', heads: ['결론', '맺음', '마무리'] },
+  { re: /적용/, mode: 'section', heads: ['적용', '오늘의 적용'] },
+  { re: /복음적 연결/, mode: 'section', heads: ['복음', '복음적 연결'] },
+  { re: /예화/, mode: 'section', heads: ['예화'] },
+  { re: /본론|본문 해설|논리|설명 보강/, mode: 'section', heads: ['본론', '본문 설명', '본문'] },
+  { re: /분량|목표 시간|AI 냄새|문체/, mode: 'whole' },
+];
+function placeRuleFor(request) {
+  const r = PARTIAL_PLACE.find(x => x.re.test(request));
+  return r || { mode: 'end' };
+}
+/* 결과 HTML을 원고의 알맞은 자리에 넣는다. 반환: 어디에 넣었는지 설명 */
+function applyPartial(p, request, outMd) {
+  const rule = placeRuleFor(request);
+  const outHtml = mdToHtml(outMd);
+  const div = document.createElement('div');
+  div.innerHTML = p.draft.html;
+  const heads = () => Array.from(div.querySelectorAll('h1,h2,h3'));
+  const findHead = names => heads().find(h => names.some(n => h.textContent.replace(/\s/g, '').includes(n.replace(/\s/g, ''))));
+
+  if (rule.mode === 'title') {
+    // 제목: 결과에서 첫 줄만 뽑아 h1 교체
+    const first = outMd.split('\n').map(x => x.replace(/^[#\-*\d.\s"'‘“]+/, '').replace(/["'’”]+$/, '').trim()).find(x => x.length > 1 && x.length < 40);
+    if (first) {
+      p.title = first;
+      const h1 = div.querySelector('h1');
+      if (h1) h1.textContent = first; else div.insertAdjacentHTML('afterbegin', '<h1>' + esc(first) + '</h1>');
+      p.draft.html = div.innerHTML;
+      return '제목을 "' + first + '"(으)로 바꿨습니다';
+    }
+  }
+  if (rule.mode === 'whole') {
+    const h1 = div.querySelector('h1');
+    const keepTitle = h1 ? h1.outerHTML : '';
+    const body = document.createElement('div');
+    body.innerHTML = outHtml;
+    const bh1 = body.querySelector('h1');
+    if (bh1 && keepTitle) bh1.remove();
+    p.draft.html = keepTitle + body.innerHTML;
+    return '원고 전체를 새 원고로 바꿨습니다';
+  }
+  if (rule.mode === 'section' || rule.mode === 'before') {
+    const target = findHead(rule.heads || []);
+    if (target) {
+      if (rule.mode === 'before') {
+        target.insertAdjacentHTML('beforebegin', outHtml);
+        p.draft.html = div.innerHTML;
+        return '"' + target.textContent.trim() + '" 앞에 넣었습니다';
+      }
+      // section: 해당 제목 다음부터 다음 제목 전까지를 교체
+      const level = +target.tagName[1];
+      const remove = [];
+      let n = target.nextElementSibling;
+      while (n && !(/^H[1-3]$/.test(n.tagName) && +n.tagName[1] <= level)) { remove.push(n); n = n.nextElementSibling; }
+      remove.forEach(el => el.remove());
+      const frag = document.createElement('div');
+      frag.innerHTML = outHtml;
+      frag.querySelectorAll('h1,h2,h3').forEach(h => { // 결과가 같은 제목을 또 달았으면 제거
+        if (h === frag.firstElementChild && h.textContent.replace(/\s/g, '').includes(target.textContent.replace(/\s/g, '').slice(0, 4))) h.remove();
+      });
+      target.insertAdjacentHTML('afterend', frag.innerHTML);
+      p.draft.html = div.innerHTML;
+      return '"' + target.textContent.trim() + '" 부분을 새 내용으로 바꿨습니다';
+    }
+  }
+  // 자리를 못 찾았거나 end 규칙 → 원고 끝에 붙인다
+  p.draft.html = div.innerHTML + outHtml;
+  return '원고 끝에 붙였습니다';
+}
 async function partialRewrite(p, request) {
   syncEditor();
   // 짧은 메뉴 이름을 상세 지시로 확장
@@ -1634,30 +1710,42 @@ async function partialRewrite(p, request) {
   if (request.includes('추천 도서')) {
     fullRequest = '이 설교의 중심내용과 궤를 같이하는, 실제 존재하는 책 2권을 "## 추천 도서" 섹션으로 작성하라. 각 책마다 ①제목·저자 ②추천 이유(2~3문장) ③책 내용 요약(각각 약 A4 두 페이지, 3,000자 안팎 — 핵심 논지·구조·이 설교와 만나는 지점 중심). 존재가 불확실한 책은 추천하지 말고, 세부 정보가 불확실하면 "(확인 필요)"를 붙여라. 원고 끝에 붙일 수 있는 형태로 섹션 전체만 출력하라.';
   }
+  const rule = placeRuleFor(request);
+  if (rule.mode === 'whole') {
+    fullRequest += ' 이 요청을 반영한 **설교문 전체**를 처음부터 끝까지 다시 출력하라(일부만 출력하지 말 것).';
+  } else if (rule.mode !== 'title') {
+    fullRequest += ' 원고에 그대로 넣을 수 있는 완성된 문장으로, 해당 부분만 출력하라. 설명·머리말·"다음과 같이" 같은 안내 문구는 붙이지 마라.';
+  }
   try {
-    setProgressEta(90, ['원고를 읽는 중…', '요청대로 새로 쓰는 중…', '다듬는 중…']);
+    setProgressEta(rule.mode === 'whole' ? 200 : 90, ['원고를 읽는 중…', '요청대로 새로 쓰는 중…', '다듬는 중…', '원고에 넣는 중…']);
     const out = await callAI('partial', {
       homiletical: p.central.homiletical, ref: p.passage.ref,
       needs: p.inputs.needs, purpose: p.inputs.purpose,
       rules: DB.settings.rules,
       draft: draftText(), request: fullRequest,
     }, { label: '"' + request + '" 작업 중…' });
-    const body = modal('부분 재작성 — ' + request, `
-      <p style="font-size:.82rem;color:var(--ink-soft)">다른 부분은 바꾸지 않았습니다. 아래 결과를 검토하고 원하는 방식으로 반영하세요.</p>
-      <div class="stream-preview" style="max-height:46vh" id="pr-out">${esc(out)}</div>
+    // 되돌릴 수 있도록 먼저 버전 보관 → 원고에 자동 반영
+    snapshot(p, request + ' 전 원고');
+    const where = applyPartial(p, request, out);
+    touch(p); render();
+    const body = modal('반영 완료 — ' + request, `
+      <div class="fb-item" style="background:var(--lime)"><b>원고에 바로 넣었습니다</b>${esc(where)}. 되돌리려면 아래 [되돌리기]를 누르거나, 3단계 <b>버전 기록</b>에서 "${esc(request)} 전 원고"를 복원하세요.</div>
+      <div class="stream-preview" style="max-height:40vh">${esc(out)}</div>
       <div class="btn-row">
-        <button class="btn btn-gold" id="pr-insert">커서 위치에 삽입</button>
-        <button class="btn btn-ghost" id="pr-copy">클립보드 복사</button>
-        <button class="btn btn-ghost" id="pr-close">닫기</button>
+        <button class="btn btn-primary" id="pr-ok">확인 — 원고 보기</button>
+        <button class="btn btn-ghost" id="pr-undo">되돌리기</button>
+        <button class="btn btn-ghost" id="pr-copy">📋 복사</button>
       </div>`);
-    body.querySelector('#pr-copy').addEventListener('click', () => { navigator.clipboard.writeText(out); toast('복사했습니다.'); });
-    body.querySelector('#pr-close').addEventListener('click', closeModal);
-    body.querySelector('#pr-insert').addEventListener('click', () => {
+    body.querySelector('#pr-ok').addEventListener('click', () => {
       closeModal();
-      const ed = $('#editor'); ed.focus();
-      document.execCommand('insertHTML', false, mdToHtml(out));
-      p.draft.html = ed.innerHTML; touch(p); updateEditorStatus(p);
-      toast('삽입했습니다. 필요 없는 기존 문단은 직접 지워 주세요.');
+      const ed = $('#editor'); if (ed) ed.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    body.querySelector('#pr-copy').addEventListener('click', () => { navigator.clipboard.writeText(out); toast('복사했습니다.'); });
+    body.querySelector('#pr-undo').addEventListener('click', () => {
+      const v = p.draft.versions.pop();
+      if (v) { p.draft.html = v.html; touch(p); }
+      closeModal(); render();
+      toast('되돌렸습니다.');
     });
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
 }
