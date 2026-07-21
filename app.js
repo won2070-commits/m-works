@@ -370,7 +370,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v32 · 2026-07-21';
+const APP_VERSION = 'v33 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -501,6 +501,12 @@ function openManual() {
       </tr>
     </table></div>
     <p style="margin-top:10px"><b>기억할 한 문장</b> — "지시서(①=③+④)는 앱의 것이니 두고, 나는 ② 세부작성 프롬프트에만 쓴다."</p>
+
+    <h4>9. 클로드 프로젝트의 항목별 프롬프트는 어디에?</h4>
+    <p>인공지능(클로드 등)에서 프로젝트를 만들 때 쓰던 항목별 프롬프트(dodo·big idea·title·설교형식·honor 같은 것)는 전부 <b>② 세부작성 프롬프트</b>에 넣으면 됩니다. 딱 그 용도로 만든 자리입니다.</p>
+    <p>넣는 법: ① 설정 → 🧩 설교작성·세부작성 프롬프트 → [＋ 새 세부작성 프롬프트] ② 이름 칸에 항목 이름(예: big idea) ③ 내용 칸에 프롬프트 전문 붙여넣기 ④ 적용 단계 지정.</p>
+    <p>적용 단계 예시 — big idea → <b>중심사상</b> / title(제목) → <b>부분 재작성·제목</b> / 설교형식 → <b>형식 변환</b> / 어디에 쓸지 애매하면 <b>보관만</b>으로 저장해 두었다가 나중에 지정.</p>
+    <p>이렇게 하면 클로드 프로젝트에서처럼, 해당 작업이 실행될 때마다 그 프롬프트가 자동으로 함께 적용됩니다.</p>
     </div>`);
 }
 const LOGO_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="M.Works 로고">
@@ -2191,7 +2197,8 @@ function renderPromptLibrary(m) {
         <button class="btn btn-primary btn-sm" id="pl-refsave">세부작성 프롬프트 저장</button>
         <button class="btn btn-ghost btn-sm" id="pl-refadd">＋ 새 세부작성 프롬프트</button>
       </div>
-      <p class="ai-note"><b>dodo 프롬프트</b>는 사용하시던 원문(『성경적 설교문 작성 프롬프트-dodo』)을 그대로 옮겨 심어 두었고, 설교문 작성에 이미 적용되고 있습니다. big idea·설교형식·honor는 클로드 프로젝트에서 복사해 붙여넣어 완성해 주세요.</p>
+      <p class="ai-note"><b>클로드 프로젝트의 항목별 프롬프트를 넣는 자리가 바로 여기입니다.</b> ① [＋ 새 세부작성 프롬프트] → ② 이름 칸에 항목 이름(예: big idea) → ③ 내용 칸에 프롬프트 전문 붙여넣기 → ④ 적용 단계 지정(예: big idea→중심사상, title→부분 재작성·제목, 설교형식→형식 변환. 애매하면 "보관만").<br>
+<b>dodo 프롬프트</b>는 원문 그대로 옮겨 심어 설교문 작성에 이미 적용 중이고, big idea·설교형식·honor는 내용만 채우면 됩니다.</p>
     </div>
 
     <div class="card">
