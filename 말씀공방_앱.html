@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=50">
+<link rel="apple-touch-icon" href="icon-192.png?v=51">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -759,6 +759,17 @@ body.resizing-editor #editor { pointer-events: none; }
 #ai-progress-tip b { display: block; font-size: .72rem; letter-spacing: .04em; opacity: .7; margin-bottom: 4px; }
 @keyframes tipIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
+/* 앱이 지금 무엇을 하고 있는지 알려 주는 줄 */
+#ai-progress-say {
+  font-size: .86rem; line-height: 1.55; color: var(--ink);
+  background: rgba(255,255,255,.66); border-radius: 10px;
+  padding: 9px 14px; width: 100%; text-align: left;
+  display: flex; gap: 8px; align-items: flex-start;
+  animation: sayIn .35s ease;
+}
+#ai-progress-say::before { content: "▸"; opacity: .55; flex-shrink: 0; }
+@keyframes sayIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ffffff'/><rect x='4' y='4' width='72' height='72' rx='18' fill='%23FFC000'/><text x='40' y='52' transform='scale(1 1.2)' font-size='44' font-weight='800' text-anchor='middle' fill='%23ffffff' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><rect x='48' y='42' width='44' height='44' rx='12' fill='%23FF5600' stroke='%23ffffff' stroke-width='3'/><text x='70' y='62.7' transform='scale(1 1.2)' font-size='26' font-weight='800' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>W</text></svg>">
 </head>
@@ -857,6 +868,7 @@ body.resizing-editor #editor { pointer-events: none; }
     <div id="ai-progress-label">AI가 작업하는 중…</div>
     <div id="ai-progress-sub" class="hidden"></div>
     <div id="ai-progress-stage">준비하는 중…</div>
+    <div id="ai-progress-say" class="hidden"></div>
     <div id="ai-progress-preview" class="hidden"></div>
     <div id="ai-progress-tip" class="hidden"></div>
     <button id="ai-cancel" class="btn btn-ghost">취소</button>
@@ -1861,8 +1873,12 @@ function showProgress(label) {
   progressEta = 0; progressStages = null;
   const pv = $('#ai-progress-preview');
   pv.textContent = ''; pv.classList.add('hidden');
+  const say = $('#ai-progress-say');
+  if (say) { say.textContent = ''; say.classList.add('hidden'); }
+  sayTimer = 0;
   const ring = $('#ai-ring-fg');
   ring.style.strokeDashoffset = RING_LEN;
+  showProgress._late = false;
   $('#ai-progress').classList.remove('hidden');
   startTips();
   const t0 = Date.now();
@@ -1880,12 +1896,99 @@ function showProgress(label) {
     $('#ai-ring-left').textContent = left > 5 ? '약 ' + fmtClock(left) + ' 남음' : '곧 완성됩니다';
     const si = Math.min(stages.length - 1, Math.floor(r * stages.length));
     $('#ai-progress-stage').textContent = stages[si];
+    // 예상 시간을 넘기면 솔직하게 알린다
+    if (r > 1.25 && !showProgress._late) { showProgress._late = true; narrate('생각보다 오래 걸리고 있습니다. 원고가 길거나 서버가 붐빌 때 그렇습니다 — 조금만 더 기다려 주세요.', true); }
   }, 1000);
 }
 function hideProgress() {
   $('#ai-progress').classList.add('hidden'); clearInterval(aiTimerInt);
   stopTips();
+  const say = $('#ai-progress-say');
+  if (say) { say.textContent = ''; say.classList.add('hidden'); }
   const pv = $('#ai-progress-preview'); pv.textContent = ''; pv.classList.add('hidden');
+}
+/* ═══ 앱이 지금 하는 일을 실제 신호에 맞춰 알려 준다 ═══ */
+const NARRATION = {
+  sermon: {
+    first: '구상이 끝났습니다. 이제 원고를 씁니다.',
+    marks: [
+      [/##\s*서론/, '서론을 쓰고 있습니다.'],
+      [/##\s*(본문|본론)/, '본문 설명으로 들어갔습니다.'],
+      [/##\s*(예화|논증)/, '예화를 놓을 자리를 잡았습니다.'],
+      [/##\s*(오늘의 )?적용/, '적용을 구체적으로 풀고 있습니다.'],
+      [/##\s*(복음|결론)/, '복음적 연결과 결론을 맺는 중입니다.'],
+      [/##\s*적용 찬양/, '어울리는 찬양을 고르고 있습니다.'],
+      [/##\s*기도문/, '마무리 기도문을 씁니다.'],
+      [/##\s*추천 도서/, '함께 읽을 책을 정리하고 있습니다.'],
+    ],
+  },
+  central: { first: '본문을 다 읽었습니다. 구조를 뜯어봅니다.',
+    marks: [[/"keywords"/, '반복되는 낱말과 핵심 동사를 찾았습니다.'], [/"structure"/, '본문의 구조를 나눴습니다.'],
+            [/"subject"/, '주요소 — 본문이 던지는 질문을 세웠습니다.'], [/"complement"/, '보조요소 — 본문의 답을 찾았습니다.'],
+            [/"homiletical"/, '오늘 이 회중을 향한 문장으로 옮기는 중입니다.'], [/"fcf"/, 'FCF — 본문이 겨냥하는 깨어짐을 짚습니다.']] },
+  recommend: { first: '성경 전체에서 후보를 추리기 시작했습니다.',
+    count: [/"ref"\s*:/g, n => n + '번째 본문 후보를 찾았습니다.'] },
+  gestures: { first: '원고를 다 읽었습니다. 몸짓이 필요한 자리를 봅니다.',
+    count: [/"gesture"\s*:/g, n => '제스처 ' + n + '곳째 적고 있습니다.'] },
+  stress: { first: '원고를 소리로 읽어 보는 중입니다.',
+    count: [/"word"\s*:/g, n => '힘줄 낱말 ' + n + '개째 골랐습니다.'] },
+  breaths: { first: '문장의 호흡을 재고 있습니다.',
+    count: [/"kind"\s*:/g, n => '쉼·멈춤 자리 ' + n + '곳째 표시합니다.'] },
+  titleSuggest: { first: '원고와 자료 서랍을 읽었습니다. 제목을 지어 봅니다.',
+    count: [/"title"\s*:/g, n => '제목 ' + n + '개째 만들었습니다.'] },
+  genius: { first: '원고를 정독했습니다. 냉정하게 보겠습니다.',
+    marks: [[/"verdict"/, '이 설교의 수준을 한 문장으로 진단합니다.'], [/"score"/, '다섯 가지 축으로 점수를 매기는 중입니다.'],
+            [/"brightest"/, '가장 빛나는 문장을 찾았습니다.'], [/"dullest"/, '힘이 빠지는 대목을 짚고 대안을 씁니다.'],
+            [/"geniusIdeas"/, '천재화 아이디어를 짓고 있습니다.'], [/"cutList"/, '잘라낼 것을 고릅니다.']] },
+  formatRecommend: { first: '원고의 지금 흐름을 진단하는 중입니다.',
+    marks: [[/"currentShape"/, '이 원고가 실제로 하고 있는 전개를 파악했습니다.'], [/"best"/, '가장 어울리는 형식을 골랐습니다.'],
+            [/"alternatives"/, '차선책도 함께 챙깁니다.']] },
+  feedback: { first: '원고를 처음부터 점검하기 시작했습니다.',
+    marks: [[/"oneIdea"/, '중심사상이 끝까지 유지되는지 봅니다.'], [/"theologyRisk"/, '신학적으로 오해될 곳을 살핍니다.'],
+            [/"delivery"/, '이제 전달을 점검합니다 — 입에서 걸리는 문장부터.'], [/"stress"/, '강조할 단어와 멈출 지점을 고릅니다.']] },
+  formatConvert: { first: '원고를 해체했습니다. 새 그릇에 담습니다.' },
+  weave: { first: '자료가 들어갈 자리를 찾았습니다.' },
+  partial: { first: '요청하신 부분을 다시 씁니다.' },
+  sermonReport: { first: '설교를 처음부터 끝까지 정독하고 있습니다.',
+    marks: [[/##\s*내용/, '내용을 진단합니다.'], [/##\s*전달/, '전달을 진단합니다.'], [/##\s*종합/, '종합 의견을 씁니다.']] },
+  fcf: { first: '본문 속 인간의 문제를 들여다봅니다.',
+    marks: [[/##\s*추천 FCF/, '가장 적합한 FCF를 고르는 중입니다.'], [/##\s*중심사상 연결/, '중심사상과 잇는 방법을 씁니다.']] },
+};
+let sayTimer = 0;
+function narrate(msg, force) {
+  const el = $('#ai-progress-say');
+  if (!el || !msg) return false;
+  const now = Date.now();
+  if (!force && now - sayTimer < 2500) return false;   // 너무 수다스럽지 않게
+  sayTimer = now;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+  return true;
+}
+/* 스트림을 보고 실제로 무슨 일이 일어났는지 읽어 낸다 */
+function makeNarrator(key) {
+  const cfg = NARRATION[key] || {};
+  let first = false, done = new Set(), lastN = 0, lastChars = 0;
+  return full => {
+    if (!first) { first = true; narrate(cfg.first || '내용이 나오기 시작했습니다.', true); return; }
+    if (cfg.marks) {
+      for (let i = 0; i < cfg.marks.length; i++) {
+        if (done.has(i)) continue;
+        if (cfg.marks[i][0].test(full)) {
+          if (narrate(cfg.marks[i][1])) done.add(i);   // 말한 것만 지운다
+          return;
+        }
+      }
+    }
+    if (cfg.count) {
+      const n = (full.match(cfg.count[0]) || []).length;
+      if (n > lastN && narrate(cfg.count[1](n))) lastN = n;
+      if (n > lastN) return;
+    }
+    const c = full.replace(/\s/g, '').length;
+    if (c - lastChars >= 700) { lastChars = c; narrate('지금까지 ' + c.toLocaleString() + '자 썼습니다.'); }
+  };
 }
 /* 기다리는 동안 보여줄 설교학 지식 — 『들리는 설교, 끌리는 설교』의 방법론에서 */
 const PREACH_TIPS = [
@@ -1974,9 +2077,10 @@ async function callAI(key, slots, opts = {}) {
   };
   aiAbort = new AbortController();
   if (!opts.silent) showProgress(opts.label || p.label + ' — AI 작업 중…');
+  const narrator = opts.silent ? null : makeNarrator(key);
   let full = '';
   try {
-    if (aiStatus.serverless) return await callDirect(body, opts);
+    if (aiStatus.serverless) return await callDirect(body, Object.assign({}, opts, { _narrator: narrator }));
     const headers = { 'content-type': 'application/json' };
     if (DB.settings.apiKey) headers['x-user-api-key'] = DB.settings.apiKey;
     const r = await fetch('/api/ai', { method: 'POST', headers, body: JSON.stringify(body), signal: aiAbort.signal });
@@ -1993,7 +2097,11 @@ async function callAI(key, slots, opts = {}) {
         const line = part.split('\n').find(l => l.startsWith('data:'));
         if (!line) continue;
         let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
-        if (ev.delta) { full += ev.delta; if (opts.onDelta) opts.onDelta(ev.delta, full); }
+        if (ev.delta) {
+          full += ev.delta;
+          if (narrator) narrator(full);
+          if (opts.onDelta) opts.onDelta(ev.delta, full);
+        }
         if (ev.error) throw new Error(ev.error);
         if (ev.done && ev.text) full = ev.text;
       }
@@ -2054,6 +2162,7 @@ async function callDirect(body, opts) {
       let ev; try { ev = JSON.parse(data); } catch { continue; }
       if (ev.type === 'content_block_delta' && ev.delta && ev.delta.text) {
         full += ev.delta.text;
+        if (opts._narrator) opts._narrator(full);
         if (opts.onDelta) opts.onDelta(ev.delta.text, full);
       }
       if (ev.type === 'error') throw new Error((ev.error && ev.error.message) || 'AI 스트림 오류');
@@ -2122,7 +2231,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v50 · 2026-07-21';
+const APP_VERSION = 'v51 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
