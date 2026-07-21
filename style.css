@@ -497,6 +497,30 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* 진행 링 — 경과·남은 시간 */
+.ai-ring { position: relative; width: 132px; height: 132px; }
+.ai-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ai-ring circle { fill: none; stroke-width: 9; stroke-linecap: round; }
+.ring-bg { stroke: rgba(0,0,0,.10); }
+.ring-fg {
+  stroke: var(--fin);
+  stroke-dasharray: 326.7; stroke-dashoffset: 326.7;
+  transition: stroke-dashoffset .9s linear;
+}
+.ai-ring-mid {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+}
+#ai-progress-timer {
+  font-size: 1.5rem; font-weight: 700; font-family: var(--mono);
+  letter-spacing: -0.02em; color: var(--ink); opacity: 1;
+}
+#ai-ring-left { font-size: .64rem; font-family: var(--mono); color: var(--ink); opacity: .7; letter-spacing: .02em; }
+#ai-progress-stage {
+  font-size: .78rem; color: var(--ink); opacity: .8;
+  background: rgba(255,255,255,.55); border-radius: var(--r-pill);
+  padding: 5px 14px; letter-spacing: -0.01em;
+}
 #ai-progress-label { color: var(--ink); font-weight: 600; letter-spacing: -0.02em; }
 #ai-progress-timer { font-size: .72rem; font-family: var(--mono); letter-spacing: .04em; color: var(--ink); opacity: .85; }
 #ai-progress .btn-ghost { background: transparent; border-color: rgba(0,0,0,.25); }

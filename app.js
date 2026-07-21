@@ -1,4 +1,4 @@
-/* 말씀공방 — 앱 로직
+/* M.WORKS — 앱 로직
  * 데이터: localStorage 'malsseum_v1' (프로젝트·설정·사용자 형식·프롬프트 오버라이드)
  * AI: /api/ai (SSE) — server.cjs 가 Anthropic API 또는 claude CLI로 중계
  */
@@ -19,7 +19,7 @@ function load() {
   } catch (e) {
     // 데이터 보호: 읽기에 실패해도 원본을 백업해 두고 시작한다 (덮어쓰기 방지)
     try { localStorage.setItem(LS_KEY + '_backup_' + Date.now(), raw); } catch {}
-    console.error('말씀공방 데이터 로드 실패 — 백업 후 새로 시작:', e);
+    console.error('M.WORKS 데이터 로드 실패 — 백업 후 새로 시작:', e);
     return normalize({});
   }
 }
@@ -200,19 +200,47 @@ function fillSlots(tpl, slots) {
 let aiAbort = null;
 let aiTimerInt = null;
 let progressSub = ''; // showProgress 직전에 setProgressSub()로 지정하는 한 줄 안내
+let progressEta = 0;  // 예상 소요(초) — setProgressEta()로 지정
+let progressStages = null;
 function setProgressSub(t) { progressSub = t; }
+function setProgressEta(sec, stages) { progressEta = sec; progressStages = stages || null; }
+const RING_LEN = 326.7;
+const DEFAULT_STAGES = ['본문과 자료를 읽는 중…', '생각을 정리하는 중…', '문장을 짓는 중…', '다듬어 마무리하는 중…'];
+function fmtClock(sec) {
+  const m = Math.floor(sec / 60), x = Math.round(sec % 60);
+  return m + ':' + String(x).padStart(2, '0');
+}
 function showProgress(label) {
+  clearInterval(aiTimerInt); // 앞선 타이머가 남아 겹치지 않게
   $('#ai-progress-label').textContent = label;
   const sub = $('#ai-progress-sub');
   if (progressSub) { sub.textContent = progressSub; sub.classList.remove('hidden'); }
   else { sub.textContent = ''; sub.classList.add('hidden'); }
   progressSub = '';
+  const eta = progressEta || 90;           // 지정이 없으면 90초로 가정
+  const stages = progressStages || DEFAULT_STAGES;
+  progressEta = 0; progressStages = null;
   const pv = $('#ai-progress-preview');
   pv.textContent = ''; pv.classList.add('hidden');
+  const ring = $('#ai-ring-fg');
+  ring.style.strokeDashoffset = RING_LEN;
   $('#ai-progress').classList.remove('hidden');
   const t0 = Date.now();
-  $('#ai-progress-timer').textContent = '0초';
-  aiTimerInt = setInterval(() => { $('#ai-progress-timer').textContent = Math.round((Date.now() - t0) / 1000) + '초'; }, 1000);
+  $('#ai-progress-timer').textContent = '0:00';
+  $('#ai-ring-left').textContent = '약 ' + fmtClock(eta) + ' 예상';
+  $('#ai-progress-stage').textContent = stages[0];
+  aiTimerInt = setInterval(() => {
+    const el = (Date.now() - t0) / 1000;
+    $('#ai-progress-timer').textContent = fmtClock(el);
+    // 진행률 — 예상 시간을 넘어가면 마지막 8%는 아주 천천히 채운다(끝난 척하지 않기)
+    let r = el / eta;
+    const pct = r < 1 ? r * 0.92 : Math.min(0.99, 0.92 + (1 - Math.exp(-(r - 1) * 0.7)) * 0.07);
+    ring.style.strokeDashoffset = RING_LEN * (1 - pct);
+    const left = eta - el;
+    $('#ai-ring-left').textContent = left > 5 ? '약 ' + fmtClock(left) + ' 남음' : '곧 완성됩니다';
+    const si = Math.min(stages.length - 1, Math.floor(r * stages.length));
+    $('#ai-progress-stage').textContent = stages[si];
+  }, 1000);
 }
 function hideProgress() {
   $('#ai-progress').classList.add('hidden'); clearInterval(aiTimerInt);
@@ -388,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v35 · 2026-07-21';
+const APP_VERSION = 'v36 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1043,6 +1071,7 @@ function bindCands(p) {
 async function autoFillPassage(p) {
   if (!aiConnected() || p.passage.text) return;
   try {
+    setProgressEta(35, ['본문을 불러오는 중…', '정리하는 중…']);
     const txt = await callAI('fetchPassage', { ref: p.passage.ref, translation: DB.settings.translation },
       { label: p.passage.ref + ' 전문을 입력하는 중…' });
     if (!p.passage.text) {
@@ -1060,6 +1089,7 @@ async function recommend(p, count, isMore) {
     ? '[이미 제시한 본문 — 반복 금지] ' + p.passage.candidates.map(c => c.ref).join(', ')
     : '';
   try {
+    setProgressEta(75, ['성경 전체를 훑는 중…', '회중의 필요와 맞춰 보는 중…', '후보를 좁히는 중…', '추천 이유를 쓰는 중…']);
     const r = await callAIJson('recommend', {
       count, topic: i.topic, reason: i.reason, needs: i.needs, audience: i.audience,
       purpose: i.purpose, season: i.season, avoid: i.avoid, exclude,
@@ -1175,6 +1205,7 @@ function bindCentral(p) {
   $$('#main [data-refine]').forEach(b => b.addEventListener('click', async () => {
     grab();
     try {
+      setProgressEta(50, ['요청을 읽는 중…', '문장을 다듬는 중…', '점검하는 중…']);
       const r = await callAIJson('centralRefine', {
         ref: p.passage.ref, subject: c.subject, complement: c.complement,
         exegetical: c.exegetical, theological: c.theological, homiletical: c.homiletical,
@@ -1198,6 +1229,7 @@ function bindCentral(p) {
 }
 async function analyzeCentral(p) {
   try {
+    setProgressEta(110, ['문학적 단위를 살피는 중…', '반복 단어와 구조를 찾는 중…', '주요소·보조요소를 캐는 중…', '중심사상 세 문장을 짓는 중…']);
     const r = await callAIJson('central', {
       ref: p.passage.ref, passageText: p.passage.text, topic: p.inputs.topic,
       needs: p.inputs.needs, audience: p.inputs.audience, purpose: p.inputs.purpose,
@@ -1366,6 +1398,10 @@ async function generateSermon(p, regen) {
   setProgressSub(matIds.length
     ? '🗂 자료 서랍의 자료 ' + matIds.length + '개가 함께 섞여 설교가 만들어지고 있습니다'
     : '📖 중심사상과 나의 작성 규칙을 따라 설교가 지어지고 있습니다');
+  setProgressEta(90 + targetMin * 11, [
+    '본문과 자료를 읽는 중…', '설교의 뼈대를 세우는 중…', '서론과 본론을 쓰는 중…',
+    '예화와 적용을 잇는 중…', '찬양·기도문·추천 도서를 붙이는 중…',
+  ]);
   try {
     const md = await callAI('sermon', {
       ref: p.passage.ref, passageText: p.passage.text,
@@ -1502,6 +1538,7 @@ async function weaveMaterials(p) {
   const ids = $$('#s3w-mats [data-wmat]:checked').map(cb => cb.dataset.wmat);
   if (!ids.length) return toast('녹일 자료를 먼저 체크해 주세요.');
   try {
+    setProgressEta(170, ['원고 흐름을 읽는 중…', '자료가 놓일 자리를 찾는 중…', '문장에 녹이는 중…', '앞뒤를 다듬는 중…']);
     const out = await callAI('weave', {
       homiletical: p.central.homiletical, draft: draftText(), materials: materialsSlot(ids),
     }, { label: '자료를 원고에 녹이는 중… (2~4분)' });
@@ -1533,6 +1570,7 @@ async function partialRewrite(p, request) {
     fullRequest = '이 설교의 중심내용과 궤를 같이하는, 실제 존재하는 책 2권을 "## 추천 도서" 섹션으로 작성하라. 각 책마다 ①제목·저자 ②추천 이유(2~3문장) ③책 내용 요약(각각 약 A4 두 페이지, 3,000자 안팎 — 핵심 논지·구조·이 설교와 만나는 지점 중심). 존재가 불확실한 책은 추천하지 말고, 세부 정보가 불확실하면 "(확인 필요)"를 붙여라. 원고 끝에 붙일 수 있는 형태로 섹션 전체만 출력하라.';
   }
   try {
+    setProgressEta(90, ['원고를 읽는 중…', '요청대로 새로 쓰는 중…', '다듬는 중…']);
     const out = await callAI('partial', {
       homiletical: p.central.homiletical, ref: p.passage.ref,
       needs: p.inputs.needs, purpose: p.inputs.purpose,
@@ -1583,6 +1621,7 @@ function renderStep4(m, p) {
     </div>`;
   $('#s4-fit').addEventListener('click', async () => {
     try {
+      setProgressEta(55, ['본문 성격을 보는 중…', '형식별로 견주는 중…', '점수를 매기는 중…']);
       const r = await callAIJson('formatFit', {
         ref: p.passage.ref, genre: p.passage.genre, homiletical: p.central.homiletical,
         audience: p.inputs.audience, purpose: p.inputs.purpose,
@@ -1631,6 +1670,7 @@ function renderFormGroups(p, fits) {
 async function convertFormat(p, key) {
   const f = allForms().find(f => f.key === key);
   try {
+    setProgressEta(190, ['원고를 해체하는 중…', '형식의 뼈대에 맞추는 중…', '문장을 다시 잇는 중…', '분량을 맞추며 마무리하는 중…']);
     const out = await callAI('formatConvert', {
       formatName: f.name, formatDesc: f.desc, formatSteps: f.steps,
       homiletical: p.central.homiletical, ref: p.passage.ref, draft: draftText(),
@@ -1836,6 +1876,7 @@ function renderBreaths(b) {
 }
 async function getBreaths(p) {
   try {
+    setProgressEta(80, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '정리하는 중…']);
     const r = await callAIJson('breaths', { draft: htmlToText(p.draft.html) }, { label: '낭독 호흡을 분석하는 중…' });
     p.rehearsal.breaths = r; touch(p); render();
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
@@ -1947,6 +1988,7 @@ function openMarkedScript(p, type) {
 }
 async function getFeedback(p) {
   try {
+    setProgressEta(200, ['내용을 점검하는 중…', '전달을 점검하는 중…', '문장을 하나씩 보는 중…', '피드백을 정리하는 중…']);
     const r = await callAIJson('feedback', {
       homiletical: p.central.homiletical, purpose: p.inputs.purpose, audience: p.inputs.audience,
       targetMin: p.inputs.targetMin, cpm: DB.settings.cpm, draft: draftText() || htmlToText(p.draft.html),
@@ -1956,6 +1998,7 @@ async function getFeedback(p) {
 }
 async function getGestures(p) {
   try {
+    setProgressEta(90, ['원고의 결을 읽는 중…', '몸짓이 필요한 자리를 찾는 중…', '동작을 적는 중…']);
     const r = await callAIJson('gestures', { draft: htmlToText(p.draft.html) }, { label: '제스처 지점을 찾는 중…' });
     p.rehearsal.gestures = r; touch(p); render();
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
@@ -1963,6 +2006,7 @@ async function getGestures(p) {
 /* FCF 찾기 (채플) */
 async function runFcf(p) {
   try {
+    setProgressEta(60, ['본문 속 인간의 문제를 찾는 중…', '오늘의 회중과 잇는 중…', '정리하는 중…']);
     const md = await callAI('fcf', {
       ref: p.passage.ref, passage: (p.passage.text || '').slice(0, 6000),
       needs: p.inputs.needs || p.inputs.purpose || '(입력 없음)',
@@ -2172,6 +2216,7 @@ function renderClinic(m) {
     const text = $('#cl-text').value.trim();
     if (text.length < 100) return toast('진단할 원고가 너무 짧습니다.');
     try {
+      setProgressEta(300, ['원고를 정독하는 중…', '내용을 진단하는 중…', '전달을 진단하는 중…', '리포트를 쓰는 중…']);
       const md = await callAI('sermonReport', {
         text: text.slice(0, 30000),
         source: $('#cl-yt').value.trim() || '직접 입력',
@@ -2365,6 +2410,7 @@ function openImport() {
     closeModal();
     let info = { title: '', ref: '', topic: '', purpose: '', homiletical: '' };
     if (aiConnected()) {
+      setProgressEta(60, ['원고를 읽는 중…', '제목·본문을 찾는 중…', '중심사상을 뽑는 중…']);
       try { info = await callAIJson('importAnalyze', { text: text.slice(0, 9000) }, { label: '가져온 원고를 분석하는 중…' }); }
       catch (e) { /* 분석 실패해도 가져오기는 진행 */ }
     }
@@ -2743,7 +2789,7 @@ function openSettings() {
     if (aiStatus.serverless) {
       el.innerHTML = DB.settings.apiKey
         ? '<b>연결됨</b> 단일 파일 모드 — 입력한 API 키로 Anthropic에 직접 호출합니다'
-        : `<b style="color:var(--red)">미연결</b> 단일 파일 모드입니다. 아래에 Anthropic API 키를 입력해 주세요 (console.anthropic.com에서 발급).<br>Claude 로그인(터미널) 방식은 <b>말씀공방 실행.command</b>로 열었을 때만 사용할 수 있습니다.`;
+        : `<b style="color:var(--red)">미연결</b> 단일 파일 모드입니다. 아래에 Anthropic API 키를 입력해 주세요 (console.anthropic.com에서 발급).<br>Claude 로그인(터미널) 방식은 <b>M.WORKS 실행.command</b>로 열었을 때만 사용할 수 있습니다.`;
       return;
     }
     if (aiStatus.envKey) el.innerHTML = '<b>연결됨</b> 서버 환경변수 API 키 사용 중';
