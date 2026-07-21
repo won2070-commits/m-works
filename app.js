@@ -637,7 +637,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v56 · 2026-07-21';
+const APP_VERSION = 'v57 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3962,19 +3962,42 @@ function paintAiButtons() {
 new MutationObserver(paintAiButtons).observe(document.body, { childList: true, subtree: true });
 
 /* ═══════════════════ 오른쪽 패널 도구: 성경 구절 · 유의어 ═══════════════════ */
+const BIBLE_BOOKS = '창세기 창 출애굽기 출 레위기 레 민수기 민 신명기 신 여호수아 수 사사기 삿 룻기 룻 사무엘상 삼상 사무엘하 삼하 열왕기상 왕상 열왕기하 왕하 역대상 대상 역대하 대하 에스라 스 느헤미야 느 에스더 에 욥기 욥 시편 시 잠언 잠 전도서 전 아가 아 이사야 사 예레미야 렘 예레미야애가 애 에스겔 겔 다니엘 단 호세아 호 요엘 욜 아모스 암 오바댜 옵 요나 욘 미가 미 나훔 나 하박국 합 스바냐 습 학개 학 스가랴 슥 말라기 말 마태복음 마 마가복음 막 누가복음 눅 요한복음 요 사도행전 행 로마서 롬 고린도전서 고전 고린도후서 고후 갈라디아서 갈 에베소서 엡 빌립보서 빌 골로새서 골 데살로니가전서 살전 데살로니가후서 살후 디모데전서 딤전 디모데후서 딤후 디도서 딛 빌레몬서 몬 히브리서 히 야고보서 약 베드로전서 벧전 베드로후서 벧후 요한일서 요일 요한이서 요이 요한삼서 요삼 유다서 유 요한계시록 계'.split(' ');
+/* 적은 것이 '구절'인지 '낱말'인지 스스로 가려낸다 */
+function looksLikeRef(q) {
+  const t = q.replace(/\s+/g, ' ').trim();
+  if (!/\d/.test(t)) return false;                       // 숫자가 없으면 낱말
+  if (/^\d+[:：]\d+/.test(t)) return true;               // 3:16
+  const head = t.split(/[\s\d]/)[0];
+  return BIBLE_BOOKS.includes(head);                     // 앞이 성경 이름이면 구절
+}
 (function bindCtxTools() {
-  const run = async (inputId, outId, promptKey, slotName, emptyMsg) => {
+  const run = async (inputId, outId, promptKey, slotName, emptyMsg, note) => {
     const q = $(inputId).value.trim();
     if (!q) return toast(emptyMsg);
     if (!aiConnected()) { toast('AI가 연결되지 않았습니다. 설정에서 연결해 주세요.'); return; }
     const out = $(outId);
-    out.textContent = '⏳ 불러오는 중…';
+    out.textContent = '⏳ 찾는 중…';
     try {
       const md = await callAI(promptKey, { [slotName]: q }, { silent: true });
-      out.innerHTML = mdToHtml(md);
+      out.innerHTML = (note || '') + mdToHtml(md);
+      const alt = out.querySelector('[data-alt]');
+      if (alt) alt.addEventListener('click', () => runVerse(alt.dataset.alt === 'ref'));
     } catch (e) { out.textContent = '⚠ ' + e.message; }
   };
-  const vGo = () => run('#tool-verse-in', '#tool-verse-out', 'verse', 'ref', '구절을 입력해 주세요. 예) 요 3:16');
+  /* 성경 칸 — 구절이면 본문, 낱말이면 관련 구절 찾기 (force로 바꿔 실행 가능) */
+  const runVerse = force => {
+    const q = $('#tool-verse-in').value.trim();
+    if (!q) return toast('구절이나 낱말을 넣어 주세요. 예) 요 3:16 · 사랑');
+    const asRef = force === undefined ? looksLikeRef(q) : force;
+    const note = asRef
+      ? '<div class="tool-mode">구절 보기 <button data-alt="word">낱말로 찾기</button></div>'
+      : '<div class="tool-mode">낱말로 찾기 <button data-alt="ref">구절 보기</button></div>';
+    return asRef
+      ? run('#tool-verse-in', '#tool-verse-out', 'verse', 'ref', '구절을 넣어 주세요.', note)
+      : run('#tool-verse-in', '#tool-verse-out', 'verseSearch', 'word', '낱말을 넣어 주세요.', note);
+  };
+  const vGo = () => runVerse();
   const sGo = () => run('#tool-syn-in', '#tool-syn-out', 'thesaurus', 'word', '단어를 입력해 주세요.');
   $('#tool-verse-go').addEventListener('click', vGo);
   $('#tool-syn-go').addEventListener('click', sGo);
