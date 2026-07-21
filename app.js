@@ -416,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v37 · 2026-07-21';
+const APP_VERSION = 'v38 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1244,7 +1244,7 @@ async function analyzeCentral(p) {
 const PARTIAL_REQUESTS = [
   '제목 5개 다시 제안', '제목을 더 목회적으로', '제목을 더 기억하기 쉽게',
   '서론 다시 작성', '서론을 더 짧게', '서론에 질문 추가',
-  '본론 설명 보강', '논리 점검', '본문 해설 보강',
+  '본론 설명 보강', '논리 점검', '본문 해설 보강', '배경 설명 추가 (역사·문화·지리)',
   '예화 추가 (가상 예시는 표시)', '예화 교체', '적용 구체화',
   '복음적 연결 점검', '결론 다시 작성', '결론 압축', '촌철살인의 한 문장 5개',
   '전체 분량 늘리기', '전체 분량 줄이기', '목표 시간에 맞게 조절',
@@ -1338,6 +1338,13 @@ function renderStep3(m, p) {
           <button class="btn btn-primary btn-sm" id="s3-weave" ${aiConnected() && DB.materials.length ? '' : 'disabled'}>선택한 자료를 원고에 녹이기 🤖</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">파일에서 자료 추가 (.txt .md)<input id="s3-matfile" type="file" accept=".txt,.md,.text" style="display:none"></label>
           <button class="btn btn-ghost btn-sm" id="s3-matgo">자료 서랍 열기</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>제목 정하기 <span class="opt" style="font-weight:400;font-size:.78rem">— 원고와 자료 서랍의 잡지 구절을 함께 읽고, 아홉 가지 기법으로 제안합니다</span></h3>
+        <div class="btn-row" style="margin-top:0">
+          <button class="btn btn-primary" id="s3-title" ${aiConnected() ? '' : 'disabled'}>🎯 제목 10개 추천받기 🤖</button>
+          <span style="font-size:.76rem;opacity:.8">마음에 드는 제목을 고르면 원고 제목이 바로 바뀝니다</span>
         </div>
       </div>
       <div class="card">
@@ -1511,6 +1518,8 @@ function bindEditor(p) {
   if (matGo) matGo.addEventListener('click', () => { curView = 'materials'; render(); });
   const snapBtn = $('#s3-snap');
   if (snapBtn) snapBtn.addEventListener('click', () => { syncEditor(); snapshot(p, '수동 저장'); render(); toast('버전을 저장했습니다.'); });
+  const titleBtn = $('#s3-title');
+  if (titleBtn) titleBtn.addEventListener('click', () => suggestTitles(p));
   const regenBtn = $('#s3-regen');
   if (regenBtn) regenBtn.addEventListener('click', () => {
     if (confirm('원고 전체를 다시 생성할까요? 현재 원고는 버전으로 보관됩니다.')) generateSermon(p, true);
@@ -1562,10 +1571,66 @@ async function weaveMaterials(p) {
     });
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 6000); }
 }
+/* 제목 추천 — 원고 + 자료 서랍(잡지 구절)을 읽고 아홉 기법으로 */
+async function suggestTitles(p) {
+  syncEditor();
+  try {
+    setProgressEta(85, ['원고를 읽는 중…', '자료 서랍의 구절을 훑는 중…', '기법별로 제목을 짓는 중…', '가장 좋은 것을 고르는 중…']);
+    const r = await callAIJson('titleSuggest', {
+      ref: p.passage.ref, homiletical: p.central.homiletical,
+      purpose: p.inputs.purpose, audience: p.inputs.audience,
+      draft: htmlToText(p.draft.html).slice(0, 12000),
+      materials: materialsSlot(null),
+    }, { label: '듣고 싶어지는 제목을 짓는 중…' });
+    const list = (r.titles || []).filter(t => t && t.title);
+    if (!list.length) { toast('제목을 만들지 못했습니다. 다시 시도해 주세요.'); return; }
+    const body = modal('제목 추천 — ' + esc(p.passage.ref), `
+      ${r.best ? `<div class="rec-best" style="margin-bottom:14px">
+        <div class="rec-name">첫손 — ${esc(r.best)}</div>
+        ${r.bestWhy ? `<p>${esc(r.bestWhy)}</p>` : ''}
+        ${r.subtitle ? `<div class="meta"><b>부제 제안</b> ${esc(r.subtitle)}</div>` : ''}
+      </div>` : ''}
+      <div id="tt-list">
+        ${list.map((t, i) => `
+          <div class="fb-item" style="background:var(--surface-soft);display:flex;gap:10px;align-items:flex-start">
+            <div style="flex:1">
+              <div style="font-size:1rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:3px">${esc(t.title)}</div>
+              <div style="font-size:.76rem;opacity:.85">${esc(t.technique || '')}${t.why ? ' — ' + esc(t.why) : ''}</div>
+              ${t.borrowed ? `<div style="font-size:.74rem;opacity:.75;margin-top:3px">📎 빌려온 구절: ${esc(t.borrowed)}</div>` : ''}
+            </div>
+            <button class="btn btn-primary btn-sm" data-tt="${i}" style="flex-shrink:0">이 제목 쓰기</button>
+          </div>`).join('')}
+      </div>
+      <div class="btn-row"><button class="btn btn-ghost btn-sm" id="tt-again" ${aiConnected() ? '' : 'disabled'}>다시 추천받기 🤖</button>
+      <button class="btn btn-ghost btn-sm" id="tt-copy">📋 전체 복사</button></div>`);
+    body.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => {
+      applyTitle(p, list[+b.dataset.tt].title);
+    }));
+    body.querySelector('#tt-again').addEventListener('click', () => { closeModal(); suggestTitles(p); });
+    body.querySelector('#tt-copy').addEventListener('click', () => {
+      navigator.clipboard.writeText(list.map(t => t.title + '  (' + (t.technique || '') + ')').join('\n'));
+      toast('제목 목록을 복사했습니다.');
+    });
+  } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
+function applyTitle(p, title) {
+  p.title = title;
+  const div = document.createElement('div');
+  div.innerHTML = p.draft.html;
+  const h1 = div.querySelector('h1');
+  if (h1) h1.textContent = title;
+  else div.insertAdjacentHTML('afterbegin', '<h1>' + esc(title) + '</h1>');
+  p.draft.html = div.innerHTML;
+  touch(p); closeModal(); render();
+  toast('제목을 "' + title + '"(으)로 바꿨습니다.');
+}
 async function partialRewrite(p, request) {
   syncEditor();
   // 짧은 메뉴 이름을 상세 지시로 확장
   let fullRequest = request;
+  if (request.includes('배경 설명')) {
+    fullRequest = '이 설교의 본문을 회중이 그림처럼 볼 수 있도록 [배경 설명] 단락을 써서 원고의 알맞은 자리(대개 본문 설명 앞이나 첫 대지 초입)에 넣을 수 있게 하라. 담을 것: ①역사적 배경 — 이 사건·기록이 놓인 시대와 정치·종교 상황 ②문화적 배경 — 당시 사람들의 관습·직업·신분·일상 중 이 본문을 이해하는 데 꼭 필요한 것 ③지리적 배경 — 장소의 실제 모습, 거리, 기후, 그곳에 서면 무엇이 보이는지 ④언어적 배경 — 핵심 단어의 원어 뉘앙스(확실한 것만) ⑤"그래서 원청중은 이 대목에서 무엇을 느꼈는가" 한 문장. 규칙: 설교 원고에 그대로 넣어 읽을 수 있는 구어체 문장으로 쓸 것(백과사전식 나열 금지). 분량은 1~2분(400~600자). 확실하지 않은 사실·연대·숫자는 쓰지 말거나 "(확인 필요)"를 붙일 것. 학자 이름과 출처를 지어내지 말 것.';
+  }
   if (request.includes('추천 도서')) {
     fullRequest = '이 설교의 중심내용과 궤를 같이하는, 실제 존재하는 책 2권을 "## 추천 도서" 섹션으로 작성하라. 각 책마다 ①제목·저자 ②추천 이유(2~3문장) ③책 내용 요약(각각 약 A4 두 페이지, 3,000자 안팎 — 핵심 논지·구조·이 설교와 만나는 지점 중심). 존재가 불확실한 책은 추천하지 말고, 세부 정보가 불확실하면 "(확인 필요)"를 붙여라. 원고 끝에 붙일 수 있는 형태로 섹션 전체만 출력하라.';
   }
