@@ -788,3 +788,11 @@ body.resizing-editor #editor { pointer-events: none; }
   font-family: var(--mono); font-size: .64rem; font-weight: 700;
   opacity: .42; letter-spacing: .04em;
 }
+
+/* 오른쪽 도구 제목 아이콘 */
+.tool-h { display: flex; align-items: center; gap: 8px; }
+.tool-ico {
+  width: 18px; height: 18px; flex-shrink: 0;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round; opacity: .85;
+}
