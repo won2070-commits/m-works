@@ -796,3 +796,13 @@ body.resizing-editor #editor { pointer-events: none; }
   fill: none; stroke: currentColor; stroke-width: 1.7;
   stroke-linecap: round; stroke-linejoin: round; opacity: .85;
 }
+
+/* AI 반짝임 아이콘 */
+.ai-spark {
+  width: 15px; height: 15px; flex-shrink: 0;
+  fill: currentColor; stroke: none;
+  vertical-align: -2px; margin: 0 2px;
+  opacity: .95;
+}
+.chip .ai-spark { width: 13px; height: 13px; }
+h3 .ai-spark, td .ai-spark, p .ai-spark { width: 14px; height: 14px; }

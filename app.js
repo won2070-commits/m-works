@@ -635,7 +635,9 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v55 · 2026-07-21';
+/* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
+const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
+const APP_VERSION = 'v56 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -701,7 +703,7 @@ function openManual() {
     <p>왼쪽의 <b>새 설교 시작</b>을 눌러 기본 정보(주제·대상·목적·날짜)를 적고 아래 순서로 진행합니다.</p>
     <p>① <b>본문 찾기</b> — 주제를 넣으면 AI가 본문 5곳을 추천합니다. 마음에 없으면 요청사항을 적고 추가 추천을 받으세요. 확정하면 본문 전문을 성경에서 복사해 붙여넣습니다.</p>
     <p>② <b>중심사상</b> — 본문을 로빈슨 12단계로 분석해 한 문장 중심사상을 세웁니다.</p>
-    <p>③ <b>설교 작성</b> — [🤖 설교문 작성]을 누르면 나의 작성 규칙·자료 서랍을 반영해 초안을 씁니다. 초안이 생기면 아래 <b>부분 재작성 메뉴</b>(제목 다시, 예화 추가, 추천 도서 추가 등)가 열립니다.</p>
+    <p>③ <b>설교 작성</b> — [${AI_ICO} 설교문 작성]을 누르면 나의 작성 규칙·자료 서랍을 반영해 초안을 씁니다. 초안이 생기면 아래 <b>부분 재작성 메뉴</b>(제목 다시, 예화 추가, 추천 도서 추가 등)가 열립니다.</p>
     <p>④ <b>형식 결정</b> — 연역·귀납·4페이지 등 9가지 형식으로 바꿔보고 마음에 들면 승인합니다.</p>
     <p>⑤ <b>연습하기</b> — 피드백·제스처·쉼멈춤 추천을 받고, <b>📄 원고에서 위치 보기</b>로 본문 속 표시(🖐①·∕·⏸)를 확인합니다. 표시를 누르면 옆에 설명이 나옵니다. 리허설 모드로 시간을 재세요.</p>
 
@@ -743,7 +745,7 @@ function openManual() {
       <tr>
         <td style="border:1px solid var(--hairline);padding:7px 8px"><b>① 설교작성<br>프롬프트</b></td>
         <td style="border:1px solid var(--hairline);padding:7px 8px">각 단계별 작업의 기본 지시서 전체. 기능마다 1장(본문 추천용·설교문 작성용…). 아래 ③+④ 두 부분의 묶음이며, 책의 방법론이 구현된 곳</td>
-        <td style="border:1px solid var(--hairline);padding:7px 8px">그 단계의 🤖 버튼을 누를 때마다</td>
+        <td style="border:1px solid var(--hairline);padding:7px 8px">그 단계의 ${AI_ICO} 버튼을 누를 때마다</td>
         <td style="border:1px solid var(--hairline);padding:7px 8px">원칙적으로 그대로 두기. 고치면 [기본값 복원] 가능</td>
       </tr>
       <tr>
@@ -1212,7 +1214,7 @@ function renderStep1(m, p) {
       </div>
       <div class="btn-row">
         <button class="btn btn-gold" id="s1-confirm">이 본문으로 확정</button>
-        <button class="btn btn-ghost" id="s1-check" ${aiConnected() ? '' : 'disabled'}>단락 확인 (문맥 점검) 🤖</button>
+        <button class="btn btn-ghost" id="s1-check" ${aiConnected() ? '' : 'disabled'}>단락 확인 (문맥 점검) ${AI_ICO}</button>
       </div>
       <div id="s1-check-result"></div>
     </div>` : '';
@@ -1222,7 +1224,7 @@ function renderStep1(m, p) {
       <h3>B. 본문 추천 받기</h3>
       <p style="font-size:.88rem;color:var(--ink-soft)">주제·상황·회중의 필요·목적을 분석해 성경 전체에서 후보 5개를 찾습니다. 기록 당시의 문제와 오늘의 필요가 본질에서 만나는 본문을 우선합니다.</p>
       <div class="btn-row">
-        <button class="btn btn-primary" id="s1-recommend" ${aiConnected() ? '' : 'disabled'}>본문 후보 5개 추천 🤖</button>
+        <button class="btn btn-primary" id="s1-recommend" ${aiConnected() ? '' : 'disabled'}>본문 후보 5개 추천 ${AI_ICO}</button>
         ${!aiConnected() ? '<span style="font-size:.8rem;color:var(--red)">AI 미연결 — 설정에서 연결해 주세요</span>' : ''}
       </div>
       <div id="s1-cands">${renderCands(p)}</div>
@@ -1232,7 +1234,7 @@ function renderStep1(m, p) {
         <div class="field"><label>추가 요청 사항 <span class="opt">(적으면 최우선으로 반영됩니다)</span></label>
           <textarea id="s1-extra" style="min-height:64px" placeholder="예: 지금까지 혼전, 순결에 대한 주제로 잘 알려지지 않았던 구절 가운데 몇 구절을 찾아줘">${esc(p.passage.extraReq || '')}</textarea></div>
         <div class="btn-row" style="margin-top:8px">
-          <button class="btn btn-primary" id="s1-more" ${aiConnected() ? '' : 'disabled'}>요청을 반영해 본문 2~3개 더 찾기 🤖</button>
+          <button class="btn btn-primary" id="s1-more" ${aiConnected() ? '' : 'disabled'}>요청을 반영해 본문 2~3개 더 찾기 ${AI_ICO}</button>
         </div>
       </div>` : ''}
     </div>` : '';
@@ -1373,8 +1375,8 @@ function renderStep2(m, p) {
       <h3>본문 분석 시작</h3>
       <p style="font-size:.88rem;color:var(--ink-soft)">문학적 단위 → 문맥 → 반복 단어 → 인물과 갈등 → 구조 → 원청중 메시지 → 주요소 → 보조요소 → 세 문장 → FCF 순서로 분석합니다.</p>
       ${p.passage.text ? '' : '<p class="ai-note">⚠ 본문 전문이 비어 있습니다. 1단계에서 붙여넣으면 분석이 더 정확해집니다.</p>'}
-      <div class="btn-row"><button class="btn btn-primary" id="s2-run" ${aiConnected() ? '' : 'disabled'}>중심사상 분석 🤖</button>
-      <button class="btn btn-ghost" id="s2-fcf" ${aiConnected() ? '' : 'disabled'}>FCF 찾기 🤖</button>
+      <div class="btn-row"><button class="btn btn-primary" id="s2-run" ${aiConnected() ? '' : 'disabled'}>중심사상 분석 ${AI_ICO}</button>
+      <button class="btn btn-ghost" id="s2-fcf" ${aiConnected() ? '' : 'disabled'}>FCF 찾기 ${AI_ICO}</button>
       <button class="btn btn-ghost" id="s2-manual">AI 없이 직접 작성</button>
       ${!aiConnected() ? '<span style="font-size:.8rem;color:var(--red)">AI 미연결 — 설정에서 연결해 주세요</span>' : ''}</div>
     </div>` : renderCentral(c)}
@@ -1423,7 +1425,7 @@ function renderCentral(c) {
       <div class="checks">${pills}</div>
       ${checks.comment ? `<p style="font-size:.82rem;color:var(--ink-soft);margin-top:6px">${esc(checks.comment)}</p>` : ''}
       <div class="chip-row" style="margin-top:14px">
-        ${['더 간결하게', '더 본문 중심으로', '더 설교적으로', '신학적으로 점검', '다른 중심사상 제안', '원래 의미와 오늘의 적용 비교'].map(r => `<button class="chip" data-refine="${r}">${r} 🤖</button>`).join('')}
+        ${['더 간결하게', '더 본문 중심으로', '더 설교적으로', '신학적으로 점검', '다른 중심사상 제안', '원래 의미와 오늘의 적용 비교'].map(r => `<button class="chip" data-refine="${r}">${r} ${AI_ICO}</button>`).join('')}
       </div>
       <div id="c-refine-note"></div>
     </div>
@@ -1437,8 +1439,8 @@ function renderCentral(c) {
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" id="s2-go3">중심사상 확정 → 3단계 설교 작성</button>
-        <button class="btn btn-ghost" id="s2-redo">처음부터 다시 분석 🤖</button>
-        <button class="btn btn-ghost" id="s2-fcf2">FCF 찾기 🤖</button>
+        <button class="btn btn-ghost" id="s2-redo">처음부터 다시 분석 ${AI_ICO}</button>
+        <button class="btn btn-ghost" id="s2-fcf2">FCF 찾기 ${AI_ICO}</button>
       </div>
       <p class="ai-note">AI 분석은 초안입니다. 설교자의 검토와 수정이 우선합니다 — 여기서 고친 문장이 이후 모든 단계에 쓰입니다.</p>
     </div>`;
@@ -1530,14 +1532,14 @@ function renderStep3(m, p) {
       </div>` : `<p class="ai-note">🗄 <b>자료 서랍</b>(왼쪽 메뉴)에 예화·통계·자료를 담아 두면, 설교문 곳곳에 인용해 활용합니다.</p>`}
       <p class="ai-note">📏 <b>나의 작성 규칙</b>이 자동 적용됩니다 — 적용 찬송 2곡(이유 포함)과 기도문이 원고 끝에 함께 작성됩니다.</p>
       <div class="btn-row">
-        <button class="btn btn-primary" id="s3-gen" ${aiConnected() ? '' : 'disabled'}>설교문 초안 작성 🤖 (2~4분 소요)</button>
+        <button class="btn btn-primary" id="s3-gen" ${aiConnected() ? '' : 'disabled'}>설교문 초안 작성 ${AI_ICO} (2~4분 소요)</button>
         <button class="btn btn-ghost" id="s3-blank">빈 원고에서 직접 쓰기</button>
       </div>
       <div id="s3-stream"></div>
     </div>` : ''}
     <div id="editor-area" class="${hasDraft ? '' : 'hidden'}">
       <div class="btn-row" style="margin:0 0 10px">
-        <button class="btn btn-ghost btn-sm" id="s3-backai" ${aiConnected() ? '' : 'disabled'}>🤖 AI 초안 작성으로 돌아가기</button>
+        <button class="btn btn-ghost btn-sm" id="s3-backai" ${aiConnected() ? '' : 'disabled'}>${AI_ICO} AI 초안 작성으로 돌아가기</button>
         <span style="font-size:.74rem;opacity:.75">지금 원고는 버전 기록에 안전하게 보관됩니다</span>
       </div>
       <div id="editor-wrap">
@@ -1590,7 +1592,7 @@ function renderStep3(m, p) {
           ${DB.materials.map(x => `<label><input type="checkbox" data-wmat="${x.id}"> <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span> ${esc(x.title)}</label>`).join('')}
         </div>` : '<p style="font-size:.84rem;opacity:.7">자료 서랍이 비어 있습니다. 아래 버튼이나 왼쪽 메뉴에서 자료를 넣어 두세요.</p>'}
         <div class="btn-row">
-          <button class="btn btn-primary btn-sm" id="s3-weave" ${aiConnected() && DB.materials.length ? '' : 'disabled'}>선택한 자료를 원고에 녹이기 🤖</button>
+          <button class="btn btn-primary btn-sm" id="s3-weave" ${aiConnected() && DB.materials.length ? '' : 'disabled'}>선택한 자료를 원고에 녹이기 ${AI_ICO}</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">파일에서 자료 추가 (.txt .md)<input id="s3-matfile" type="file" accept=".txt,.md,.text" style="display:none"></label>
           <button class="btn btn-ghost btn-sm" id="s3-matgo">자료 서랍 열기</button>
         </div>
@@ -1598,7 +1600,7 @@ function renderStep3(m, p) {
       <div class="card">
         <h3>제목 정하기 <span class="opt" style="font-weight:400;font-size:.78rem">— 원고와 자료 서랍의 잡지 구절을 함께 읽고, 아홉 가지 기법으로 제안합니다</span></h3>
         <div class="btn-row" style="margin-top:0">
-          <button class="btn btn-primary" id="s3-title" ${aiConnected() ? '' : 'disabled'}>🎯 제목 10개 추천받기 🤖</button>
+          <button class="btn btn-primary" id="s3-title" ${aiConnected() ? '' : 'disabled'}>🎯 제목 10개 추천받기 ${AI_ICO}</button>
           <span style="font-size:.76rem;opacity:.8">마음에 드는 제목을 고르면 원고 제목이 바로 바뀝니다</span>
         </div>
       </div>
@@ -1612,7 +1614,7 @@ function renderStep3(m, p) {
         <div id="s3-versions">${renderVersions(p)}</div>
         <div class="btn-row">
           <button class="btn btn-ghost btn-sm" id="s3-snap">현재 원고를 버전으로 저장</button>
-          <button class="btn btn-ghost btn-sm" id="s3-regen" ${aiConnected() ? '' : 'disabled'}>초안 전체 다시 생성 🤖</button>
+          <button class="btn btn-ghost btn-sm" id="s3-regen" ${aiConnected() ? '' : 'disabled'}>초안 전체 다시 생성 ${AI_ICO}</button>
           <button class="btn btn-primary" id="s3-go4" style="margin-left:auto">4단계 형식 결정 →</button>
         </div>
       </div>
@@ -2014,7 +2016,7 @@ async function suggestTitles(p) {
             <button class="btn btn-primary btn-sm" data-tt="${i}" style="flex-shrink:0">이 제목 쓰기</button>
           </div>`).join('')}
       </div>
-      <div class="btn-row"><button class="btn btn-ghost btn-sm" id="tt-again" ${aiConnected() ? '' : 'disabled'}>다시 추천받기 🤖</button>
+      <div class="btn-row"><button class="btn btn-ghost btn-sm" id="tt-again" ${aiConnected() ? '' : 'disabled'}>다시 추천받기 ${AI_ICO}</button>
       <button class="btn btn-ghost btn-sm" id="tt-copy">📋 전체 복사</button></div>`);
     body.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => {
       applyTitle(p, list[+b.dataset.tt].title);
@@ -2200,8 +2202,8 @@ function renderStep4(m, p) {
     <h1 class="step-title">형식 결정</h1>
     <p class="step-desc">형식은 그릇입니다. 같은 내용도 그릇이 바뀌면 다른 맛이 납니다. 기준은 세 축 — <b>본문의 성격 × 청중의 상태 × 설교의 목적</b>. 중심사상은 어떤 그릇에서도 보존됩니다.</p>
     <div class="btn-row" style="margin-bottom:16px">
-      <button class="btn btn-primary" id="s4-rec" ${aiConnected() ? '' : 'disabled'}>내 원고를 읽고 형식 추천받기 🤖</button>
-      <button class="btn btn-ghost" id="s4-fit" ${aiConnected() ? '' : 'disabled'}>형식별 적합도 점수 🤖</button>
+      <button class="btn btn-primary" id="s4-rec" ${aiConnected() ? '' : 'disabled'}>내 원고를 읽고 형식 추천받기 ${AI_ICO}</button>
+      <button class="btn btn-ghost" id="s4-fit" ${aiConnected() ? '' : 'disabled'}>형식별 적합도 점수 ${AI_ICO}</button>
       <button class="btn btn-ghost" id="s4-addform">＋ 사용자 정의 형식 만들기</button>
       ${p.form.selected ? `<span class="badge" style="margin-left:auto">현재 형식: ${esc(formName(p.form.selected))}</span>` : ''}
     </div>
@@ -2255,7 +2257,7 @@ function renderFormatRec(p, r) {
   const alts = (r.alternatives || []).filter(a => a && a.key);
   return `
     <div class="card rec-card">
-      <h3 style="margin-top:0">🤖 AI 형식 추천 <span class="opt" style="font-weight:400;font-size:.74rem">— 내 원고를 읽고 판단한 결과</span></h3>
+      <h3 style="margin-top:0">${AI_ICO} AI 형식 추천 <span class="opt" style="font-weight:400;font-size:.74rem">— 내 원고를 읽고 판단한 결과</span></h3>
       ${r.currentShape ? `<div class="fb-item" style="background:var(--surface-soft)"><b>지금 원고의 흐름</b>${esc(r.currentShape)}</div>` : ''}
       <div class="rec-best">
         <div class="rec-name">추천 — ${esc(formName(b.key) || b.key || '')}</div>
@@ -2263,8 +2265,8 @@ function renderFormatRec(p, r) {
         ${b.whatChanges ? `<div class="meta"><b>바뀌는 점</b> ${esc(b.whatChanges)}</div>` : ''}
         ${b.risk ? `<div class="meta"><b>주의</b> ${esc(b.risk)}</div>` : ''}
         ${b.key ? `<div class="btn-row" style="margin-top:10px">
-          <button class="btn btn-primary btn-sm" id="s4-rec-convert" data-key="${esc(b.key)}" ${aiConnected() ? '' : 'disabled'}>이 형식으로 변환 🤖</button>
-          <button class="btn btn-ghost btn-sm" id="s4-rec-again" ${aiConnected() ? '' : 'disabled'}>다시 추천받기 🤖</button>
+          <button class="btn btn-primary btn-sm" id="s4-rec-convert" data-key="${esc(b.key)}" ${aiConnected() ? '' : 'disabled'}>이 형식으로 변환 ${AI_ICO}</button>
+          <button class="btn btn-ghost btn-sm" id="s4-rec-again" ${aiConnected() ? '' : 'disabled'}>다시 추천받기 ${AI_ICO}</button>
         </div>` : ''}
       </div>
       ${alts.length ? `<div style="margin-top:12px"><b style="font-size:.86rem">차선책</b>
@@ -2289,7 +2291,7 @@ function renderFormGroups(p, fits) {
       <div class="meta"><b>주의</b> ${esc(f.cautions)}</div>
       ${fits[f.key] ? `<div class="meta"><b>AI 평가</b> ${esc(fits[f.key].reason)}</div>` : ''}
       <button class="btn btn-sm ${p.form.selected === f.key ? 'btn-ghost' : 'btn-primary'}" data-conv="${f.key}" ${aiConnected() ? '' : 'disabled'}>
-        ${p.form.selected === f.key ? '이 형식으로 다시 변환 🤖' : '이 형식으로 변환 🤖'}</button>
+        ${p.form.selected === f.key ? '이 형식으로 다시 변환 ${AI_ICO}' : '이 형식으로 변환 ${AI_ICO}'}</button>
     </div>`;
   return FORM_GROUPS.map(([g, title, sub, color]) => {
     const forms = allForms().filter(f => (f.custom ? 'custom' : (f.group || 'practical')) === g);
@@ -2417,12 +2419,12 @@ function renderStep5(m, p) {
     <div class="card">
       <h3>원고 점검</h3>
       <div class="btn-row" style="margin-top:0">
-        <button class="btn btn-primary" id="s5-feedback" ${aiConnected() ? '' : 'disabled'}>내용 + 전달 피드백 받기 🤖</button>
-        <button class="btn btn-ghost" id="s5-gestures" ${aiConnected() ? '' : 'disabled'}>제스처 5~10개 제안 🤖</button>
-        <button class="btn btn-ghost" id="s5-breaths" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 자리 찾기 🤖</button>
-        <button class="btn btn-ghost" id="s5-stress" ${aiConnected() ? '' : 'disabled'}>강약 자리 찾기 🤖</button>
+        <button class="btn btn-primary" id="s5-feedback" ${aiConnected() ? '' : 'disabled'}>내용 + 전달 피드백 받기 ${AI_ICO}</button>
+        <button class="btn btn-ghost" id="s5-gestures" ${aiConnected() ? '' : 'disabled'}>제스처 5~10개 제안 ${AI_ICO}</button>
+        <button class="btn btn-ghost" id="s5-breaths" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 자리 찾기 ${AI_ICO}</button>
+        <button class="btn btn-ghost" id="s5-stress" ${aiConnected() ? '' : 'disabled'}>강약 자리 찾기 ${AI_ICO}</button>
         <button class="btn btn-primary" id="s5-marked">📖 낭독 표시 원고 보기</button>
-        <button class="btn btn-ai" id="s5-genius" ${aiConnected() ? '' : 'disabled'}>💎 천재화 — 평가와 아이디어 🤖</button>
+        <button class="btn btn-ai" id="s5-genius" ${aiConnected() ? '' : 'disabled'}>💎 천재화 — 평가와 아이디어 ${AI_ICO}</button>
         <button class="btn btn-gold" id="s5-rehearse">🎤 리허설 모드 시작</button>
       </div>
       <div id="s5-br">${r.breaths ? renderBreaths(r.breaths) : ''}</div>
@@ -2922,7 +2924,7 @@ function renderGenius(p, g) {
       <div class="btn-row">
         <button class="btn btn-primary btn-sm" id="s5-gn-open">3단계로 가서 고치기</button>
         <button class="btn btn-ghost btn-sm" id="s5-gn-word">Word로 저장</button>
-        <button class="btn btn-ghost btn-sm" id="s5-gn-again" ${aiConnected() ? '' : 'disabled'}>다시 받기 🤖</button>
+        <button class="btn btn-ghost btn-sm" id="s5-gn-again" ${aiConnected() ? '' : 'disabled'}>다시 받기 ${AI_ICO}</button>
       </div>
     </div>`;
 }
@@ -3103,7 +3105,7 @@ function renderClinic(m) {
       <div class="chip-row">
         ${cur() && htmlToText(cur().draft.html).length > 100 ? `<button class="chip" id="cl-current">현재 프로젝트 원고 불러오기</button>` : ''}
         <label class="chip" style="cursor:pointer">📄 워드·텍스트 파일<input id="cl-file" type="file" accept=".docx,.txt,.md,.text" style="display:none"></label>
-        <label class="chip" style="cursor:pointer">📷 사진·PDF 원고 인식 🤖<input id="cl-img" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" style="display:none"></label>
+        <label class="chip" style="cursor:pointer">📷 사진·PDF 원고 인식 ${AI_ICO}<input id="cl-img" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" style="display:none"></label>
       </div>
       <div class="field" style="margin-top:8px"><label>▶ 유튜브 설교 영상 (자막으로 진단)</label>
         <div style="display:flex;gap:8px"><input id="cl-yt" placeholder="https://www.youtube.com/watch?v=..." style="flex:1">
@@ -3113,7 +3115,7 @@ function renderClinic(m) {
         <textarea id="cl-text" style="min-height:160px" placeholder="원고를 붙여넣거나, 위에서 가져오세요"></textarea></div>
       <div id="cl-status" style="font-size:.8rem;margin:6px 0"></div>
       <div class="btn-row">
-        <button class="btn btn-primary" id="cl-run" ${aiConnected() ? '' : 'disabled'}>피드백 리포트 작성 🤖 (2~5분)</button>
+        <button class="btn btn-primary" id="cl-run" ${aiConnected() ? '' : 'disabled'}>피드백 리포트 작성 ${AI_ICO} (2~5분)</button>
         ${!aiConnected() ? '<span style="font-size:.78rem;color:var(--magenta)">AI 미연결 — 설정에서 연결해 주세요</span>' : ''}
       </div>
     </div>
@@ -3418,7 +3420,7 @@ function openImport() {
       </div></div>
     <div class="btn-row">
       <button class="btn btn-primary" id="im-make">새 프로젝트로 만들기</button>
-      <button class="btn btn-ghost" id="im-feedback">🩺 이 원고로 피드백 리포트 🤖</button>
+      <button class="btn btn-ghost" id="im-feedback">🩺 이 원고로 피드백 리포트 ${AI_ICO}</button>
       <button class="btn btn-ghost btn-sm" id="im-copy">📋 원고 복사</button>
     </div>
     <p style="font-size:.74rem;opacity:.8;margin-top:6px">AI 연결 시 제목·본문·중심사상을 자동 추출합니다. 유튜브 영상 진단은 자막(음성 원고)을 기준으로 하며, 몸짓·표정 등 화면 요소는 다음 버전에서 지원합니다.</p>`);
@@ -3953,9 +3955,9 @@ function openPromptManager() {
 }
 
 /* ═══════════════════ AI 버튼 색 (Fin Orange) ═══════════════════ */
-// 🤖 표시가 있는 버튼 = AI 실행 버튼 → Fin Orange 악센트 자동 적용
+// 반짝임 아이콘이 있는 버튼 = AI 실행 버튼 → Fin Orange 악센트 자동 적용
 function paintAiButtons() {
-  $$('.btn').forEach(b => { if (b.textContent.includes('🤖')) b.classList.add('btn-ai'); });
+  $$('.btn').forEach(b => { if (b.querySelector('.ai-spark')) b.classList.add('btn-ai'); });
 }
 new MutationObserver(paintAiButtons).observe(document.body, { childList: true, subtree: true });
 
