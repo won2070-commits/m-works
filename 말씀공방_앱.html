@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=58">
+<link rel="apple-touch-icon" href="icon-192.png?v=59">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1844,7 +1844,7 @@ function normalize(d) {
   d.settings = Object.assign({
     translation: '개역개정', cpm: 300, model: 'sonnet', apiKey: '',
     style: '', targetMin: 25, editorSize: 17, editorHeight: 0, rules: defaultRules(),
-    fontScale: 100, fontFace: 'basic', appPass: '', theme: 'white', brightness: 100,
+    fontScale: 100, fontFace: 'basic', appPass: '', theme: 'white', brightness: 100, accessCode: '',
   }, d.settings || {});
   d.projects = Array.isArray(d.projects) ? d.projects : [];
   d.customForms = Array.isArray(d.customForms) ? d.customForms : [];
@@ -1898,7 +1898,8 @@ async function fetchStatus(refresh) {
   const userKey = DB.settings.apiKey;
   if (aiStatus.serverless) {
     if (userKey) { badge.textContent = '● AI 연결됨 (내 API 키 · 직접 호출)'; badge.className = 'ai-badge ok'; }
-    else { badge.textContent = '○ AI 미연결 — 설정에서 API 키 입력'; badge.className = 'ai-badge bad'; }
+    else if (DB.settings.accessCode) { badge.textContent = '● AI 연결됨 (사용 코드)'; badge.className = 'ai-badge ok'; }
+    else { badge.textContent = '○ AI 미연결 — 설정에서 연결'; badge.className = 'ai-badge bad'; }
   }
   else if (aiStatus.envKey) { badge.textContent = '● AI 연결됨 (서버 API 키)'; badge.className = 'ai-badge ok'; }
   else if (userKey) { badge.textContent = '● AI 연결됨 (내 API 키)'; badge.className = 'ai-badge ok'; }
@@ -1906,8 +1907,8 @@ async function fetchStatus(refresh) {
   else { badge.textContent = '○ AI 미연결 — 설정에서 연결'; badge.className = 'ai-badge bad'; }
 }
 function aiConnected() {
-  if (aiStatus.serverless) return !!DB.settings.apiKey;
-  return aiStatus.envKey || aiStatus.cli || !!DB.settings.apiKey;
+  if (aiStatus.serverless) return !!(DB.settings.apiKey || DB.settings.accessCode);
+  return aiStatus.envKey || aiStatus.cli || !!DB.settings.apiKey || !!DB.settings.accessCode;
 }
 
 function getPrompt(key) {
@@ -2283,17 +2284,23 @@ async function callAI(key, slots, opts = {}) {
 }
 /* 단일 파일 모드: 브라우저에서 Anthropic API를 직접 호출 (키는 이 브라우저에만 저장) */
 const MODEL_IDS = { sonnet: 'claude-sonnet-5', opus: 'claude-opus-4-8', haiku: 'claude-haiku-4-5-20251001' };
+const PROXY_URL = 'https://hansung-tsj.netlify.app/api/mworks-ai';
 async function callDirect(body, opts) {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+  // 내 API 키가 있으면 Anthropic 직접, 없고 사용 코드가 있으면 중계 서버로
+  const useProxy = !DB.settings.apiKey && DB.settings.accessCode;
+  const r = await fetch(useProxy ? PROXY_URL : 'https://api.anthropic.com/v1/messages', {
     method: 'POST',
     signal: aiAbort.signal,
-    headers: {
+    headers: useProxy ? {
+      'content-type': 'application/json',
+      'x-mworks-code': DB.settings.accessCode,
+    } : {
       'x-api-key': DB.settings.apiKey,
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify({
+    body: JSON.stringify(useProxy ? body : {
       model: MODEL_IDS[body.model] || body.model || 'claude-sonnet-5',
       max_tokens: body.maxTokens || 8000,
       system: body.system || undefined,
@@ -2302,9 +2309,11 @@ async function callDirect(body, opts) {
     }),
   });
   if (!r.ok) {
-    const t = await r.text().catch(() => '');
+    let msg = '';
+    try { msg = (await r.json()).message || ''; } catch { msg = await r.text().catch(() => ''); }
+    if (useProxy && msg) throw new Error(msg);
     if (r.status === 401) throw new Error('API 키가 올바르지 않습니다. 설정에서 확인해 주세요.');
-    throw new Error('AI 호출 오류 (' + r.status + '): ' + t.slice(0, 200));
+    throw new Error('AI 호출 오류 (' + r.status + '): ' + String(msg).slice(0, 200));
   }
   let full = '', buf = '';
   const reader = r.body.getReader();
@@ -2393,7 +2402,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v58 · 2026-07-22';
+const APP_VERSION = 'v59 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -2464,7 +2473,8 @@ function openManual() {
     <p>⑤ <b>연습하기</b> — 피드백·제스처·쉼멈춤 추천을 받고, <b>📄 원고에서 위치 보기</b>로 본문 속 표시(🖐①·∕·⏸)를 확인합니다. 표시를 누르면 옆에 설명이 나옵니다. 리허설 모드로 시간을 재세요.</p>
 
     <h4>2. AI 연결</h4>
-    <p>가장 쉬운 방법: 설정의 <b>간편 연결</b>에 교회 비밀번호를 넣고 [🔑 연결]을 누르면 끝입니다. 휴대폰·태블릿 등 어느 기기든 한 번만 하면 됩니다.</p>
+    <p><b>배포받은 분들</b>: 설정의 <b>사용 코드로 연결</b>에 발급받은 코드(MW-XXXX-XXXX)를 넣으면 끝입니다. API 키는 서버에만 있고, 월 사용 한도 안에서 쓸 수 있습니다.</p>
+    <p><b>관리자</b>: 설정 → 🛠 배포 관리에서 코드를 발급·중지하고 사용량을 봅니다. 교회 비밀번호를 아는 분은 <b>간편 연결</b>도 됩니다.</p>
     <p>그 외에 Anthropic API 키를 직접 넣거나, 이 컴퓨터에서 claude 로그인이 되어 있으면 자동 연결됩니다. 왼쪽 아래 배지에서 연결 상태를 확인하세요.</p>
     <p>설교문 생성은 처음 1~3분간 조용히 구상한 뒤 글이 흐르기 시작합니다.</p>
 
@@ -5532,6 +5542,14 @@ function openSettings() {
     <h4 style="margin-top:0">AI 연결</h4>
     <div id="set-ai-status" class="fb-item">확인 중…</div>
     <div class="field" style="margin-top:10px">
+      <label>사용 코드로 연결 <span class="opt">(배포받은 분들은 이 방법 — 발급받은 코드를 넣으세요)</span></label>
+      <div style="display:flex;gap:8px">
+        <input id="set-acode" value="${esc(s.accessCode || '')}" placeholder="MW-XXXX-XXXX" style="flex:1;font-family:var(--mono)" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="set-acode-go">연결</button>
+      </div>
+      <div class="hint">코드는 관리자(도원욱 목사)가 발급합니다. 월 사용 한도가 있으며, API 키는 서버에만 보관됩니다.</div>
+    </div>
+    <div class="field" style="margin-top:10px">
       <label>간편 연결 <span class="opt">(교회 비밀번호만 넣으면 연결 — 다른 기기에서 이 방법을 쓰세요)</span></label>
       <div style="display:flex;gap:8px">
         <input id="set-proxy-pass" type="password" placeholder="연결 비밀번호" style="flex:1" autocomplete="off">
@@ -5594,6 +5612,7 @@ function openSettings() {
       <button class="btn btn-ghost" id="set-rules">📏 나의 작성 규칙</button>
       <button class="btn btn-ghost" id="set-prompts">🧩 설교작성·세부작성 프롬프트</button>
       <button class="btn btn-ghost" id="set-manual">📖 사용 설명서</button>
+      <button class="btn btn-ghost" id="set-dist">🛠 배포 관리 (관리자)</button>
     </div>
     <p class="ai-note"><b>개인정보</b> — 모든 설교 데이터는 이 컴퓨터의 브라우저에만 저장됩니다. AI 호출 시 해당 프로젝트의 입력 내용만 Anthropic 서버로 전송됩니다.</p>`);
   const updStatus = () => {
@@ -5657,6 +5676,28 @@ function openSettings() {
   });
   body.querySelector('#set-rules').addEventListener('click', openRules);
   body.querySelector('#set-manual').addEventListener('click', () => { closeModal(); openManual(); });
+  body.querySelector('#set-dist').addEventListener('click', async () => {
+    const pw = prompt('관리자 비밀번호를 입력하세요');
+    if (pw === null) return;
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+    const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    openDistAdmin(hash);
+  });
+  body.querySelector('#set-acode-go').addEventListener('click', async () => {
+    const code = $('#set-acode').value.trim().toUpperCase();
+    if (!code) { s.accessCode = ''; save(true); fetchStatus(); toast('사용 코드를 지웠습니다.'); return; }
+    const btn = body.querySelector('#set-acode-go'); btn.disabled = true; btn.textContent = '확인 중…';
+    try {
+      const r = await (await fetch(ADMIN_URL, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'check', code }) })).json();
+      if (r.ok) {
+        s.accessCode = code; save(true); await fetchStatus(true);
+        toast('연결되었습니다' + (r.name ? ' — ' + r.name + '님' : '') + '. 이번 달 사용량 ' + (r.usedPct || 0) + '%');
+        closeModal();
+      } else toast(r.message || '코드를 확인하지 못했습니다.', 5000);
+    } catch (e) { toast('연결 실패: ' + e.message, 5000); }
+    btn.disabled = false; btn.textContent = '연결';
+  });
   body.querySelector('#set-pass').addEventListener('click', () => {
     if (s.appPass) {
       const cur = prompt('현재 비밀번호를 입력하세요');
@@ -5679,6 +5720,83 @@ function openSettings() {
   });
   body.querySelector('#set-prompts').addEventListener('click', () => { closeModal(); curView = 'prompts'; render(); });
 }
+/* ═══════════════════ 배포 관리 — 사용 코드 발급·사용량 (관리자) ═══════════════════ */
+const ADMIN_URL = 'https://hansung-tsj.netlify.app/.netlify/functions/mworks-admin';
+async function adminCall(hash, payload) {
+  const r = await fetch(ADMIN_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-auth': hash },
+    body: JSON.stringify(payload),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.message || j.error || ('오류 ' + r.status));
+  return j;
+}
+const fmtTok = n => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? Math.round(n / 1000) + 'k' : String(n);
+async function openDistAdmin(hash) {
+  let data;
+  try { data = await adminCall(hash, { action: 'list' }); }
+  catch (e) { toast(e.message, 5000); return; }
+  const body = modal('배포 관리 — 사용 코드', `
+    <div class="fb-item" style="background:${data.keyConfigured ? 'var(--mint)' : 'var(--pink)'}">
+      <b>서버 API 키</b>${data.keyConfigured
+        ? '등록되어 있습니다. 코드만 발급하면 바로 쓸 수 있습니다.'
+        : '아직 등록되지 않았습니다 — 코드를 발급해도 AI가 작동하지 않습니다. (Netlify 환경변수 MWORKS_ANTHROPIC_KEY)'}
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-primary btn-sm" id="da-new">＋ 새 코드 발급</button>
+      <span style="font-size:.76rem;opacity:.8">${data.month} 사용량 기준 · 한도는 월 가중 토큰(기본 3M ≈ 설교 40편)</span>
+    </div>
+    <div id="da-list" style="margin-top:10px">
+      ${data.rows.length ? data.rows.map(r => `
+        <div class="fb-item" style="background:var(--surface-soft);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:180px">
+            <b style="font-family:var(--mono)">${esc(r.code)}</b> ${esc(r.name || '')}
+            ${r.active ? '' : '<span class="badge" style="background:var(--pink)">중지됨</span>'}
+            <div style="font-size:.74rem;opacity:.8;margin-top:3px">
+              이번 달 ${fmtTok(r.usedTokens)} / ${fmtTok(r.limitTokens)} (${Math.min(100, Math.round(r.usedTokens / r.limitTokens * 100))}%) · ${r.calls}회
+              ${r.lastUsed ? ' · 마지막 ' + new Date(r.lastUsed).toLocaleDateString('ko-KR') : ''}
+            </div>
+            <div class="mini-progress" style="margin-top:4px"><i style="width:${Math.min(100, Math.round(r.usedTokens / r.limitTokens * 100))}%"></i></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" data-da-copy="${esc(r.code)}">복사</button>
+          <button class="btn btn-ghost btn-sm" data-da-toggle="${esc(r.code)}" data-active="${r.active ? 1 : 0}">${r.active ? '중지' : '재개'}</button>
+          <button class="btn btn-ghost btn-sm" data-da-limit="${esc(r.code)}">한도</button>
+          <button class="btn btn-danger btn-sm" data-da-del="${esc(r.code)}">삭제</button>
+        </div>`).join('') : '<p style="font-size:.86rem;opacity:.75">발급된 코드가 없습니다. [＋ 새 코드 발급]으로 시작하세요.</p>'}
+    </div>
+    <p class="ai-note" style="margin-top:12px">코드를 받은 사람은 <b>설정 → 사용 코드로 연결</b>에 넣기만 하면 됩니다. API 키는 서버 밖으로 나가지 않으며, 모든 사용 요금은 서버에 등록된 키(관리자)에게 청구됩니다.</p>`);
+  const reopen = () => openDistAdmin(hash);
+  body.querySelector('#da-new').addEventListener('click', async () => {
+    const name = prompt('누구에게 드리는 코드인가요? (이름 또는 메모)');
+    if (name === null) return;
+    try {
+      const r = await adminCall(hash, { action: 'create', name });
+      await navigator.clipboard.writeText(r.code).catch(() => {});
+      toast('발급 완료: ' + r.code + ' (복사됨)');
+      reopen();
+    } catch (e) { toast(e.message, 5000); }
+  });
+  body.querySelectorAll('[data-da-copy]').forEach(b => b.addEventListener('click', () => {
+    navigator.clipboard.writeText(b.dataset.daCopy); toast('복사했습니다: ' + b.dataset.daCopy);
+  }));
+  body.querySelectorAll('[data-da-toggle]').forEach(b => b.addEventListener('click', async () => {
+    try { await adminCall(hash, { action: 'toggle', code: b.dataset.daToggle, active: b.dataset.active !== '1' }); reopen(); }
+    catch (e) { toast(e.message, 5000); }
+  }));
+  body.querySelectorAll('[data-da-limit]').forEach(b => b.addEventListener('click', async () => {
+    const v = prompt('월 한도 (가중 토큰 수 — 예: 3000000 ≈ 설교 40편)', '3000000');
+    if (v === null) return;
+    try { await adminCall(hash, { action: 'limit', code: b.dataset.daLimit, limitTokens: +v }); reopen(); }
+    catch (e) { toast(e.message, 5000); }
+  }));
+  body.querySelectorAll('[data-da-del]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm(b.dataset.daDel + ' 코드를 삭제할까요? 그 사람은 더 이상 연결할 수 없습니다.')) return;
+    try { await adminCall(hash, { action: 'delete', code: b.dataset.daDel }); reopen(); }
+    catch (e) { toast(e.message, 5000); }
+  }));
+}
+
 /* 프롬프트 관리(관리자) */
 function openPromptManager() {
   const keys = Object.keys(window.MSGB_PROMPTS);
