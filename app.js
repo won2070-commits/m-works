@@ -188,7 +188,7 @@ function getPrompt(key) {
     .map(r => ({ name: r.name, target: r.target, text: (r.text || '').replace(/\(여기에 클로드 프로젝트[^)]*\)/g, '').trim() }))
     .filter(r => r.target === key && r.text);
   if (refs.length) {
-    system += '\n\n[설교자의 참조 프롬프트 — 아래 지침도 함께 따르라]\n' +
+    system += '\n\n[설교자의 세부 프롬프트 — 아래 지침도 함께 따르라]\n' +
       refs.map(r => `《${r.name}》\n${r.text}`).join('\n\n');
   }
   return { system, user: ov.user || base.user, maxTokens: base.maxTokens, label: base.label };
@@ -370,7 +370,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v29 · 2026-07-17';
+const APP_VERSION = 'v30 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -2125,7 +2125,7 @@ function renderClinic(m) {
 let clinicPrefill = '';
 /* ═══════════════════ 프롬프트 서재 ═══════════════════ */
 const PROMPT_TARGETS = [
-  ['', '참조만 (자동 적용 안 함)'], ['sermon', '설교문 작성'], ['central', '중심사상'],
+  ['', '보관만 (자동 적용 안 함)'], ['sermon', '설교문 작성'], ['central', '중심사상'],
   ['partial', '부분 재작성·제목'], ['formatConvert', '형식 변환'], ['sermonReport', '설교 피드백'],
   ['recommend', '본문 추천'], ['feedback', '연습하기 피드백'],
 ];
@@ -2134,10 +2134,10 @@ function renderPromptLibrary(m) {
   m.innerHTML = `
     <div class="step-head">PROMPT LIBRARY</div>
     <h1 class="step-title">프롬프트 서재</h1>
-    <p class="step-desc">이 앱을 움직이는 모든 프롬프트를 한 곳에 모았습니다. <b>내 참조 프롬프트</b>에 클로드 프로젝트(dodo·big idea·title·설교형식·honor 등)의 프롬프트를 넣어 두면, 지정한 단계에 자동으로 함께 적용됩니다. 설교자마다 자기 프롬프트를 다듬어 가는 자리입니다.</p>
+    <p class="step-desc"><b>프롬프트</b>는 각 단계별 작업에 필요한 기본 지시문이고, <b>세부 프롬프트</b>는 그 외에 추가로 얹는 지시문 — 각 단계 안에서 더 세부적인 필요를 규정합니다(예: 본문 추천 — 이런 것들을 참조하라 / 중심사상 — 이런 것을 하라). 세부 프롬프트에 적용 단계를 지정하면 그 단계의 프롬프트에 자동으로 결합됩니다.</p>
 
     <div class="card">
-      <h3>내 참조 프롬프트 <span class="opt" style="font-weight:400;font-size:.76rem">— 지정한 단계의 AI 지시에 자동 결합됩니다</span></h3>
+      <h3>세부 프롬프트 <span class="opt" style="font-weight:400;font-size:.76rem">— 각 단계 안의 세부 필요를 규정, 지정한 단계에 자동 결합됩니다</span></h3>
       <div id="pl-refs">
         ${DB.refPrompts.map((r, i) => `
           <div class="fb-item" style="background:var(--surface-soft)">
@@ -2152,14 +2152,14 @@ function renderPromptLibrary(m) {
           </div>`).join('')}
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary btn-sm" id="pl-refsave">참조 프롬프트 저장</button>
-        <button class="btn btn-ghost btn-sm" id="pl-refadd">＋ 새 참조 프롬프트</button>
+        <button class="btn btn-primary btn-sm" id="pl-refsave">세부 프롬프트 저장</button>
+        <button class="btn btn-ghost btn-sm" id="pl-refadd">＋ 새 세부 프롬프트</button>
       </div>
       <p class="ai-note"><b>dodo 프롬프트</b>는 사용하시던 원문(『성경적 설교문 작성 프롬프트-dodo』)을 그대로 옮겨 심어 두었고, 설교문 작성에 이미 적용되고 있습니다. big idea·설교형식·honor는 클로드 프로젝트에서 복사해 붙여넣어 완성해 주세요.</p>
     </div>
 
     <div class="card">
-      <h3>단계별 기본 프롬프트 <span class="opt" style="font-weight:400;font-size:.76rem">— 앱의 뼈대. 수정하면 이 브라우저에 저장됩니다</span></h3>
+      <h3>프롬프트 <span class="opt" style="font-weight:400;font-size:.76rem">— 각 단계별 작업에 필요한 기본 지시문. 수정하면 이 브라우저에 저장됩니다</span></h3>
       <div class="field"><label>프롬프트 선택</label>
         <select id="pl-key">${keys.map(k => `<option value="${k}">${esc(window.MSGB_PROMPTS[k].label)} ${DB.promptOverrides[k] ? '(수정됨)' : ''}</option>`).join('')}</select></div>
       <div class="field"><label>시스템 지시</label><textarea id="pl-system" style="min-height:110px;font-family:var(--mono);font-size:.74rem"></textarea></div>
@@ -2175,10 +2175,10 @@ function renderPromptLibrary(m) {
       if (n) { r.name = n.value.trim(); r.target = t.value; r.text = x.value; }
     });
   };
-  $('#pl-refsave').addEventListener('click', () => { grabRefs(); save(true); toast('참조 프롬프트를 저장했습니다. 지정한 단계에 적용됩니다.'); });
+  $('#pl-refsave').addEventListener('click', () => { grabRefs(); save(true); toast('세부 프롬프트를 저장했습니다. 지정한 단계에 적용됩니다.'); });
   $('#pl-refadd').addEventListener('click', () => { grabRefs(); DB.refPrompts.push({ id: uid(), name: '새 프롬프트', target: '', text: '' }); save(true); render(); });
   m.querySelectorAll('[data-rpdel]').forEach(b => b.addEventListener('click', () => {
-    if (confirm('이 참조 프롬프트를 삭제할까요?')) { grabRefs(); DB.refPrompts.splice(+b.dataset.rpdel, 1); save(true); render(); }
+    if (confirm('이 세부 프롬프트를 삭제할까요?')) { grabRefs(); DB.refPrompts.splice(+b.dataset.rpdel, 1); save(true); render(); }
   }));
   const loadK = () => {
     const k = $('#pl-key').value;
@@ -2656,7 +2656,7 @@ function openSettings() {
       <button class="btn btn-gold" id="set-save">설정 저장</button>
       <button class="btn btn-ghost" id="set-recheck">AI 연결 다시 확인</button>
       <button class="btn btn-ghost" id="set-rules">📏 나의 작성 규칙</button>
-      <button class="btn btn-ghost" id="set-prompts">프롬프트 관리 (고급)</button>
+      <button class="btn btn-ghost" id="set-prompts">🧩 프롬프트·세부 프롬프트</button>
       <button class="btn btn-ghost" id="set-manual">📖 사용 설명서</button>
     </div>
     <p class="ai-note"><b>개인정보</b> — 모든 설교 데이터는 이 컴퓨터의 브라우저에만 저장됩니다. AI 호출 시 해당 프로젝트의 입력 내용만 Anthropic 서버로 전송됩니다.</p>`);
@@ -2746,7 +2746,7 @@ function openSettings() {
 /* 프롬프트 관리(관리자) */
 function openPromptManager() {
   const keys = Object.keys(window.MSGB_PROMPTS);
-  const body = modal('프롬프트 관리', `
+  const body = modal('프롬프트', `
     <p style="font-size:.84rem;color:var(--ink-soft)">각 단계의 AI 지시문을 앱 재배포 없이 수정할 수 있습니다. 수정본은 이 브라우저에 저장되며, <b>기본값 복원</b>으로 언제든 되돌립니다. <code>{{슬롯}}</code> 표기는 앱이 자동으로 채우는 자리이므로 지우지 마세요.</p>
     <div class="field"><label>프롬프트 선택</label>
       <select id="pm-key">${keys.map(k => `<option value="${k}">${esc(window.MSGB_PROMPTS[k].label)} ${DB.promptOverrides[k] ? '(수정됨)' : ''}</option>`).join('')}</select></div>
