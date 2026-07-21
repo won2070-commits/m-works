@@ -480,8 +480,16 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 }
 .ai-progress-box {
   background: var(--lime); border-radius: var(--r-lg);
-  padding: 36px 52px; text-align: center;
+  padding: 32px 40px; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
+  max-width: 680px; width: 92%;
+}
+#ai-progress-sub { font-size: .84rem; color: var(--ink); opacity: .9; }
+#ai-progress-preview {
+  background: #ffffff; color: #111; text-align: left; width: 100%;
+  font-size: .95rem; line-height: 1.75; border-radius: 12px;
+  padding: 14px 16px; max-height: 42vh; overflow-y: auto; white-space: pre-wrap;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
 }
 .ai-spinner {
   width: 34px; height: 34px; border-radius: 50%;
@@ -589,3 +597,10 @@ body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea
 
 /* 화면 밝기 오버레이 */
 #bright-ov { position: fixed; inset: 0; pointer-events: none; z-index: 99999; background: transparent; }
+
+/* 오른쪽 패널 도구 */
+.tool-row { display: flex; gap: 6px; margin: 8px 0 4px; }
+.tool-row input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: 8px; font-size: .82rem; }
+.tool-out { font-size: .8rem; line-height: 1.65; background: var(--surface-soft); border-radius: 8px; padding: 9px 11px; margin-top: 5px; max-height: 300px; overflow-y: auto; }
+.tool-out:empty { display: none; }
+.tool-out p { margin: 0 0 6px; }

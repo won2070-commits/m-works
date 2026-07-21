@@ -570,6 +570,30 @@ const SERMON_FORMS = [
 
 // 브라우저 전역으로 노출
 if (typeof window !== 'undefined') {
+
+PROMPTS.verse = {
+  label: '도구 · 성경 구절 보기',
+  maxTokens: 2000,
+  system: '너는 성경 구절을 보여주는 도우미다. 개역개정 본문을 절 번호와 함께 제공하되, 한 글자라도 확신이 없는 절에는 "(확인 필요)"를 붙인다. 해설·설명은 붙이지 않는다. 한국어로만 답한다.',
+  user: `다음 구절을 보여 달라: {{ref}}
+
+형식:
+**{{ref}} (개역개정)**
+절 번호를 붙여 한 절씩 줄바꿈.
+마지막 줄: ※ 인용 전 성경에서 꼭 확인하세요.`,
+};
+PROMPTS.thesaurus = {
+  label: '도구 · 유의어 사전',
+  maxTokens: 1500,
+  system: '너는 한국어 유의어 사전이자 설교 문장 코치다. 군더더기 없이 간결하게 답한다.',
+  user: `단어: {{word}}
+
+다음 형식(마크다운)으로 답하라:
+**비슷한 말** — 5~8개, 각각 뉘앙스 차이를 괄호로 짧게
+**더 부드러운 표현** — 2~3개
+**더 강한 표현** — 2~3개
+**설교 문장 예** — 이 단어 대신 바꿔 쓴 자연스러운 예문 1개`,
+};
   window.MSGB_PROMPTS = PROMPTS;
   window.MSGB_BASE_SYSTEM = BASE_SYSTEM;
   window.MSGB_FORMS = SERMON_FORMS;

@@ -199,14 +199,32 @@ function fillSlots(tpl, slots) {
 
 let aiAbort = null;
 let aiTimerInt = null;
+let progressSub = ''; // showProgress 직전에 setProgressSub()로 지정하는 한 줄 안내
+function setProgressSub(t) { progressSub = t; }
 function showProgress(label) {
   $('#ai-progress-label').textContent = label;
+  const sub = $('#ai-progress-sub');
+  if (progressSub) { sub.textContent = progressSub; sub.classList.remove('hidden'); }
+  else { sub.textContent = ''; sub.classList.add('hidden'); }
+  progressSub = '';
+  const pv = $('#ai-progress-preview');
+  pv.textContent = ''; pv.classList.add('hidden');
   $('#ai-progress').classList.remove('hidden');
   const t0 = Date.now();
   $('#ai-progress-timer').textContent = '0초';
   aiTimerInt = setInterval(() => { $('#ai-progress-timer').textContent = Math.round((Date.now() - t0) / 1000) + '초'; }, 1000);
 }
-function hideProgress() { $('#ai-progress').classList.add('hidden'); clearInterval(aiTimerInt); }
+function hideProgress() {
+  $('#ai-progress').classList.add('hidden'); clearInterval(aiTimerInt);
+  const pv = $('#ai-progress-preview'); pv.textContent = ''; pv.classList.add('hidden');
+}
+function progressPreview(fullText) { // 생성 중 원고가 흘러가는 선명한 미리보기
+  const pv = $('#ai-progress-preview');
+  if (!pv) return;
+  pv.classList.remove('hidden');
+  pv.textContent = fullText.length > 2600 ? '…' + fullText.slice(-2600) : fullText;
+  pv.scrollTop = pv.scrollHeight;
+}
 $('#ai-cancel').addEventListener('click', () => { if (aiAbort) aiAbort.abort(); });
 
 async function callAI(key, slots, opts = {}) {
@@ -370,7 +388,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v33 · 2026-07-21';
+const APP_VERSION = 'v34 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1332,6 +1350,9 @@ async function generateSermon(p, regen) {
   if (streamEl) streamEl.innerHTML = '<div class="stream-preview" id="s3-preview">…</div>';
   hideProgressSafeLabel();
   const matIds = $$('#s3-mats [data-mat]:checked').map(cb => cb.dataset.mat);
+  setProgressSub(matIds.length
+    ? '🗂 자료 서랍의 자료 ' + matIds.length + '개가 함께 섞여 설교가 만들어지고 있습니다'
+    : '📖 중심사상과 나의 작성 규칙을 따라 설교가 지어지고 있습니다');
   try {
     const md = await callAI('sermon', {
       ref: p.passage.ref, passageText: p.passage.text,
@@ -1346,6 +1367,7 @@ async function generateSermon(p, regen) {
     }, {
       label: targetMin + '분 설교문을 짓는 중… (처음 1~3분은 구상 시간이라 조용합니다)',
       onDelta: (d, full) => {
+        progressPreview(full);
         const pv = $('#s3-preview');
         if (pv) { pv.textContent = full.slice(-1500); pv.scrollTop = pv.scrollHeight; }
       },
@@ -2823,6 +2845,27 @@ function paintAiButtons() {
   $$('.btn').forEach(b => { if (b.textContent.includes('🤖')) b.classList.add('btn-ai'); });
 }
 new MutationObserver(paintAiButtons).observe(document.body, { childList: true, subtree: true });
+
+/* ═══════════════════ 오른쪽 패널 도구: 성경 구절 · 유의어 ═══════════════════ */
+(function bindCtxTools() {
+  const run = async (inputId, outId, promptKey, slotName, emptyMsg) => {
+    const q = $(inputId).value.trim();
+    if (!q) return toast(emptyMsg);
+    if (!aiConnected()) { toast('AI가 연결되지 않았습니다. 설정에서 연결해 주세요.'); return; }
+    const out = $(outId);
+    out.textContent = '⏳ 불러오는 중…';
+    try {
+      const md = await callAI(promptKey, { [slotName]: q }, { silent: true });
+      out.innerHTML = mdToHtml(md);
+    } catch (e) { out.textContent = '⚠ ' + e.message; }
+  };
+  const vGo = () => run('#tool-verse-in', '#tool-verse-out', 'verse', 'ref', '구절을 입력해 주세요. 예) 요 3:16');
+  const sGo = () => run('#tool-syn-in', '#tool-syn-out', 'thesaurus', 'word', '단어를 입력해 주세요.');
+  $('#tool-verse-go').addEventListener('click', vGo);
+  $('#tool-syn-go').addEventListener('click', sGo);
+  $('#tool-verse-in').addEventListener('keydown', e => { if (e.key === 'Enter') vGo(); });
+  $('#tool-syn-in').addEventListener('keydown', e => { if (e.key === 'Enter') sGo(); });
+})();
 
 /* ═══════════════════ 시작 ═══════════════════ */
 window.gotoStep = gotoStep; // 잠금 카드의 onclick 용
