@@ -131,7 +131,7 @@ function normProject(p) {
   p.central = Object.assign({ done: false }, p.central || {});
   p.draft = Object.assign({ html: '', versions: [], memo: '' }, p.draft || {});
   p.form = Object.assign({ selected: '', fits: {}, pending: null, rec: null }, p.form || {});
-  p.rehearsal = Object.assign({ feedback: null, gestures: null, runs: [], checklist: {}, selfEval: '' }, p.rehearsal || {});
+  p.rehearsal = Object.assign({ feedback: null, gestures: null, genius: null, runs: [], checklist: {}, selfEval: '' }, p.rehearsal || {});
   p.step = p.step || 0;
   p.favorite = !!p.favorite;
   return p;
@@ -416,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v39 · 2026-07-21';
+const APP_VERSION = 'v40 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1984,11 +1984,13 @@ function renderStep5(m, p) {
         <button class="btn btn-primary" id="s5-feedback" ${aiConnected() ? '' : 'disabled'}>내용 + 전달 피드백 받기 🤖</button>
         <button class="btn btn-ghost" id="s5-gestures" ${aiConnected() ? '' : 'disabled'}>제스처 5~10개 제안 🤖</button>
         <button class="btn btn-ghost" id="s5-breaths" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 자리 찾기 🤖</button>
+        <button class="btn btn-ai" id="s5-genius" ${aiConnected() ? '' : 'disabled'}>💎 천재화 — 평가와 아이디어 🤖</button>
         <button class="btn btn-gold" id="s5-rehearse">🎤 리허설 모드 시작</button>
       </div>
       <div id="s5-br">${r.breaths ? renderBreaths(r.breaths) : ''}</div>
       <div id="s5-fb">${r.feedback ? renderFeedback(r.feedback, p) : ''}</div>
       <div id="s5-gs">${r.gestures ? renderGestures(r.gestures) : ''}</div>
+      <div id="s5-gn">${r.genius ? renderGenius(p, r.genius) : ''}</div>
     </div>
     <div class="card">
       <h3>연습 기록</h3>
@@ -2008,6 +2010,13 @@ function renderStep5(m, p) {
   $('#s5-feedback').addEventListener('click', () => getFeedback(p));
   $('#s5-gestures').addEventListener('click', () => getGestures(p));
   $('#s5-breaths').addEventListener('click', () => getBreaths(p));
+  $('#s5-genius').addEventListener('click', () => getGenius(p));
+  const gnApply = $('#s5-gn-open');
+  if (gnApply) gnApply.addEventListener('click', () => { syncEditor(); gotoStep(3); });
+  const gnAgain = $('#s5-gn-again');
+  if (gnAgain) gnAgain.addEventListener('click', () => getGenius(p));
+  const gnWord = $('#s5-gn-word');
+  if (gnWord) gnWord.addEventListener('click', () => saveGeniusDoc(p));
   const brIns = $('#s5-br-insert');
   if (brIns) brIns.addEventListener('click', () => insertBreathMarks(p));
   const gsView = $('#s5-gs-view');
@@ -2195,6 +2204,98 @@ async function getFeedback(p) {
     }, { label: '원고를 점검하는 중…' });
     p.rehearsal.feedback = r; touch(p); render();
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
+/* 천재화 — 평가와 아이디어 */
+async function getGenius(p) {
+  syncEditor();
+  try {
+    setProgressEta(230, ['원고를 정독하는 중…', '가장 빛나는 문장을 찾는 중…', '힘 빠지는 대목을 짚는 중…', '천재화 아이디어를 짓는 중…', '정리하는 중…']);
+    const r = await callAIJson('genius', {
+      ref: p.passage.ref, homiletical: p.central.homiletical,
+      purpose: p.inputs.purpose, audience: p.inputs.audience, targetMin: p.inputs.targetMin,
+      draft: htmlToText(p.draft.html).slice(0, 16000),
+    }, { label: '천재 설교 코치의 눈으로 원고를 다시 보는 중…' });
+    p.rehearsal.genius = r; p.rehearsal.geniusAt = Date.now();
+    touch(p); render();
+    const box = $('#s5-gn');
+    if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
+function renderGenius(p, g) {
+  const sc = g.score || {};
+  const bars = [['한 가지 선명함', sc.clarity], ['기억에 남음', sc.memorability], ['긴장과 흡인력', sc.tension], ['구체성', sc.concreteness], ['복음적 깊이', sc.gospel]]
+    .filter(([, v]) => typeof v === 'number');
+  const dull = (g.dullest || []).filter(x => x && x.sentence);
+  const ideas = (g.geniusIdeas || []).filter(x => x && x.idea);
+  const cuts = (g.cutList || []).filter(Boolean);
+  return `
+    <div class="genius-box">
+      <h4 style="margin-top:18px">💎 천재화 — 평가와 아이디어</h4>
+      ${g.verdict ? `<div class="gn-verdict">${esc(g.verdict)}</div>` : ''}
+      ${bars.length ? `<div class="gn-scores">
+        ${bars.map(([k, v]) => `<div class="gn-score"><span class="gn-k">${k}</span>
+          <span class="gn-bar"><i style="width:${v * 10}%"></i></span><span class="gn-v">${v}</span></div>`).join('')}
+      </div>${sc.comment ? `<p class="gn-note">${esc(sc.comment)}</p>` : ''}` : ''}
+
+      ${g.brightest && g.brightest.sentence ? `
+      <div class="gn-card gn-bright">
+        <div class="gn-title">✨ 가장 빛나는 문장</div>
+        <blockquote>"${esc(g.brightest.sentence)}"</blockquote>
+        ${g.brightest.why ? `<p>${esc(g.brightest.why)}</p>` : ''}
+        ${g.brightest.howToBuildAround ? `<div class="meta"><b>이 문장을 축으로 재구성하려면</b> ${esc(g.brightest.howToBuildAround)}</div>` : ''}
+      </div>` : ''}
+
+      ${dull.length ? `<div class="gn-card">
+        <div class="gn-title">🪫 힘이 빠지는 문장</div>
+        ${dull.map(d => `<div class="gn-dull">
+          <blockquote>"${esc(d.sentence)}"</blockquote>
+          ${d.problem ? `<div class="meta"><b>문제</b> ${esc(d.problem)}</div>` : ''}
+          ${d.rewrite ? `<div class="meta gn-fix"><b>이렇게</b> ${esc(d.rewrite)}</div>` : ''}
+        </div>`).join('')}
+      </div>` : ''}
+
+      ${ideas.length ? `<div class="gn-card gn-ideas">
+        <div class="gn-title">💡 천재화 아이디어</div>
+        ${ideas.map((x, i) => `<div class="gn-idea">
+          <b>${i + 1}. ${esc(x.idea)}</b>
+          ${x.how ? `<p>${esc(x.how)}</p>` : ''}
+          ${x.effect ? `<div class="meta"><b>기대 효과</b> ${esc(x.effect)}</div>` : ''}
+        </div>`).join('')}
+      </div>` : ''}
+
+      ${g.oneImage ? `<div class="gn-card"><div class="gn-title">🖼 하나의 이미지로 관통하기</div><p>${esc(g.oneImage)}</p></div>` : ''}
+      ${(g.openingLine || g.closingLine) ? `<div class="gn-card">
+        <div class="gn-title">🎬 첫 문장 · 마지막 문장</div>
+        ${g.openingLine ? `<div class="meta"><b>첫 문장</b> ${esc(g.openingLine)}</div>` : ''}
+        ${g.closingLine ? `<div class="meta"><b>마지막 문장</b> ${esc(g.closingLine)}</div>` : ''}
+      </div>` : ''}
+      ${cuts.length ? `<div class="gn-card"><div class="gn-title">✂️ 잘라낼 것</div>
+        ${cuts.map(c => `<div class="meta">${esc(c)}</div>`).join('')}</div>` : ''}
+      ${g.riskCheck ? `<div class="ai-note"><b>놓치고 있는 것</b> — ${esc(g.riskCheck)}</div>` : ''}
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" id="s5-gn-open">3단계로 가서 고치기</button>
+        <button class="btn btn-ghost btn-sm" id="s5-gn-word">Word로 저장</button>
+        <button class="btn btn-ghost btn-sm" id="s5-gn-again" ${aiConnected() ? '' : 'disabled'}>다시 받기 🤖</button>
+      </div>
+    </div>`;
+}
+function saveGeniusDoc(p) {
+  const g = p.rehearsal.genius; if (!g) return;
+  const esc2 = t => esc(t || '');
+  const parts = [`<h1>천재화 리포트 — ${esc2(p.title || p.inputs.topic)}</h1>`,
+    `<p><b>${esc2(p.passage.ref)}</b> · ${today()}</p>`,
+    g.verdict ? `<p><b>진단</b> ${esc2(g.verdict)}</p>` : ''];
+  if (g.brightest) parts.push(`<h2>가장 빛나는 문장</h2><p>"${esc2(g.brightest.sentence)}"</p><p>${esc2(g.brightest.why)}</p><p>${esc2(g.brightest.howToBuildAround)}</p>`);
+  (g.dullest || []).forEach(d => parts.push(`<h3>고칠 문장</h3><p>"${esc2(d.sentence)}"</p><p>문제: ${esc2(d.problem)}</p><p>대안: ${esc2(d.rewrite)}</p>`));
+  (g.geniusIdeas || []).forEach((x, i) => parts.push(`<h3>아이디어 ${i + 1} — ${esc2(x.idea)}</h3><p>${esc2(x.how)}</p><p>기대 효과: ${esc2(x.effect)}</p>`));
+  if (g.oneImage) parts.push(`<h2>하나의 이미지</h2><p>${esc2(g.oneImage)}</p>`);
+  if (g.openingLine) parts.push(`<p><b>첫 문장</b> ${esc2(g.openingLine)}</p>`);
+  if (g.closingLine) parts.push(`<p><b>마지막 문장</b> ${esc2(g.closingLine)}</p>`);
+  if ((g.cutList || []).length) parts.push(`<h2>잘라낼 것</h2>` + g.cutList.map(c => `<p>${esc2(c)}</p>`).join(''));
+  if (g.riskCheck) parts.push(`<h2>놓치고 있는 것</h2><p>${esc2(g.riskCheck)}</p>`);
+  const doc = `<html xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>${wordCss()}</style></head><body>${parts.join('')}</body></html>`;
+  saveFileAs('천재화리포트_' + (p.title || p.inputs.topic || '설교').replace(/[\\/:*?"<>|]/g, '') + '.doc', doc, 'application/msword', 'Word 문서');
 }
 async function getGestures(p) {
   try {
