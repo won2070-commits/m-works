@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=44">
+<link rel="apple-touch-icon" href="icon-192.png?v=45">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -731,6 +731,23 @@ body.resizing-editor #editor { pointer-events: none; }
 .st-lv { font-size: .72rem; font-weight: 700; background: var(--lime); border-radius: var(--r-pill); padding: 1px 8px; }
 .st-item.st-strong .st-lv { background: var(--gold); }
 .st-why { grid-column: 1 / -1; font-size: .78rem; opacity: .82; line-height: 1.5; }
+
+/* 적용 찬양 목록 */
+.song-list { display: flex; flex-direction: column; gap: 6px; }
+.song-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: var(--surface-soft); border: 1px solid transparent; border-radius: var(--r-md);
+  padding: 11px 14px; font: inherit; color: var(--ink); cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.song-item:hover { border-color: var(--ink); background: #fff; }
+.song-badge { font-size: .7rem; font-weight: 700; border-radius: var(--r-pill); padding: 2px 9px; flex-shrink: 0; }
+.sb-hymn { background: var(--mint); }
+.sb-gospel { background: var(--cream); }
+.song-title { font-weight: 600; font-size: .92rem; }
+.song-artist { font-size: .78rem; opacity: .75; }
+.song-go { margin-left: auto; font-size: .76rem; opacity: .7; white-space: nowrap; }
+.song-link { text-decoration: none; display: inline-flex; align-items: center; }
 
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ffffff'/><rect x='4' y='4' width='72' height='72' rx='18' fill='%23FFC000'/><text x='40' y='52' transform='scale(1 1.2)' font-size='44' font-weight='800' text-anchor='middle' fill='%23ffffff' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><rect x='48' y='42' width='44' height='44' rx='12' fill='%23FF5600' stroke='%23ffffff' stroke-width='3'/><text x='70' y='62.7' transform='scale(1 1.2)' font-size='26' font-weight='800' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>W</text></svg>">
@@ -2027,7 +2044,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v44 · 2026-07-21';
+const APP_VERSION = 'v45 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -2964,6 +2981,7 @@ function renderStep3(m, p) {
         <h3>부분 재작성 <span class="opt" style="font-weight:400;font-size:.78rem">— 누르면 그 부분이 원고 안 제자리에 바로 반영됩니다. 되돌리기도 한 번에 됩니다.</span></h3>
         <div class="chip-row">${PARTIAL_REQUESTS.map(r => `<button class="chip" data-partial="${esc(r)}">${esc(r)}</button>`).join('')}</div>
       </div>
+      ${renderSongCard(p)}
       <div class="card">
         <h3>버전 기록</h3>
         <div id="s3-versions">${renderVersions(p)}</div>
@@ -2991,6 +3009,99 @@ function renderStep3(m, p) {
     touch(p); render();
   });
   if (hasDraft || $('#editor')) bindEditor(p);
+}
+/* ═══════════════════ 적용 찬양 — 악보·듣기 찾아보기 ═══════════════════ */
+/* 원고의 "적용 찬양/찬송" 단락에서 곡을 뽑아낸다 */
+function extractSongs(html) {
+  const text = htmlToText(html);
+  const lines = text.split('\n');
+  const start = lines.findIndex(l => /^#*\s*적용\s*(찬양|찬송)/.test(l.trim()));
+  if (start < 0) return [];
+  const songs = [];
+  let group = '';
+  for (let i = start + 1; i < lines.length; i++) {
+    const raw = lines[i].trim();
+    if (!raw) continue;
+    if (/^#/.test(raw) || /^(기도문|추천 도서|결론)/.test(raw)) break;   // 다음 섹션이면 중단
+    if (/^\**\s*(가스펠|CCM|복음성가)\s*\**$/.test(raw)) { group = '가스펠'; continue; }
+    if (/^\**\s*(찬송가|새찬송가)/.test(raw)) { group = '찬송가'; continue; }
+    // "1. 제목 — 부른이 — 이유" / "1. 79. 제목 — 이유" / (마크다운 목록이면) "79. 제목 — 이유"
+    let body = raw.replace(/^[-·*]\s*/, '');
+    const nums = [];
+    while (nums.length < 2) {                       // 앞머리 숫자를 최대 둘까지 걷어낸다
+      const m = body.match(/^([0-9]{1,3})\s*장?\s*[.)．]\s*/);
+      if (!m) break;
+      nums.push(m[1]); body = body.slice(m[0].length);
+    }
+    if (!body || body.length < 2) continue;
+    // 숫자가 둘이면 뒤엣것이 찬송가 번호, 하나뿐이면 찬송가 항목일 때만 번호로 본다
+    let num = nums.length >= 2 ? nums[1] : (nums.length === 1 && group === '찬송가' ? nums[0] : '');
+    const parts = body.split(/\s*[—–-]\s*/).map(x => x.trim()).filter(Boolean);
+    const title = (parts[0] || '').replace(/^["'‘“]|["'’”]$/g, '').trim();
+    if (!title || title.length > 40) continue;
+    songs.push({
+      group: group || (num ? '찬송가' : '가스펠'),
+      num, title,
+      artist: (group === '찬송가' || num) ? '' : (parts[1] || ''),
+      reason: parts.slice((group === '찬송가' || num) ? 1 : 2).join(' — '),
+    });
+    if (songs.length >= 8) break;
+  }
+  return songs;
+}
+function songSearchUrls(s) {
+  const isHymn = s.group === '찬송가' || s.num;
+  const base = isHymn ? ('새찬송가 ' + (s.num ? s.num + '장 ' : '') + s.title) : (s.title + (s.artist ? ' ' + s.artist : ''));
+  const q = t => encodeURIComponent(t);
+  return {
+    score: 'https://www.google.com/search?tbm=isch&q=' + q(base + ' 악보'),
+    listen: 'https://www.youtube.com/results?search_query=' + q(base + (isHymn ? ' 찬송' : '')),
+    play:   'https://www.youtube.com/results?search_query=' + q(base + ' 반주'),
+    lyrics: 'https://www.google.com/search?q=' + q(base + ' 가사'),
+  };
+}
+function renderSongCard(p) {
+  const songs = extractSongs(p.draft.html);
+  if (!songs.length) return '';
+  return `
+    <div class="card">
+      <h3>🎵 적용 찬양 <span class="opt" style="font-weight:400;font-size:.78rem">— 곡을 누르면 악보·듣기·가사를 찾아봅니다</span></h3>
+      <div class="song-list">
+        ${songs.map((s, i) => `
+          <button class="song-item" data-song="${i}">
+            <span class="song-badge ${s.group === '찬송가' ? 'sb-hymn' : 'sb-gospel'}">${esc(s.group)}</span>
+            <span class="song-title">${s.num ? esc(s.num) + '장 ' : ''}${esc(s.title)}</span>
+            ${s.artist ? `<span class="song-artist">${esc(s.artist)}</span>` : ''}
+            <span class="song-go">악보 보기 →</span>
+          </button>`).join('')}
+      </div>
+      <p class="ai-note" style="margin-top:10px">악보와 음원은 저작권이 있어 앱 안에 담지 않고, 누르면 검색 결과로 연결합니다. 예배에 사용할 때는 저작권(CCLI 등) 규정을 확인해 주세요.</p>
+    </div>`;
+}
+function bindSongCard(p) {
+  const songs = extractSongs(p.draft.html);
+  $$('#main [data-song]').forEach(b => b.addEventListener('click', () => {
+    const s = songs[+b.dataset.song]; if (!s) return;
+    const u = songSearchUrls(s);
+    const isHymn = s.group === '찬송가' || s.num;
+    const body = modal('🎵 ' + (s.num ? s.num + '장 ' : '') + s.title, `
+      <div class="fb-item" style="background:${isHymn ? 'var(--mint)' : 'var(--cream)'}">
+        <b>${esc(s.group)}</b>${s.artist ? ' · ' + esc(s.artist) : ''}
+        ${s.reason ? `<div style="font-size:.84rem;margin-top:6px">${esc(s.reason)}</div>` : ''}
+      </div>
+      <p style="font-size:.82rem;color:var(--ink-soft);margin:12px 0 8px">아래를 누르면 새 창에서 열립니다.</p>
+      <div class="chip-row">
+        <a class="chip song-link" href="${u.score}" target="_blank" rel="noopener">🎼 악보 찾기</a>
+        <a class="chip song-link" href="${u.listen}" target="_blank" rel="noopener">▶ 찬양 듣기</a>
+        <a class="chip song-link" href="${u.play}" target="_blank" rel="noopener">🎹 반주 영상</a>
+        <a class="chip song-link" href="${u.lyrics}" target="_blank" rel="noopener">📄 가사 보기</a>
+      </div>
+      <div class="btn-row"><button class="btn btn-ghost btn-sm" id="song-copy">📋 곡 이름 복사</button></div>`);
+    body.querySelector('#song-copy').addEventListener('click', () => {
+      navigator.clipboard.writeText((s.num ? s.num + '장 ' : '') + s.title + (s.artist ? ' / ' + s.artist : ''));
+      toast('복사했습니다.');
+    });
+  }));
 }
 function renderVersions(p) {
   if (!p.draft.versions.length) return '<p style="font-size:.85rem;color:var(--ink-soft)">저장된 버전이 없습니다.</p>';
@@ -3169,6 +3280,7 @@ function bindEditor(p) {
   if (matGo) matGo.addEventListener('click', () => { curView = 'materials'; render(); });
   const snapBtn = $('#s3-snap');
   if (snapBtn) snapBtn.addEventListener('click', () => { syncEditor(); snapshot(p, '수동 저장'); render(); toast('버전을 저장했습니다.'); });
+  bindSongCard(p);
   const titleBtn = $('#s3-title');
   if (titleBtn) titleBtn.addEventListener('click', () => suggestTitles(p));
   const regenBtn = $('#s3-regen');
@@ -3649,6 +3761,7 @@ function renderStep5(m, p) {
       <div id="s5-gs">${r.gestures ? renderGestures(r.gestures) : ''}</div>
       <div id="s5-gn">${r.genius ? renderGenius(p, r.genius) : ''}</div>
     </div>
+    ${renderSongCard(p)}
     <div class="card">
       <h3>연습 기록</h3>
       ${r.runs.length ? `<table class="proj-table" style="margin-bottom:12px"><tr><th>회차</th><th>날짜</th><th>실측 시간</th><th>목표 대비</th></tr>
@@ -3668,6 +3781,7 @@ function renderStep5(m, p) {
   $('#s5-gestures').addEventListener('click', () => getGestures(p));
   $('#s5-breaths').addEventListener('click', () => getBreaths(p));
   $('#s5-genius').addEventListener('click', () => getGenius(p));
+  bindSongCard(p);
   $('#s5-stress').addEventListener('click', () => getStress(p));
   $('#s5-marked').addEventListener('click', () => openMarkedScript(p, 'all'));
   const stIns = $('#s5-st-insert');

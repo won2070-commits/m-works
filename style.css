@@ -718,3 +718,20 @@ body.resizing-editor #editor { pointer-events: none; }
 .st-lv { font-size: .72rem; font-weight: 700; background: var(--lime); border-radius: var(--r-pill); padding: 1px 8px; }
 .st-item.st-strong .st-lv { background: var(--gold); }
 .st-why { grid-column: 1 / -1; font-size: .78rem; opacity: .82; line-height: 1.5; }
+
+/* 적용 찬양 목록 */
+.song-list { display: flex; flex-direction: column; gap: 6px; }
+.song-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: var(--surface-soft); border: 1px solid transparent; border-radius: var(--r-md);
+  padding: 11px 14px; font: inherit; color: var(--ink); cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.song-item:hover { border-color: var(--ink); background: #fff; }
+.song-badge { font-size: .7rem; font-weight: 700; border-radius: var(--r-pill); padding: 2px 9px; flex-shrink: 0; }
+.sb-hymn { background: var(--mint); }
+.sb-gospel { background: var(--cream); }
+.song-title { font-weight: 600; font-size: .92rem; }
+.song-artist { font-size: .78rem; opacity: .75; }
+.song-go { margin-left: auto; font-size: .76rem; opacity: .7; white-space: nowrap; }
+.song-link { text-decoration: none; display: inline-flex; align-items: center; }
