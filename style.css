@@ -325,7 +325,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 #editor-toolbar button.on { background: var(--ink); color: #fff; }
 #editor-toolbar .sep { width: 1px; background: var(--hairline); margin: 4px 6px; }
 #editor {
-  min-height: 480px; padding: 40px 48px; outline: none;
+  min-height: 480px; padding: 40px 48px; outline: none; overflow-y: auto;
   font-family: var(--sans); font-size: 1rem; font-weight: 400; line-height: 1.8; color: var(--ink);
   letter-spacing: -0.01em; max-width: 100%;
 }
@@ -683,3 +683,16 @@ body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea
 .g-art-cap b { font-size: .92rem; letter-spacing: -0.02em; }
 .g-art-sm .g-art-cap b { font-size: .84rem; }
 .g-art-cap span { font-size: .76rem; opacity: .78; line-height: 1.5; }
+
+/* 편집기 높이 조절 손잡이 */
+#editor-resize {
+  height: 16px; cursor: ns-resize; background: var(--surface-soft);
+  border-top: 1px solid var(--hairline-soft);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+#editor-resize:hover { background: var(--lime); }
+#editor-resize span { width: 46px; height: 4px; border-radius: 2px; background: rgba(0,0,0,.22); display: block; }
+body.resizing-editor { user-select: none; cursor: ns-resize; }
+body.resizing-editor #editor { pointer-events: none; }
+@media print { #editor-resize { display: none !important; } }

@@ -112,7 +112,7 @@ function dodoPromptText() {
 function normalize(d) {
   d.settings = Object.assign({
     translation: '개역개정', cpm: 300, model: 'sonnet', apiKey: '',
-    style: '', targetMin: 25, editorSize: 17, rules: defaultRules(),
+    style: '', targetMin: 25, editorSize: 17, editorHeight: 0, rules: defaultRules(),
     fontScale: 100, fontFace: 'basic', appPass: '', theme: 'white', brightness: 100,
   }, d.settings || {});
   d.projects = Array.isArray(d.projects) ? d.projects : [];
@@ -416,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v41 · 2026-07-21';
+const APP_VERSION = 'v42 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1245,7 +1245,7 @@ const PARTIAL_REQUESTS = [
   '제목 5개 다시 제안', '제목을 더 목회적으로', '제목을 더 기억하기 쉽게',
   '서론 다시 작성', '서론을 더 짧게', '서론에 질문 추가',
   '본론 설명 보강', '논리 점검', '본문 해설 보강', '배경 설명 추가 (역사·문화·지리)',
-  '예화 추가 (가상 예시는 표시)', '예화 교체', '적용 구체화',
+  '예화 추가 (가상 예시는 표시)', '예화 교체', '유머 추가 (품위 있게)', '적용 구체화',
   '복음적 연결 점검', '결론 다시 작성', '결론 압축', '촌철살인의 한 문장 5개',
   '전체 분량 늘리기', '전체 분량 줄이기', '목표 시간에 맞게 조절',
   'AI 냄새 제거', '설교자의 기존 문체에 맞게 수정',
@@ -1317,9 +1317,11 @@ function renderStep3(m, p) {
           <button data-cmd="redo" title="다시 실행">↷</button>
           <span class="sep"></span>
           <button id="tb-find" title="원고 검색">🔍</button>
+          <button id="tb-taller" title="편집기 높이 늘리기">↕＋</button><button id="tb-shorter" title="편집기 높이 줄이기">↕−</button>
           <button id="tb-full" title="전체 화면">⛶</button>
         </div>
         <div id="editor" contenteditable="true" spellcheck="false">${p.draft.html}</div>
+        <div id="editor-resize" title="끌어서 편집기 높이 조절 · 두 번 누르면 자동 크기로"><span></span></div>
         <div id="editor-status">
           <span>글자 <b id="st-chars">0</b></span>
           <span>단어 <b id="st-words">0</b></span>
@@ -1500,6 +1502,44 @@ function bindEditor(p) {
     if (!found) toast('찾지 못했습니다.');
   });
   $('#tb-full').addEventListener('click', () => document.body.classList.toggle('fullscreen-editor'));
+  // ── 편집기 높이 조절: 손잡이 끌기 + 버튼 ──
+  // 높이를 직접 지정하면 그 크기의 스크롤 창이 되고, 0이면 내용에 맞춰 자동으로 늘어난다
+  const setEdH = h => {
+    if (!h) { // 자동(내용에 맞춤)
+      DB.settings.editorHeight = 0;
+      ed.style.height = ''; ed.style.minHeight = '480px';
+      return;
+    }
+    const v = Math.max(240, Math.min(3000, Math.round(h)));
+    DB.settings.editorHeight = v;
+    ed.style.height = v + 'px'; ed.style.minHeight = '';
+  };
+  const curEdH = () => DB.settings.editorHeight || Math.round(ed.getBoundingClientRect().height);
+  setEdH(DB.settings.editorHeight || 0);
+  const taller = $('#tb-taller'), shorter = $('#tb-shorter');
+  if (taller) taller.addEventListener('click', () => { setEdH(curEdH() + 200); save(true); toast('편집기를 키웠습니다. 손잡이를 끌어 세밀하게 맞출 수 있습니다.'); });
+  if (shorter) shorter.addEventListener('click', () => { setEdH(curEdH() - 200); save(true); });
+  const grip = $('#editor-resize');
+  if (grip) {
+    const start = e => {
+      e.preventDefault();
+      const y0 = (e.touches ? e.touches[0].clientY : e.clientY);
+      const h0 = ed.getBoundingClientRect().height;
+      document.body.classList.add('resizing-editor');
+      const move = ev => setEdH(h0 + ((ev.touches ? ev.touches[0].clientY : ev.clientY) - y0));
+      const end = () => {
+        document.body.classList.remove('resizing-editor');
+        window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', end);
+        window.removeEventListener('touchmove', move); window.removeEventListener('touchend', end);
+        save(true);
+      };
+      window.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+      window.addEventListener('touchmove', move, { passive: false }); window.addEventListener('touchend', end);
+    };
+    grip.addEventListener('mousedown', start);
+    grip.addEventListener('touchstart', start, { passive: false });
+    grip.addEventListener('dblclick', () => { setEdH(0); save(true); toast('원고 길이에 맞춰 자동으로 되돌렸습니다.'); });
+  }
 
   $$('#main [data-partial]').forEach(b => b.addEventListener('click', () => partialRewrite(p, b.dataset.partial)));
   const weaveBtn = $('#s3-weave');
@@ -1627,7 +1667,7 @@ function applyTitle(p, title) {
 /* 부분 재작성 결과가 들어갈 자리 규칙 */
 const PARTIAL_PLACE = [
   // 구체적인 규칙을 먼저 — '추천 도서…(책 제목…)'이 제목 규칙에 걸리지 않도록
-  { re: /추천 도서/, mode: 'end' },
+  { re: /추천 도서|유머/, mode: 'end' },
   { re: /배경 설명/, mode: 'before', heads: ['본문', '설명', '본론'] },
   { re: /제목/, mode: 'title' },
   { re: /서론/, mode: 'section', heads: ['서론', '도입'] },
@@ -1704,6 +1744,9 @@ async function partialRewrite(p, request) {
   syncEditor();
   // 짧은 메뉴 이름을 상세 지시로 확장
   let fullRequest = request;
+  if (request.includes('유머')) {
+    fullRequest = '이 설교의 알맞은 자리에 넣을 유머를 만들라. 규칙: ①회중을 웃기려고 설교를 멈추지 말 것 — 유머는 메시지로 가는 다리여야 하고, 웃음 직후 반드시 본론으로 이어지는 한 문장이 따라붙어야 한다 ②설교자 자신을 낮추는 자기 비하형이나, 누구나 겪는 일상의 관찰형으로 할 것 ③특정 인물·직업·세대·성별·지역·외모를 웃음거리로 삼지 말 것 ④정치·시사 풍자 금지 ⑤성경 인물이나 하나님을 가볍게 만들지 말 것 ⑥한국 강단의 품위를 지킬 것 — 억지 개그·유행어 남용 금지 ⑦지어낸 실화를 설교자의 경험처럼 쓰지 말 것(가상 예시는 "(가상 예시)" 표시). 서로 다른 자리에 쓸 유머 2~3개를 제안하되, 각각 ⓐ들어갈 위치(어느 대목 뒤) ⓑ그대로 읽을 수 있는 완성된 문장 ⓒ이어지는 연결 문장 ⓓ웃음이 안 터졌을 때의 대비책 한 줄을 함께 쓰라.';
+  }
   if (request.includes('배경 설명')) {
     fullRequest = '이 설교의 본문을 회중이 그림처럼 볼 수 있도록 [배경 설명] 단락을 써서 원고의 알맞은 자리(대개 본문 설명 앞이나 첫 대지 초입)에 넣을 수 있게 하라. 담을 것: ①역사적 배경 — 이 사건·기록이 놓인 시대와 정치·종교 상황 ②문화적 배경 — 당시 사람들의 관습·직업·신분·일상 중 이 본문을 이해하는 데 꼭 필요한 것 ③지리적 배경 — 장소의 실제 모습, 거리, 기후, 그곳에 서면 무엇이 보이는지 ④언어적 배경 — 핵심 단어의 원어 뉘앙스(확실한 것만) ⑤"그래서 원청중은 이 대목에서 무엇을 느꼈는가" 한 문장. 규칙: 설교 원고에 그대로 넣어 읽을 수 있는 구어체 문장으로 쓸 것(백과사전식 나열 금지). 분량은 1~2분(400~600자). 확실하지 않은 사실·연대·숫자는 쓰지 말거나 "(확인 필요)"를 붙일 것. 학자 이름과 출처를 지어내지 말 것.';
   }
