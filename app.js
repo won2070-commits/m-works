@@ -370,7 +370,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v28 · 2026-07-17';
+const APP_VERSION = 'v29 · 2026-07-17';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1031,10 +1031,13 @@ function renderStep2(m, p) {
       <p style="font-size:.88rem;color:var(--ink-soft)">문학적 단위 → 문맥 → 반복 단어 → 인물과 갈등 → 구조 → 원청중 메시지 → 주요소 → 보조요소 → 세 문장 → FCF 순서로 분석합니다.</p>
       ${p.passage.text ? '' : '<p class="ai-note">⚠ 본문 전문이 비어 있습니다. 1단계에서 붙여넣으면 분석이 더 정확해집니다.</p>'}
       <div class="btn-row"><button class="btn btn-primary" id="s2-run" ${aiConnected() ? '' : 'disabled'}>중심사상 분석 🤖</button>
+      <button class="btn btn-ghost" id="s2-fcf" ${aiConnected() ? '' : 'disabled'}>FCF 찾기 🤖</button>
       <button class="btn btn-ghost" id="s2-manual">AI 없이 직접 작성</button>
       ${!aiConnected() ? '<span style="font-size:.8rem;color:var(--red)">AI 미연결 — 설정에서 연결해 주세요</span>' : ''}</div>
     </div>` : renderCentral(c)}
   `;
+  const fcfBtn = $('#s2-fcf');
+  if (fcfBtn) fcfBtn.addEventListener('click', () => runFcf(p));
   const run = $('#s2-run');
   if (run) run.addEventListener('click', () => analyzeCentral(p));
   const man = $('#s2-manual');
@@ -1092,6 +1095,7 @@ function renderCentral(c) {
       <div class="btn-row">
         <button class="btn btn-primary" id="s2-go3">중심사상 확정 → 3단계 설교 작성</button>
         <button class="btn btn-ghost" id="s2-redo">처음부터 다시 분석 🤖</button>
+        <button class="btn btn-ghost" id="s2-fcf2">FCF 찾기 🤖</button>
       </div>
       <p class="ai-note">AI 분석은 초안입니다. 설교자의 검토와 수정이 우선합니다 — 여기서 고친 문장이 이후 모든 단계에 쓰입니다.</p>
     </div>`;
@@ -1129,6 +1133,8 @@ function bindCentral(p) {
     gotoStep(3);
   });
   $('#s2-redo').addEventListener('click', () => analyzeCentral(p));
+  const fcf2 = $('#s2-fcf2');
+  if (fcf2) fcf2.addEventListener('click', () => runFcf(p));
 }
 async function analyzeCentral(p) {
   try {
@@ -1877,6 +1883,21 @@ async function getGestures(p) {
     p.rehearsal.gestures = r; touch(p); render();
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
 }
+/* FCF 찾기 (채플) */
+async function runFcf(p) {
+  try {
+    const md = await callAI('fcf', {
+      ref: p.passage.ref, passage: (p.passage.text || '').slice(0, 6000),
+      needs: p.inputs.needs || p.inputs.purpose || '(입력 없음)',
+    }, { label: '본문의 FCF를 찾는 중…' });
+    p.central.fcfNote = md; touch(p);
+    const body = modal('FCF 찾기 — ' + p.passage.ref, `
+      <div class="stream-preview" style="max-height:56vh">${mdToHtml(md)}</div>
+      <div class="btn-row"><button class="btn btn-ghost btn-sm" id="fcf-copy">📋 복사</button>
+      <span style="font-size:.76rem;opacity:.85">결과는 프로젝트에 자동 저장되었습니다. 프롬프트는 설정 → 프롬프트 관리의 "2단계 · FCF 찾기"에서 수정할 수 있습니다.</span></div>`);
+    body.querySelector('#fcf-copy').addEventListener('click', () => { navigator.clipboard.writeText(md); toast('복사했습니다.'); });
+  } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
 /* 리허설 모드 */
 function startRehearsal(p) {
   const paras = htmlToParas(p.draft.html);
@@ -2037,6 +2058,10 @@ function renderClinic(m) {
         <button class="btn btn-danger btn-sm" data-rdel="${i}">삭제</button>
       </div>`).join('')}</div>` : ''}`;
   const setStatus = (msg, working) => { $('#cl-status').innerHTML = working ? '⏳ ' + esc(msg) : esc(msg); };
+  if (clinicPrefill) {
+    $('#cl-text').value = clinicPrefill; clinicPrefill = '';
+    setStatus('가져오기에서 원고를 불러왔습니다. 아래 [피드백 리포트 작성]을 누르세요.');
+  }
   const curBtn = $('#cl-current');
   if (curBtn) curBtn.addEventListener('click', () => { $('#cl-text').value = htmlToText(cur().draft.html); setStatus('현재 프로젝트 원고를 불러왔습니다.'); });
   $('#cl-file').addEventListener('change', e => {
@@ -2097,6 +2122,7 @@ function renderClinic(m) {
   }));
 }
 
+let clinicPrefill = '';
 /* ═══════════════════ 프롬프트 서재 ═══════════════════ */
 const PROMPT_TARGETS = [
   ['', '참조만 (자동 적용 안 함)'], ['sermon', '설교문 작성'], ['central', '중심사상'],
@@ -2198,21 +2224,29 @@ function openRules() {
 /* ═══════════════════ 가져오기 (파일·사진·유튜브) ═══════════════════ */
 function openImport() {
   const body = modal('가져오기 — 예전 설교를 M.Works로', `
-    <p style="font-size:.84rem;opacity:.855">파일·사진·유튜브 영상·붙여넣기로 기존 설교를 가져오면 새 프로젝트가 만들어지고, 형식 변환·부분 재작성·피드백 등 모든 기능을 그대로 쓸 수 있습니다.</p>
+    <p style="font-size:.84rem;opacity:.855">파일·사진·유튜브 영상·붙여넣기로 기존 설교를 가져옵니다. 원고 전문이 아래 상자에 추출되므로 자유롭게 고치고, 새 프로젝트로 만들거나 바로 피드백 리포트를 받을 수 있습니다.</p>
     <div class="chip-row" style="margin-top:14px">
       <label class="chip" style="cursor:pointer">📄 텍스트 파일 (.txt .md)<input id="im-file" type="file" accept=".txt,.md,.text" style="display:none"></label>
       <label class="chip" style="cursor:pointer">📷 사진·PDF (원고 인식 🤖)<input id="im-img" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" style="display:none"></label>
     </div>
-    <div class="field" style="margin-top:10px"><label>▶ 유튜브 주소 (자막 추출)</label>
+    <div class="field" style="margin-top:10px"><label>▶ 유튜브 설교 영상 (자막을 원고로 추출)</label>
       <div style="display:flex;gap:8px"><input id="im-yt" placeholder="https://www.youtube.com/watch?v=..." style="flex:1">
       <button class="btn btn-ghost btn-sm" id="im-yt-go">자막 가져오기</button></div></div>
     <div class="field" style="margin-top:10px"><label>또는 원고 붙여넣기</label>
       <textarea id="im-paste" style="min-height:120px" placeholder="설교 원고 전체를 붙여넣으세요"></textarea></div>
     <div id="im-status" style="font-size:.8rem;margin-top:6px"></div>
+    <div class="field" style="margin-top:10px"><label>가져온 뒤 시작할 단계</label>
+      <div class="chip-row">
+        <label class="chip" style="cursor:pointer"><input type="radio" name="im-step" value="3" checked> ③ 설교문 수정</label>
+        <label class="chip" style="cursor:pointer"><input type="radio" name="im-step" value="4"> ④ 형식 결정</label>
+        <label class="chip" style="cursor:pointer"><input type="radio" name="im-step" value="5"> ⑤ 연습·리허설</label>
+      </div></div>
     <div class="btn-row">
       <button class="btn btn-primary" id="im-make">새 프로젝트로 만들기</button>
-      <span style="font-size:.76rem;opacity:.858">AI 연결 시 제목·본문·중심사상을 자동 추출합니다</span>
-    </div>`);
+      <button class="btn btn-ghost" id="im-feedback">🩺 이 원고로 피드백 리포트 🤖</button>
+      <button class="btn btn-ghost btn-sm" id="im-copy">📋 원고 복사</button>
+    </div>
+    <p style="font-size:.74rem;opacity:.8;margin-top:6px">AI 연결 시 제목·본문·중심사상을 자동 추출합니다. 유튜브 영상 진단은 자막(음성 원고)을 기준으로 하며, 몸짓·표정 등 화면 요소는 다음 버전에서 지원합니다.</p>`);
   let gotText = '';
   const setStatus = (msg, working) => { $('#im-status').innerHTML = working ? '⏳ ' + esc(msg) : esc(msg); };
   body.querySelector('#im-file').addEventListener('change', e => {
@@ -2262,10 +2296,22 @@ function openImport() {
     p.passage.ref = info.ref || ''; p.passage.confirmed = !!info.ref;
     p.central = Object.assign(p.central, { done: true, unit: '(가져온 원고)', homiletical: info.homiletical || '' });
     p.draft.html = textToHtml(text);
-    p.step = 3;
+    const startStep = +(body.querySelector('input[name="im-step"]:checked') || { value: 3 }).value;
+    p.step = startStep;
     DB.projects.unshift(p); curId = p.id; save(true);
-    gotoStep(3);
-    toast('가져오기 완료 — 이제 형식 변환·부분 재작성·피드백을 모두 쓸 수 있습니다.');
+    gotoStep(startStep);
+    toast('가져오기 완료 — ' + startStep + '단계에서 시작합니다.');
+  });
+  body.querySelector('#im-copy').addEventListener('click', () => {
+    const text = ($('#im-paste').value || gotText || '').trim();
+    if (!text) return toast('복사할 원고가 없습니다.');
+    navigator.clipboard.writeText(text); toast('원고를 복사했습니다.');
+  });
+  body.querySelector('#im-feedback').addEventListener('click', () => {
+    const text = ($('#im-paste').value || gotText || '').trim();
+    if (text.length < 100) return toast('원고가 너무 짧습니다. 먼저 내용을 가져와 주세요.');
+    clinicPrefill = text;
+    closeModal(); curView = 'clinic'; render();
   });
 }
 function textToHtml(text) {
