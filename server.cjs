@@ -117,7 +117,7 @@ async function runApi(res, key, { system, prompt, model, maxTokens }, onAbort) {
 }
 
 // ---------- claude CLI 호출 (스트리밍) ----------
-function runCli(res, { system, prompt, model, maxTokens }, onAbort) {
+function runCli(res, { system, prompt, model, maxTokens, effort }, onAbort) {
   return new Promise((resolve, reject) => {
     const args = ['-p',
       '--output-format', 'stream-json', '--include-partial-messages', '--verbose',
@@ -126,7 +126,7 @@ function runCli(res, { system, prompt, model, maxTokens }, onAbort) {
       '--tools', '',                 // 도구 없이 순수 텍스트 생성만
       '--setting-sources', '',       // 사용자 훅·플러그인 미적용 (독립 호출)
       '--strict-mcp-config',
-      '--effort', 'medium',          // 추론 과다로 인한 긴 무응답 방지 (품질·속도 균형)
+      '--effort', (effort === 'low' || effort === 'high') ? effort : 'medium', // 작업별 추론 깊이 (가벼운 일은 low로 빠르게)
     ];
     if (system) args.push('--system-prompt', system);   // 기본 코딩 페르소나를 설교 조력자로 교체
     const child = spawn(cliState.path, args, { env: cleanEnv(), cwd: ROOT });

@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=57">
+<link rel="apple-touch-icon" href="icon-192.png?v=58">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2197,6 +2197,29 @@ function progressPreview(fullText) { // 생성 중 원고가 흘러가는 선명
 }
 $('#ai-cancel').addEventListener('click', () => { if (aiAbort) aiAbort.abort(); });
 
+/* ═══ 작업별 속도 등급 ═══
+ * fast  — 가벼운 언어 작업: 빠른 모델(haiku) + 얕은 추론. 몇 배 빠르다.
+ * quick — 지식·정확성이 필요하지만 깊은 궁리는 불필요: 기본 모델 + 얕은 추론.
+ * (없음) — 설교문·분석 등 품질이 생명인 작업: 기본 모델 + 중간 추론(기존 그대로).
+ */
+const SPEED_TIERS = {
+  // fast — 언어 감각 작업 (성경 지식 의존도 낮음)
+  thesaurus:     { model: 'haiku',  effort: 'low' },
+  importAnalyze: { model: 'haiku',  effort: 'low' },
+  passageCheck:  { model: 'haiku',  effort: 'low' },
+  formatFit:     { effort: 'low' },
+  // quick — 성경 지식·정확성 필요 → 모델은 유지, 추론만 얕게
+  verse:         { effort: 'low' },
+  verseSearch:   { effort: 'low' },
+  fetchPassage:  { effort: 'low' },
+  breaths:       { effort: 'low' },
+  stress:        { effort: 'low' },
+  gestures:      { effort: 'low' },
+  titleSuggest:  { effort: 'low' },
+  centralRefine: { effort: 'low' },
+  // 나머지(sermon·central·recommend·partial·weave·formatConvert·formatRecommend·
+  // feedback·sermonReport·fcf·genius)는 품질 우선 — 기존 무게 유지
+};
 async function callAI(key, slots, opts = {}) {
   if (!aiConnected()) {
     toast('AI가 연결되지 않았습니다. 설정에서 연결해 주세요.');
@@ -2204,11 +2227,13 @@ async function callAI(key, slots, opts = {}) {
     throw new Error('no-ai');
   }
   const p = getPrompt(key);
+  const tier = SPEED_TIERS[key] || {};
   const body = {
     system: fillSlots(p.system, slots),
     prompt: fillSlots(p.user, slots),
-    model: DB.settings.model,
+    model: tier.model || DB.settings.model,
     maxTokens: p.maxTokens,
+    effort: tier.effort || 'medium',
   };
   aiAbort = new AbortController();
   if (!opts.silent) showProgress(opts.label || p.label + ' — AI 작업 중…', key);
@@ -2368,7 +2393,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v57 · 2026-07-21';
+const APP_VERSION = 'v58 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3057,7 +3082,7 @@ function bindCands(p) {
 async function autoFillPassage(p) {
   if (!aiConnected() || p.passage.text) return;
   try {
-    setProgressEta(35, ['본문을 불러오는 중…', '정리하는 중…']);
+    setProgressEta(22, ['본문을 불러오는 중…', '정리하는 중…']);
     const txt = await callAI('fetchPassage', { ref: p.passage.ref, translation: DB.settings.translation },
       { label: p.passage.ref + ' 전문을 입력하는 중…', onDelta: (d, full) => progressPreview(full) });
     if (!p.passage.text) {
@@ -3191,7 +3216,7 @@ function bindCentral(p) {
   $$('#main [data-refine]').forEach(b => b.addEventListener('click', async () => {
     grab();
     try {
-      setProgressEta(50, ['요청을 읽는 중…', '문장을 다듬는 중…', '점검하는 중…']);
+      setProgressEta(32, ['요청을 읽는 중…', '문장을 다듬는 중…', '점검하는 중…']);
       const r = await callAIJson('centralRefine', {
         ref: p.passage.ref, subject: c.subject, complement: c.complement,
         exegetical: c.exegetical, theological: c.theological, homiletical: c.homiletical,
@@ -3721,7 +3746,7 @@ async function weaveMaterials(p) {
 async function suggestTitles(p) {
   syncEditor();
   try {
-    setProgressEta(85, ['원고를 읽는 중…', '자료 서랍의 구절을 훑는 중…', '기법별로 제목을 짓는 중…', '가장 좋은 것을 고르는 중…']);
+    setProgressEta(55, ['원고를 읽는 중…', '자료 서랍의 구절을 훑는 중…', '기법별로 제목을 짓는 중…', '가장 좋은 것을 고르는 중…']);
     const r = await callAIJson('titleSuggest', {
       ref: p.passage.ref, homiletical: p.central.homiletical,
       purpose: p.inputs.purpose, audience: p.inputs.audience,
@@ -3945,7 +3970,7 @@ function renderStep4(m, p) {
     </div>`;
   $('#s4-fit').addEventListener('click', async () => {
     try {
-      setProgressEta(55, ['본문 성격을 보는 중…', '형식별로 견주는 중…', '점수를 매기는 중…']);
+      setProgressEta(35, ['본문 성격을 보는 중…', '형식별로 견주는 중…', '점수를 매기는 중…']);
       const r = await callAIJson('formatFit', {
         ref: p.passage.ref, genre: p.passage.genre, homiletical: p.central.homiletical,
         audience: p.inputs.audience, purpose: p.inputs.purpose,
@@ -4334,7 +4359,7 @@ function renderBreaths(b) {
 async function getStress(p) {
   syncEditor();
   try {
-    setProgressEta(120, ['원고를 소리로 읽어 보는 중…', '힘이 실릴 낱말을 고르는 중…', '흘려보낼 대목을 찾는 중…', '정리하는 중…']);
+    setProgressEta(60, ['원고를 소리로 읽어 보는 중…', '힘이 실릴 낱말을 고르는 중…', '흘려보낼 대목을 찾는 중…', '정리하는 중…']);
     const r = await callAIJson('stress', { draft: htmlToText(p.draft.html).slice(0, 16000) },
       { label: '강약을 줄 자리를 찾는 중…' });
     p.rehearsal.stress = r; touch(p); render();
@@ -4399,7 +4424,7 @@ function insertStressMarks(p) {
 }
 async function getBreaths(p) {
   try {
-    setProgressEta(80, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '정리하는 중…']);
+    setProgressEta(45, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '정리하는 중…']);
     const r = await callAIJson('breaths', { draft: htmlToText(p.draft.html) }, { label: '낭독 호흡을 분석하는 중…' });
     p.rehearsal.breaths = r; touch(p); render();
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
@@ -4678,7 +4703,7 @@ function saveGeniusDoc(p) {
 }
 async function getGestures(p) {
   try {
-    setProgressEta(90, ['원고의 결을 읽는 중…', '몸짓이 필요한 자리를 찾는 중…', '동작을 적는 중…']);
+    setProgressEta(55, ['원고의 결을 읽는 중…', '몸짓이 필요한 자리를 찾는 중…', '동작을 적는 중…']);
     const r = await callAIJson('gestures', { draft: htmlToText(p.draft.html) }, { label: '제스처 지점을 찾는 중…' });
     p.rehearsal.gestures = r; touch(p); render();
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
@@ -5197,7 +5222,7 @@ function openImport() {
     closeModal();
     let info = { title: '', ref: '', topic: '', purpose: '', homiletical: '' };
     if (aiConnected()) {
-      setProgressEta(60, ['원고를 읽는 중…', '제목·본문을 찾는 중…', '중심사상을 뽑는 중…']);
+      setProgressEta(30, ['원고를 읽는 중…', '제목·본문을 찾는 중…', '중심사상을 뽑는 중…']);
       try { info = await callAIJson('importAnalyze', { text: text.slice(0, 9000) }, { label: '가져온 원고를 분석하는 중…' }); }
       catch (e) { /* 분석 실패해도 가져오기는 진행 */ }
     }
