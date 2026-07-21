@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=46">
+<link rel="apple-touch-icon" href="icon-192.png?v=47">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2044,7 +2044,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v46 · 2026-07-21';
+const APP_VERSION = 'v47 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -4457,7 +4457,7 @@ function renderClinic(m) {
       <h3>진단할 설교 넣기</h3>
       <div class="chip-row">
         ${cur() && htmlToText(cur().draft.html).length > 100 ? `<button class="chip" id="cl-current">현재 프로젝트 원고 불러오기</button>` : ''}
-        <label class="chip" style="cursor:pointer">📄 텍스트 파일<input id="cl-file" type="file" accept=".txt,.md,.text" style="display:none"></label>
+        <label class="chip" style="cursor:pointer">📄 워드·텍스트 파일<input id="cl-file" type="file" accept=".docx,.txt,.md,.text" style="display:none"></label>
         <label class="chip" style="cursor:pointer">📷 사진·PDF 원고 인식 🤖<input id="cl-img" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" style="display:none"></label>
       </div>
       <div class="field" style="margin-top:8px"><label>▶ 유튜브 설교 영상 (자막으로 진단)</label>
@@ -4487,9 +4487,13 @@ function renderClinic(m) {
   }
   const curBtn = $('#cl-current');
   if (curBtn) curBtn.addEventListener('click', () => { $('#cl-text').value = htmlToText(cur().draft.html); setStatus('현재 프로젝트 원고를 불러왔습니다.'); });
-  $('#cl-file').addEventListener('change', e => {
+  $('#cl-file').addEventListener('change', async e => {
     const f = e.target.files[0]; if (!f) return;
-    const fr = new FileReader(); fr.onload = () => { $('#cl-text').value = fr.result; setStatus('파일을 읽었습니다: ' + f.name); }; fr.readAsText(f);
+    try {
+      setStatus('파일을 읽는 중…', true);
+      $('#cl-text').value = await readDroppedFile(f, m => setStatus(m, true));
+      setStatus('✓ ' + f.name + ' 을 읽었습니다.');
+    } catch (err) { setStatus('⚠ ' + err.message); }
   });
   $('#cl-img').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
@@ -4647,13 +4651,114 @@ function openRules() {
 }
 
 /* ═══════════════════ 가져오기 (파일·사진·유튜브) ═══════════════════ */
+/* ═══════════════════ 워드(.docx) 파일 읽기 ═══════════════════ */
+/* docx는 ZIP 안의 word/document.xml — 브라우저 내장 기능만으로 풀어 읽는다 */
+async function readDocx(file) {
+  if (typeof DecompressionStream === 'undefined') {
+    throw new Error('이 브라우저는 워드 파일 열기를 지원하지 않습니다. 크롬·사파리 최신 버전을 쓰거나, 워드에서 텍스트를 복사해 붙여넣어 주세요.');
+  }
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const dv = new DataView(buf.buffer);
+  // ZIP 끝 기록(EOCD) 찾기
+  let eocd = -1;
+  for (let i = buf.length - 22; i >= 0 && i > buf.length - 66000; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('워드(.docx) 파일이 아닌 것 같습니다.');
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  let target = null;
+  const dec = new TextDecoder();
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const compSize = dv.getUint32(off + 20, true);
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const cmtLen = dv.getUint16(off + 32, true);
+    const localOff = dv.getUint32(off + 42, true);
+    const name = dec.decode(buf.subarray(off + 46, off + 46 + nameLen));
+    if (name === 'word/document.xml') { target = { method, compSize, localOff }; break; }
+    off += 46 + nameLen + extraLen + cmtLen;
+  }
+  if (!target) throw new Error('문서 본문을 찾지 못했습니다. (.doc 옛 형식이면 워드에서 .docx로 저장해 주세요)');
+  const lo = target.localOff;
+  if (dv.getUint32(lo, true) !== 0x04034b50) throw new Error('파일이 손상된 것 같습니다.');
+  const dataStart = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true);
+  const data = buf.subarray(dataStart, dataStart + target.compSize);
+  let xml;
+  if (target.method === 0) xml = dec.decode(data);
+  else {
+    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    xml = await new Response(stream).text();
+  }
+  return docxXmlToText(xml);
+}
+function docxXmlToText(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  if (!doc.documentElement) throw new Error('문서를 읽지 못했습니다.');
+  const paras = [];
+  (function walk(node) {
+    for (const ch of node.children) {
+      if (ch.localName === 'p') { paras.push(ch); continue; }
+      walk(ch);
+    }
+  })(doc.documentElement);
+  const text = paras.map(p => {
+    let t = '';
+    (function walk(n) {
+      for (const ch of n.children) {
+        const ln = ch.localName;
+        if (ln === 't') t += ch.textContent;
+        else if (ln === 'tab') t += '\t';
+        else if (ln === 'br' || ln === 'cr') t += '\n';
+        else walk(ch);
+      }
+    })(p);
+    return t.trim();
+  }).join('\n');
+  return text.replace(/\n{3,}/g, '\n\n').trim();
+}
+/* 어떤 파일이든 알맞게 읽어 준다 */
+async function readDroppedFile(file, onStatus) {
+  const name = (file.name || '').toLowerCase();
+  const say = m => { if (onStatus) onStatus(m); };
+  if (name.endsWith('.docx')) {
+    say('워드 파일을 여는 중…');
+    const t = await readDocx(file);
+    if (!t || t.length < 20) throw new Error('워드 파일에서 글을 찾지 못했습니다.');
+    return t;
+  }
+  if (name.endsWith('.doc')) {
+    throw new Error('옛 워드 형식(.doc)입니다. 워드에서 [다른 이름으로 저장] → .docx 로 저장한 뒤 다시 넣어 주세요.');
+  }
+  if (name.endsWith('.hwp') || name.endsWith('.hwpx')) {
+    throw new Error('아래아한글 파일은 아직 지원하지 않습니다. 한글에서 [파일 → 다른 이름으로 저장] → 서식 있는 문서(.docx)나 텍스트(.txt)로 저장해 주세요.');
+  }
+  if (/^image\//.test(file.type) || name.endsWith('.pdf')) {
+    if (aiStatus.serverless) throw new Error('사진·PDF 인식은 로컬 서버(실행.command)로 열었을 때만 됩니다.');
+    say('사진에서 원고를 인식하는 중… (1~3분)');
+    const b64 = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(String(fr.result).split(',')[1]);
+      fr.onerror = rej; fr.readAsDataURL(file);
+    });
+    const j = await (await fetch('/api/ocr', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ data: b64, mime: file.type, model: DB.settings.model }) })).json();
+    if (j.error) throw new Error(j.error);
+    return j.text;
+  }
+  say('파일을 읽는 중…');
+  return await file.text();
+}
 function openImport() {
   const body = modal('가져오기 — 예전 설교를 M.Works로', `
-    <p style="font-size:.84rem;opacity:.855">파일·사진·유튜브 영상·붙여넣기로 기존 설교를 가져옵니다. 원고 전문이 아래 상자에 추출되므로 자유롭게 고치고, 새 프로젝트로 만들거나 바로 피드백 리포트를 받을 수 있습니다.</p>
-    <div class="chip-row" style="margin-top:14px">
-      <label class="chip" style="cursor:pointer">📄 텍스트 파일 (.txt .md)<input id="im-file" type="file" accept=".txt,.md,.text" style="display:none"></label>
-      <label class="chip" style="cursor:pointer">📷 사진·PDF (원고 인식 🤖)<input id="im-img" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" style="display:none"></label>
-    </div>
+    <p style="font-size:.84rem;opacity:.855">워드 파일을 끌어다 놓으면 바로 열립니다. 사진·PDF·유튜브·붙여넣기도 됩니다. 원고 전문이 아래 상자에 들어오므로 자유롭게 고치고, 새 프로젝트로 만들거나 바로 피드백 리포트를 받을 수 있습니다.</p>
+    <label class="dropzone" id="im-drop" style="margin-top:14px">
+      <span>📄 <b>여기로 파일을 끌어다 놓으세요</b> — 워드(.docx) · 텍스트(.txt .md) · 사진 · PDF</span>
+      <small>또는 눌러서 파일 고르기 · 워드 파일은 바로 열려 이어서 작업할 수 있습니다</small>
+      <input id="im-file" type="file" accept=".docx,.txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
+    </label>
     <div class="field" style="margin-top:10px"><label>▶ 유튜브 설교 영상 (자막을 원고로 추출)</label>
       <div style="display:flex;gap:8px"><input id="im-yt" placeholder="https://www.youtube.com/watch?v=..." style="flex:1">
       <button class="btn btn-ghost btn-sm" id="im-yt-go">자막 가져오기</button></div></div>
@@ -4674,26 +4779,28 @@ function openImport() {
     <p style="font-size:.74rem;opacity:.8;margin-top:6px">AI 연결 시 제목·본문·중심사상을 자동 추출합니다. 유튜브 영상 진단은 자막(음성 원고)을 기준으로 하며, 몸짓·표정 등 화면 요소는 다음 버전에서 지원합니다.</p>`);
   let gotText = '';
   const setStatus = (msg, working) => { $('#im-status').innerHTML = working ? '⏳ ' + esc(msg) : esc(msg); };
-  body.querySelector('#im-file').addEventListener('change', e => {
-    const f = e.target.files[0]; if (!f) return;
-    const fr = new FileReader();
-    fr.onload = () => { gotText = fr.result; $('#im-paste').value = gotText; setStatus('파일을 읽었습니다: ' + f.name); };
-    fr.readAsText(f);
-  });
-  body.querySelector('#im-img').addEventListener('change', e => {
-    const f = e.target.files[0]; if (!f) return;
-    setStatus('사진에서 원고를 인식하는 중… (1~3분)', true);
-    const fr = new FileReader();
-    fr.onload = async () => {
-      try {
-        const b64 = String(fr.result).split(',')[1];
-        const r = await fetch('/api/ocr', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: b64, mime: f.type, model: DB.settings.model }) });
-        const j = await r.json();
-        if (j.error) { setStatus('⚠ ' + j.error); return; }
-        gotText = j.text; $('#im-paste').value = gotText; setStatus('원고를 인식했습니다. 내용을 확인해 주세요.');
-      } catch (err) { setStatus('⚠ 인식 실패: ' + err.message); }
-    };
-    fr.readAsDataURL(f);
+  const takeFile = async f => {
+    if (!f) return;
+    try {
+      setStatus('파일을 읽는 중…', true);
+      const t = await readDroppedFile(f, m => setStatus(m, true));
+      gotText = t;
+      $('#im-paste').value = t;
+      const chars = t.replace(/\s/g, '').length;
+      setStatus('✓ ' + f.name + ' 을 읽었습니다 (' + chars.toLocaleString() + '자). 내용을 확인하고 아래에서 시작 단계를 고르세요.');
+    } catch (err) { setStatus('⚠ ' + err.message); }
+  };
+  body.querySelector('#im-file').addEventListener('change', e => takeFile(e.target.files[0]));
+  const dz = body.querySelector('#im-drop');
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dz.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('dragover'); }));
+  dz.addEventListener('drop', e => takeFile(e.dataTransfer.files[0]));
+  // 모달 어디에 떨어뜨려도 받아 준다
+  body.addEventListener('dragover', e => e.preventDefault());
+  body.addEventListener('drop', e => {
+    if (e.target.closest('#im-drop')) return;
+    e.preventDefault();
+    if (e.dataTransfer.files[0]) takeFile(e.dataTransfer.files[0]);
   });
   body.querySelector('#im-yt-go').addEventListener('click', async () => {
     const u = $('#im-yt').value.trim(); if (!u) { toast('유튜브 주소를 넣어 주세요.'); return; }
