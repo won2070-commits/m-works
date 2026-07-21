@@ -735,3 +735,13 @@ body.resizing-editor #editor { pointer-events: none; }
 .song-artist { font-size: .78rem; opacity: .75; }
 .song-go { margin-left: auto; font-size: .76rem; opacity: .7; white-space: nowrap; }
 .song-link { text-decoration: none; display: inline-flex; align-items: center; }
+
+/* 기다리는 동안 보여주는 설교학 지식 카드 */
+#ai-progress-tip {
+  background: rgba(255,255,255,.72); border-radius: 12px;
+  padding: 12px 16px; width: 100%; text-align: left;
+  font-size: .84rem; line-height: 1.65; color: var(--ink);
+  animation: tipIn .5s ease;
+}
+#ai-progress-tip b { display: block; font-size: .72rem; letter-spacing: .04em; opacity: .7; margin-bottom: 4px; }
+@keyframes tipIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

@@ -225,6 +225,7 @@ function showProgress(label) {
   const ring = $('#ai-ring-fg');
   ring.style.strokeDashoffset = RING_LEN;
   $('#ai-progress').classList.remove('hidden');
+  startTips();
   const t0 = Date.now();
   $('#ai-progress-timer').textContent = '0:00';
   $('#ai-ring-left').textContent = '약 ' + fmtClock(eta) + ' 예상';
@@ -244,7 +245,71 @@ function showProgress(label) {
 }
 function hideProgress() {
   $('#ai-progress').classList.add('hidden'); clearInterval(aiTimerInt);
+  stopTips();
   const pv = $('#ai-progress-preview'); pv.textContent = ''; pv.classList.add('hidden');
+}
+/* 기다리는 동안 보여줄 설교학 지식 — 『들리는 설교, 끌리는 설교』의 방법론에서 */
+const PREACH_TIPS = [
+  ['중심사상', '한 편의 설교에는 한 가지 생각만 담깁니다. 해돈 로빈슨은 물었습니다 — "저자가 말하려는 것은 무엇인가(주요소), 그것에 대해 무엇이라 말하는가(보조요소)."'],
+  ['중심사상', '중심사상은 두 번 태어납니다. 석의의 문장(그때·거기) → 원리의 문장(언제나) → 청중의 문장(지금·여기·우리).'],
+  ['중심사상', '주제문 테스트 세 가지 — ①한 문장인가 ②이 본문에서만 나오는 문장인가 ③그 자체로 말이 되는가.'],
+  ['본문 선택', '하나님의 니즈와 성도의 니즈가 만나는 자리에서 본문을 고릅니다. 회중의 필요를 본문의 원래 의미보다 앞세우지 않습니다.'],
+  ['본문 선택', '구절 하나만 떼어 오지 말고 온전한 문학적 단락을 고르세요. 앞뒤 문맥이 곧 안전장치입니다.'],
+  ['FCF', '채플의 FCF — 이 본문은 왜 필요한가. 본문이 겨냥하는 인간의 깨어짐을 한 문장으로. 모든 본문을 교만·불순종 같은 상투적 죄로 몰아가지 않습니다.'],
+  ['원고', '원고는 쓰는 것이 아니라 깎는 것입니다. 전진·순서·통일 — 이 세 가지가 흐름을 만듭니다.'],
+  ['원고', '귀에는 되감기 버튼이 없습니다. 그래서 단문입니다. 한 문장에 하나의 생각만 담으세요.'],
+  ['원고', '제목이 절반입니다. 듣고 싶어지는 제목, 꼭 들어야 할 것 같은 기대를 만드는 제목.'],
+  ['서론', '서론 세 줄에 배려가 보여야 합니다. 회중은 첫 삼십 초에 들을지 말지를 정합니다.'],
+  ['예화', '예화는 창문입니다. 벽이 있어야 창문을 냅니다 — 예화의 자리는 설명 다음입니다.'],
+  ['예화', '겪지 않은 일을 겪은 것처럼 말하지 않습니다. 빌려온 이야기는 빌려왔다고 밝히는 것이 강단의 정직입니다.'],
+  ['적용', '적용은 초대의 문법으로 — 누가, 무엇을, 언제까지, 어떻게 확인하는가.'],
+  ['적용', '"기도합시다·믿읍시다"로 끝나는 적용은 적용이 아닙니다. 손에 잡히는 한 가지를 주세요.'],
+  ['결론', '결론은 촌철살인 한 문장으로 닫습니다. 요약을 늘어놓는 순간 여운이 흩어집니다.'],
+  ['형식', '형식은 그릇입니다. 같은 내용도 그릇이 바뀌면 다른 맛이 납니다.'],
+  ['형식', '연역은 중심사상을 앞에, 귀납은 뒤에 둡니다. 회중이 저항할 만한 메시지라면 귀납이 안전합니다.'],
+  ['형식', '윌슨의 네 페이지 — 성경의 문제, 세상의 문제, 성경의 은혜, 세상의 은혜. 문제 절반, 은혜 절반.'],
+  ['형식', '유진 라우리의 플롯 — 평형을 깨고(오! 이런), 모순을 헤집고, 실마리를 뒤집고, 복음을 경험하게 하고, 내일을 기대하게 합니다.'],
+  ['연습', '입에서 걸리는 문장은 잘못된 문장입니다. 소리 내어 읽는 것이 문어체를 구어체로 바꾸는 유일한 길입니다.'],
+  ['연습', '강세로 굴곡을 만들고, 어미를 내리고, 완급을 조절하고, 결정적인 순간에 멈추세요.'],
+  ['연습', '멈춤은 빈 시간이 아닙니다. 회중이 방금 들은 말을 삼키는 시간입니다.'],
+  ['전달', '한 문장에 강조는 하나면 충분합니다. 다 강조하면 아무것도 강조되지 않습니다.'],
+  ['전달', '제스처는 의미를 돕는 동작만. 과장된 손짓은 말을 가립니다.'],
+  ['태도', '설교는 대신 생산되는 것이 아닙니다. AI는 재료를 다듬을 뿐, 첫 문장과 마지막 문장은 설교자의 손에서 나옵니다.'],
+  ['태도', '믿지 않는 사람이 듣고 있다는 전제로 쓰세요. 교회 안의 언어가 교회 밖에서도 들리게.'],
+];
+let tipTimer = null, tipIdx = 0;
+function startTips() {
+  const el = $('#ai-progress-tip');
+  if (!el) return;
+  tipIdx = Math.floor(Math.random() * PREACH_TIPS.length);
+  const show = () => {
+    const [tag, text] = PREACH_TIPS[tipIdx % PREACH_TIPS.length];
+    el.innerHTML = '<b>💡 ' + esc(tag) + '</b>' + esc(text);
+    el.classList.remove('hidden');
+    el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    tipIdx++;
+  };
+  show();
+  clearInterval(tipTimer);
+  tipTimer = setInterval(show, 11000);
+}
+function stopTips() {
+  clearInterval(tipTimer); tipTimer = null;
+  const el = $('#ai-progress-tip');
+  if (el) { el.classList.add('hidden'); el.textContent = ''; }
+}
+/* 만들어지는 중인 JSON에서 사람이 읽을 수 있는 부분만 뽑아 보여준다 */
+function jsonStreamPeek(buf) {
+  const out = [];
+  const re = /"([^"\\]{1,24})"\s*:\s*"((?:[^"\\]|\\.){6,})/g;
+  let m;
+  while ((m = re.exec(buf))) {
+    const key = m[1];
+    if (/^(key|id|type|level|how|position|fit|score)$/i.test(key)) continue;
+    const v = m[2].replace(/\\n/g, ' ').replace(/\\"/g, '"').replace(/\\+$/, '').trim();
+    if (v.length > 8) out.push('· ' + v);
+  }
+  return out.slice(-7).join('\n');
 }
 function progressPreview(fullText) { // 생성 중 원고가 흘러가는 선명한 미리보기
   const pv = $('#ai-progress-preview');
@@ -410,13 +475,15 @@ function closeJson(s) {
   return t + stack.reverse().join('');
 }
 async function callAIJson(key, slots, opts = {}) {
-  const txt = await callAI(key, slots, opts);
+  const txt = await callAI(key, slots, Object.assign({
+    onDelta: (d, full) => { const peek = jsonStreamPeek(full); if (peek) progressPreview(peek); },
+  }, opts));
   try { return parseJSON(txt); }
   catch (e) { console.warn('JSON 파싱 실패 원문:', txt); throw new Error('AI 응답을 해석하지 못했습니다. 한 번 더 시도해 주세요.'); }
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v49 · 2026-07-21';
+const APP_VERSION = 'v50 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1073,7 +1140,7 @@ async function autoFillPassage(p) {
   try {
     setProgressEta(35, ['본문을 불러오는 중…', '정리하는 중…']);
     const txt = await callAI('fetchPassage', { ref: p.passage.ref, translation: DB.settings.translation },
-      { label: p.passage.ref + ' 전문을 입력하는 중…' });
+      { label: p.passage.ref + ' 전문을 입력하는 중…', onDelta: (d, full) => progressPreview(full) });
     if (!p.passage.text) {
       p.passage.text = txt.trim();
       touch(p);
@@ -1710,7 +1777,7 @@ async function weaveMaterials(p) {
     setProgressEta(170, ['원고 흐름을 읽는 중…', '자료가 놓일 자리를 찾는 중…', '문장에 녹이는 중…', '앞뒤를 다듬는 중…']);
     const out = await callAI('weave', {
       homiletical: p.central.homiletical, draft: draftText(), materials: materialsSlot(ids),
-    }, { label: '자료를 원고에 녹이는 중… (2~4분)' });
+    }, { label: '자료를 원고에 녹이는 중… (2~4분)', onDelta: (d, full) => progressPreview(full) });
     const changes = (out.match(/\[변경점\]([\s\S]*?)\[원고\]/) || [])[1] || '';
     const script = (out.match(/\[원고\]([\s\S]*)/) || [])[1] || out;
     const body = modal('자료 투입 결과 검토', `
@@ -1906,7 +1973,7 @@ async function partialRewrite(p, request) {
       needs: p.inputs.needs, purpose: p.inputs.purpose,
       rules: DB.settings.rules,
       draft: draftText(), request: fullRequest,
-    }, { label: '"' + request + '" 작업 중…' });
+    }, { label: '"' + request + '" 작업 중…', onDelta: (d, full) => progressPreview(full) });
     // 되돌릴 수 있도록 먼저 버전 보관 → 원고에 자동 반영
     snapshot(p, request + ' 전 원고');
     const where = applyPartial(p, request, out);
@@ -2057,7 +2124,7 @@ async function convertFormat(p, key) {
     const out = await callAI('formatConvert', {
       formatName: f.name, formatDesc: f.desc, formatSteps: f.steps,
       homiletical: p.central.homiletical, ref: p.passage.ref, draft: draftText(),
-    }, { label: '"' + f.name + '" 형식으로 재구성 중… (2~4분)' });
+    }, { label: '"' + f.name + '" 형식으로 재구성 중… (2~4분)', onDelta: (d, full) => progressPreview(full) });
     // 파싱: [개요-이전] [개요-이후] [원고]
     const before = (out.match(/\[개요-이전\]([\s\S]*?)\[개요-이후\]/) || [])[1] || '';
     const after = (out.match(/\[개요-이후\]([\s\S]*?)\[원고\]/) || [])[1] || '';
@@ -2704,7 +2771,7 @@ async function runFcf(p) {
     const md = await callAI('fcf', {
       ref: p.passage.ref, passage: (p.passage.text || '').slice(0, 6000),
       needs: p.inputs.needs || p.inputs.purpose || '(입력 없음)',
-    }, { label: '본문의 FCF를 찾는 중…' });
+    }, { label: '본문의 FCF를 찾는 중…', onDelta: (d, full) => progressPreview(full) });
     p.central.fcfNote = md; touch(p);
     const body = modal('FCF 찾기 — ' + p.passage.ref, `
       <div class="stream-preview" style="max-height:56vh">${mdToHtml(md)}</div>
@@ -2918,7 +2985,7 @@ function renderClinic(m) {
       const md = await callAI('sermonReport', {
         text: text.slice(0, 30000),
         source: $('#cl-yt').value.trim() || '직접 입력',
-      }, { label: '책의 기준으로 설교를 진단하는 중… (처음 1~3분은 분석 시간입니다)' });
+      }, { label: '책의 기준으로 설교를 진단하는 중… (처음 1~3분은 분석 시간입니다)', onDelta: (d, full) => progressPreview(full) });
       const title = (md.match(/\*\*분석 대상\*\*\s*([^\n·]+)/) || md.match(/^# ?(.+)/m) || [, '설교 리포트'])[1].trim().slice(0, 60);
       DB.reports.unshift({ ts: Date.now(), title, md });
       if (DB.reports.length > 30) DB.reports.pop();
