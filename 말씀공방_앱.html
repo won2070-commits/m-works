@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=45">
+<link rel="apple-touch-icon" href="icon-192.png?v=46">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2044,7 +2044,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v45 · 2026-07-21';
+const APP_VERSION = 'v46 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3054,7 +3054,10 @@ function songSearchUrls(s) {
   const base = isHymn ? ('새찬송가 ' + (s.num ? s.num + '장 ' : '') + s.title) : (s.title + (s.artist ? ' ' + s.artist : ''));
   const q = t => encodeURIComponent(t);
   return {
-    score: 'https://www.google.com/search?tbm=isch&q=' + q(base + ' 악보'),
+    score:  'https://www.google.com/search?tbm=isch&q=' + q(base + ' 악보'),
+    pdf:    'https://www.google.com/search?q=' + q(base + ' 악보 filetype:pdf'),
+    buy:    'https://www.google.com/search?q=' + q(base + ' 악보 구매'),
+    hymnary: isHymn ? 'https://hymnary.org/search?qu=' + q(s.title) : '',
     listen: 'https://www.youtube.com/results?search_query=' + q(base + (isHymn ? ' 찬송' : '')),
     play:   'https://www.youtube.com/results?search_query=' + q(base + ' 반주'),
     lyrics: 'https://www.google.com/search?q=' + q(base + ' 가사'),
@@ -3075,7 +3078,7 @@ function renderSongCard(p) {
             <span class="song-go">악보 보기 →</span>
           </button>`).join('')}
       </div>
-      <p class="ai-note" style="margin-top:10px">악보와 음원은 저작권이 있어 앱 안에 담지 않고, 누르면 검색 결과로 연결합니다. 예배에 사용할 때는 저작권(CCLI 등) 규정을 확인해 주세요.</p>
+      <p class="ai-note" style="margin-top:10px">곡을 누르면 <b>악보 보기 · PDF 내려받기 · 정품 구입 · 듣기</b>로 연결됩니다. 악보·음원은 저작권이 있어 앱에 담지 않습니다 — 예배 사용 시 정품 구입 또는 CCLI 등 사용 허락을 확인해 주세요.</p>
     </div>`;
 }
 function bindSongCard(p) {
@@ -3089,17 +3092,39 @@ function bindSongCard(p) {
         <b>${esc(s.group)}</b>${s.artist ? ' · ' + esc(s.artist) : ''}
         ${s.reason ? `<div style="font-size:.84rem;margin-top:6px">${esc(s.reason)}</div>` : ''}
       </div>
-      <p style="font-size:.82rem;color:var(--ink-soft);margin:12px 0 8px">아래를 누르면 새 창에서 열립니다.</p>
+      <p style="font-size:.82rem;color:var(--ink-soft);margin:12px 0 6px"><b>악보 보기 · 내려받기</b> (새 창에서 열립니다)</p>
       <div class="chip-row">
-        <a class="chip song-link" href="${u.score}" target="_blank" rel="noopener">🎼 악보 찾기</a>
+        <a class="chip song-link" href="${u.score}" target="_blank" rel="noopener">🎼 악보 보기</a>
+        <a class="chip song-link" href="${u.pdf}" target="_blank" rel="noopener">📥 PDF 내려받기</a>
+        <a class="chip song-link" href="${u.buy}" target="_blank" rel="noopener">🛒 정품 악보 구입</a>
+        ${u.hymnary ? `<a class="chip song-link" href="${u.hymnary}" target="_blank" rel="noopener">🌐 Hymnary (무료 공개 악보)</a>` : ''}
+      </div>
+      <p style="font-size:.82rem;color:var(--ink-soft);margin:14px 0 6px"><b>듣기 · 가사</b></p>
+      <div class="chip-row">
         <a class="chip song-link" href="${u.listen}" target="_blank" rel="noopener">▶ 찬양 듣기</a>
         <a class="chip song-link" href="${u.play}" target="_blank" rel="noopener">🎹 반주 영상</a>
         <a class="chip song-link" href="${u.lyrics}" target="_blank" rel="noopener">📄 가사 보기</a>
       </div>
-      <div class="btn-row"><button class="btn btn-ghost btn-sm" id="song-copy">📋 곡 이름 복사</button></div>`);
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" id="song-save">🗄 자료 서랍에 저장</button>
+        <button class="btn btn-ghost btn-sm" id="song-copy">📋 곡 이름 복사</button>
+      </div>
+      <p class="ai-note" style="margin-top:12px"><b>저작권 안내</b> — 새찬송가 악보는 한국찬송가공회, CCM 악보는 각 저작권자에게 권리가 있습니다. 내려받은 악보를 예배에 쓰거나 인쇄·복사할 때는 <b>정품 구입 또는 CCLI 등 사용 허락</b>이 필요합니다. 저작권이 만료된 오래된 찬송은 Hymnary 등에서 무료로 받을 수 있습니다.</p>`);
     body.querySelector('#song-copy').addEventListener('click', () => {
       navigator.clipboard.writeText((s.num ? s.num + '장 ' : '') + s.title + (s.artist ? ' / ' + s.artist : ''));
       toast('복사했습니다.');
+    });
+    body.querySelector('#song-save').addEventListener('click', () => {
+      const name = (s.num ? s.num + '장 ' : '') + s.title;
+      DB.materials.unshift({
+        id: uid(), type: '메모',
+        title: '🎵 ' + name + (s.artist ? ' / ' + s.artist : ''),
+        content: [s.group + (s.num ? ' ' + s.num + '장' : ''), s.reason,
+          '악보: ' + u.score, 'PDF: ' + u.pdf, '구입: ' + u.buy, '듣기: ' + u.listen].filter(Boolean).join('\n'),
+        tags: '찬양,' + s.group,
+      });
+      save(true); closeModal();
+      toast('자료 서랍에 저장했습니다. 링크는 자료 서랍에서 다시 열 수 있습니다.');
     });
   }));
 }
