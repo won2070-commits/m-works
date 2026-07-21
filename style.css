@@ -767,3 +767,24 @@ body.resizing-editor #editor { pointer-events: none; }
   100% { box-shadow: 0 0 0 0 rgba(255,86,0,0); transform: scale(1); }
 }
 @keyframes sayIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+
+/* 다섯 단계 타일 */
+.step-tile {
+  position: relative; border-radius: var(--r-md);
+  padding: 16px 10px 14px; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  transition: transform .14s ease, filter .15s;
+}
+.step-tile:hover { transform: translateY(-2px); filter: brightness(1.03); }
+.tile-svg {
+  width: 26px; height: 26px; display: block;
+  fill: none; stroke: currentColor; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.st-ico { opacity: .9; }
+.st-lb { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+.st-n {
+  position: absolute; top: 8px; right: 10px;
+  font-family: var(--mono); font-size: .64rem; font-weight: 700;
+  opacity: .42; letter-spacing: .04em;
+}

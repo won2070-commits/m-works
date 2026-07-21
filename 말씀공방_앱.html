@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=53">
+<link rel="apple-touch-icon" href="icon-192.png?v=54">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -780,6 +780,27 @@ body.resizing-editor #editor { pointer-events: none; }
   100% { box-shadow: 0 0 0 0 rgba(255,86,0,0); transform: scale(1); }
 }
 @keyframes sayIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+
+/* 다섯 단계 타일 */
+.step-tile {
+  position: relative; border-radius: var(--r-md);
+  padding: 16px 10px 14px; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  transition: transform .14s ease, filter .15s;
+}
+.step-tile:hover { transform: translateY(-2px); filter: brightness(1.03); }
+.tile-svg {
+  width: 26px; height: 26px; display: block;
+  fill: none; stroke: currentColor; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.st-ico { opacity: .9; }
+.st-lb { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+.st-n {
+  position: absolute; top: 8px; right: 10px;
+  font-family: var(--mono); font-size: .64rem; font-weight: 700;
+  opacity: .42; letter-spacing: .04em;
+}
 
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ffffff'/><rect x='4' y='4' width='72' height='72' rx='18' fill='%23FFC000'/><text x='40' y='52' transform='scale(1 1.2)' font-size='44' font-weight='800' text-anchor='middle' fill='%23ffffff' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><rect x='48' y='42' width='44' height='44' rx='12' fill='%23FF5600' stroke='%23ffffff' stroke-width='3'/><text x='70' y='62.7' transform='scale(1 1.2)' font-size='26' font-weight='800' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>W</text></svg>">
@@ -2297,7 +2318,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v53 · 2026-07-21';
+const APP_VERSION = 'v54 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -2670,6 +2691,36 @@ function render() {
 }
 
 /* ═══════════════════ 홈 ═══════════════════ */
+/* 다섯 단계 타일 — 뜻이 바로 보이는 선 아이콘 */
+const ICO = (d, extra) => `<svg viewBox="0 0 24 24" class="tile-svg">${d}${extra || ''}</svg>`;
+const STEP_TILES = [
+  // 본문 찾기 — 펼친 성경 위의 돋보기
+  ['본문 찾기', 'var(--lime)', ICO(`
+    <path d="M3.2 5.4c2.7-1.1 5.4-1.1 8.1 0v12.4c-2.7-1.1-5.4-1.1-8.1 0V5.4z"/>
+    <path d="M11.3 5.4c1.5-.6 3-.9 4.5-.9"/>
+    <circle cx="16.6" cy="13.4" r="4.1"/>
+    <path d="M19.6 16.5l2.6 2.7"/>`)],
+  // 중심 사상 — 한 가운데로 모이는 과녁
+  ['중심 사상', 'var(--mint)', ICO(`
+    <circle cx="12" cy="12" r="8.4"/>
+    <circle cx="12" cy="12" r="4.2"/>
+    <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>`)],
+  // 설교 작성 — 원고 위를 지나는 펜
+  ['설교 작성', 'var(--lilac)', ICO(`
+    <path d="M4 20.2l.6-4.1L15.4 5.3a2.1 2.1 0 013 3L7.6 19.1l-3.6 1.1z"/>
+    <path d="M13.6 7.1l3.3 3.3"/>
+    <path d="M4 4.4h7"/><path d="M4 8.2h4.6"/>`)],
+  // 형식 결정 — 내용을 담는 틀
+  ['형식 결정', 'var(--cream)', ICO(`
+    <rect x="3.2" y="4.2" width="17.6" height="15.6" rx="2.4"/>
+    <path d="M3.2 9.4h17.6"/>
+    <path d="M9.4 9.4v10.4"/>`)],
+  // 연습하기 — 마이크와 울림
+  ['연습하기', 'var(--pink)', ICO(`
+    <rect x="9.2" y="2.8" width="5.6" height="10.4" rx="2.8"/>
+    <path d="M5.6 11.4a6.4 6.4 0 0012.8 0"/>
+    <path d="M12 17.8v3.4"/><path d="M8.8 21.2h6.4"/>`)],
+];
 function renderHome(m) {
   const recent = DB.projects.slice(0, 5);
   m.innerHTML = `
@@ -2684,8 +2735,12 @@ function renderHome(m) {
     </div>
     <div class="card">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;text-align:center">
-        ${[['① 본문 찾기', 'var(--lime)'], ['② 중심 사상', 'var(--mint)'], ['③ 설교 작성', 'var(--lilac)'], ['④ 형식 결정', 'var(--cream)'], ['⑤ 연습하기', 'var(--pink)']]
-          .map(([s, c]) => `<div style="background:${c};border-radius:var(--r-md);padding:14px 8px;font-size:1rem;font-weight:700;color:var(--ink)">${s}</div>`).join('')}
+        ${STEP_TILES.map(([label, color, icon], i) => `
+          <div class="step-tile" style="background:${color}">
+            <span class="st-ico">${icon}</span>
+            <span class="st-lb">${label}</span>
+            <span class="st-n">${i + 1}</span>
+          </div>`).join('')}
       </div>
     </div>
     ${recent.length ? `<div class="card" style="margin-top:34px"><h3>최근 작업</h3>${recent.map(p => `
