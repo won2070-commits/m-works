@@ -130,7 +130,7 @@ function normProject(p) {
   p.passage = Object.assign({ ref: '', text: '', confirmed: false, candidates: [], check: null, genre: '', extraReq: '' }, p.passage || {});
   p.central = Object.assign({ done: false }, p.central || {});
   p.draft = Object.assign({ html: '', versions: [], memo: '' }, p.draft || {});
-  p.form = Object.assign({ selected: '', fits: {}, pending: null }, p.form || {});
+  p.form = Object.assign({ selected: '', fits: {}, pending: null, rec: null }, p.form || {});
   p.rehearsal = Object.assign({ feedback: null, gestures: null, runs: [], checklist: {}, selfEval: '' }, p.rehearsal || {});
   p.step = p.step || 0;
   p.favorite = !!p.favorite;
@@ -416,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v36 · 2026-07-21';
+const APP_VERSION = 'v37 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1611,10 +1611,12 @@ function renderStep4(m, p) {
     <h1 class="step-title">형식 결정</h1>
     <p class="step-desc">형식은 그릇입니다. 같은 내용도 그릇이 바뀌면 다른 맛이 납니다. 기준은 세 축 — <b>본문의 성격 × 청중의 상태 × 설교의 목적</b>. 중심사상은 어떤 그릇에서도 보존됩니다.</p>
     <div class="btn-row" style="margin-bottom:16px">
-      <button class="btn btn-ghost" id="s4-fit" ${aiConnected() ? '' : 'disabled'}>내 설교에 맞는 형식 적합도 평가 🤖</button>
+      <button class="btn btn-primary" id="s4-rec" ${aiConnected() ? '' : 'disabled'}>내 원고를 읽고 형식 추천받기 🤖</button>
+      <button class="btn btn-ghost" id="s4-fit" ${aiConnected() ? '' : 'disabled'}>형식별 적합도 점수 🤖</button>
       <button class="btn btn-ghost" id="s4-addform">＋ 사용자 정의 형식 만들기</button>
       ${p.form.selected ? `<span class="badge" style="margin-left:auto">현재 형식: ${esc(formName(p.form.selected))}</span>` : ''}
     </div>
+    <div id="s4-recbox">${p.form.rec ? renderFormatRec(p, p.form.rec) : ''}</div>
     ${renderFormGroups(p, fits)}
     <div class="btn-row" style="margin-top:20px">
       <button class="btn btn-primary" id="s4-go5" style="margin-left:auto">5단계 연습하기 →</button>
@@ -1632,9 +1634,54 @@ function renderStep4(m, p) {
       touch(p); render();
     } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
   });
+  $('#s4-rec').addEventListener('click', () => recommendFormat(p));
+  const recConv = $('#s4-rec-convert');
+  if (recConv) recConv.addEventListener('click', () => convertFormat(p, recConv.dataset.key));
+  const recAgain = $('#s4-rec-again');
+  if (recAgain) recAgain.addEventListener('click', () => recommendFormat(p));
   $('#s4-addform').addEventListener('click', () => openFormEditor(null, () => render()));
   $('#s4-go5').addEventListener('click', () => gotoStep(5));
   $$('#main [data-conv]').forEach(b => b.addEventListener('click', () => convertFormat(p, b.dataset.conv)));
+}
+/* 원고를 읽고 형식 추천 */
+async function recommendFormat(p) {
+  syncEditor();
+  try {
+    setProgressEta(80, ['원고 전체를 읽는 중…', '지금의 흐름을 진단하는 중…', '형식들과 견주는 중…', '추천 이유를 쓰는 중…']);
+    const r = await callAIJson('formatRecommend', {
+      ref: p.passage.ref, genre: p.passage.genre || '(미상)',
+      homiletical: p.central.homiletical, audience: p.inputs.audience, purpose: p.inputs.purpose,
+      targetMin: p.inputs.targetMin,
+      draft: htmlToText(p.draft.html).slice(0, 14000),
+      formatList: allForms().map(f => f.key + '=' + f.name).join(', '),
+    }, { label: '원고를 읽고 어울리는 형식을 찾는 중…' });
+    p.form.rec = r; p.form.recAt = Date.now();
+    touch(p); render();
+    const box = $('#s4-recbox');
+    if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
+function renderFormatRec(p, r) {
+  const b = r.best || {};
+  const alts = (r.alternatives || []).filter(a => a && a.key);
+  return `
+    <div class="card rec-card">
+      <h3 style="margin-top:0">🤖 AI 형식 추천 <span class="opt" style="font-weight:400;font-size:.74rem">— 내 원고를 읽고 판단한 결과</span></h3>
+      ${r.currentShape ? `<div class="fb-item" style="background:var(--surface-soft)"><b>지금 원고의 흐름</b>${esc(r.currentShape)}</div>` : ''}
+      <div class="rec-best">
+        <div class="rec-name">추천 — ${esc(formName(b.key) || b.key || '')}</div>
+        ${b.reason ? `<p>${esc(b.reason)}</p>` : ''}
+        ${b.whatChanges ? `<div class="meta"><b>바뀌는 점</b> ${esc(b.whatChanges)}</div>` : ''}
+        ${b.risk ? `<div class="meta"><b>주의</b> ${esc(b.risk)}</div>` : ''}
+        ${b.key ? `<div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-primary btn-sm" id="s4-rec-convert" data-key="${esc(b.key)}" ${aiConnected() ? '' : 'disabled'}>이 형식으로 변환 🤖</button>
+          <button class="btn btn-ghost btn-sm" id="s4-rec-again" ${aiConnected() ? '' : 'disabled'}>다시 추천받기 🤖</button>
+        </div>` : ''}
+      </div>
+      ${alts.length ? `<div style="margin-top:12px"><b style="font-size:.86rem">차선책</b>
+        ${alts.map(a => `<div class="meta"><b>${esc(formName(a.key) || a.key)}</b> ${esc(a.reason || '')}</div>`).join('')}</div>` : ''}
+      ${r.keepAsIs ? `<div class="ai-note" style="margin-top:12px"><b>형식을 바꾸지 않아도 되는 이유</b> — ${esc(r.keepAsIs)}</div>` : ''}
+    </div>`;
 }
 const FORM_GROUPS = [
   ['deductive', '연역적 형식', '중심사상을 앞에 두고 설명해 내려간다', 'var(--mint)'],

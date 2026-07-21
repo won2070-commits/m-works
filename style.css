@@ -628,3 +628,13 @@ body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea
 .tool-out { font-size: .8rem; line-height: 1.65; background: var(--surface-soft); border-radius: 8px; padding: 9px 11px; margin-top: 5px; max-height: 300px; overflow-y: auto; }
 .tool-out:empty { display: none; }
 .tool-out p { margin: 0 0 6px; }
+
+/* 4단계 AI 형식 추천 카드 */
+.rec-card { border: 2px solid var(--fin); }
+.rec-best {
+  background: var(--cream); border-radius: var(--r-md);
+  padding: 14px 16px; margin-top: 10px;
+}
+.rec-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.rec-best p { font-size: .88rem; line-height: 1.65; margin: 0 0 8px; }
+.rec-best .meta { font-size: .8rem; line-height: 1.6; margin-top: 4px; opacity: .9; }
