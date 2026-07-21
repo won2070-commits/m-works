@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=42">
+<link rel="apple-touch-icon" href="icon-192.png?v=43">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -82,6 +82,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .save-status { font-size: .66rem; font-family: var(--mono); letter-spacing: .04em; color: var(--ink); opacity: .75; min-width: 88px; text-align: right; margin-left: auto; }
+.save-status:empty { min-width: 0; }
 .top-actions { display: flex; gap: 8px; align-items: center; }
 .top-btn {
   background: var(--canvas); color: var(--ink);
@@ -732,7 +733,7 @@ body.resizing-editor #editor { pointer-events: none; }
       <strong>M.Works</strong>
     </div>
   </div>
-  <div id="save-status" class="save-status" title="자동 저장 상태">—</div>
+  <div id="save-status" class="save-status" title="자동 저장 상태"></div>
   <button class="icon-btn top-tool" id="top-settings" title="설정" aria-label="설정"><svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 1.56V21a2 2 0 11-4 0v-.09A1.7 1.7 0 009 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.56-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.56V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.51 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9c.06.32.1.66.1 1a1.7 1.7 0 001.56 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1z"/></svg></button>
 </header>
 
@@ -1973,7 +1974,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v42 · 2026-07-21';
+const APP_VERSION = 'v43 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {

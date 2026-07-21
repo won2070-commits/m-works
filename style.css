@@ -69,6 +69,7 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
   color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .save-status { font-size: .66rem; font-family: var(--mono); letter-spacing: .04em; color: var(--ink); opacity: .75; min-width: 88px; text-align: right; margin-left: auto; }
+.save-status:empty { min-width: 0; }
 .top-actions { display: flex; gap: 8px; align-items: center; }
 .top-btn {
   background: var(--canvas); color: var(--ink);
