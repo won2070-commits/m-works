@@ -210,7 +210,7 @@ function fmtClock(sec) {
   const m = Math.floor(sec / 60), x = Math.round(sec % 60);
   return m + ':' + String(x).padStart(2, '0');
 }
-function showProgress(label) {
+function showProgress(label, key) {
   clearInterval(aiTimerInt); // 앞선 타이머가 남아 겹치지 않게
   $('#ai-progress-label').textContent = label;
   const sub = $('#ai-progress-sub');
@@ -229,7 +229,7 @@ function showProgress(label) {
   ring.style.strokeDashoffset = RING_LEN;
   showProgress._late = false;
   $('#ai-progress').classList.remove('hidden');
-  startTips();
+  startTips(key);
   const t0 = Date.now();
   $('#ai-progress-timer').textContent = '0:00';
   $('#ai-ring-left').textContent = '약 ' + fmtClock(eta) + ' 예상';
@@ -273,8 +273,8 @@ const NARRATION = {
   },
   central: { first: '본문을 다 읽었습니다. 구조를 뜯어봅니다.',
     marks: [[/"keywords"/, '반복되는 낱말과 핵심 동사를 찾았습니다.'], [/"structure"/, '본문의 구조를 나눴습니다.'],
-            [/"subject"/, '주요소 — 본문이 던지는 질문을 세웠습니다.'], [/"complement"/, '보조요소 — 본문의 답을 찾았습니다.'],
-            [/"homiletical"/, '오늘 이 회중을 향한 문장으로 옮기는 중입니다.'], [/"fcf"/, 'FCF — 본문이 겨냥하는 깨어짐을 짚습니다.']] },
+            [/"subject"/, '주요소 — 본문이 던지는 질문을 세웠습니다.', '중심사상'], [/"complement"/, '보조요소 — 본문의 답을 찾았습니다.'],
+            [/"homiletical"/, '오늘 이 회중을 향한 문장으로 옮기는 중입니다.', '중심사상'], [/"fcf"/, 'FCF — 본문이 겨냥하는 깨어짐을 짚습니다.', 'FCF']] },
   recommend: { first: '성경 전체에서 후보를 추리기 시작했습니다.',
     count: [/"ref"\s*:/g, n => n + '번째 본문 후보를 찾았습니다.'] },
   gestures: { first: '원고를 다 읽었습니다. 몸짓이 필요한 자리를 봅니다.',
@@ -287,14 +287,14 @@ const NARRATION = {
     count: [/"title"\s*:/g, n => '제목 ' + n + '개째 만들었습니다.'] },
   genius: { first: '원고를 정독했습니다. 냉정하게 보겠습니다.',
     marks: [[/"verdict"/, '이 설교의 수준을 한 문장으로 진단합니다.'], [/"score"/, '다섯 가지 축으로 점수를 매기는 중입니다.'],
-            [/"brightest"/, '가장 빛나는 문장을 찾았습니다.'], [/"dullest"/, '힘이 빠지는 대목을 짚고 대안을 씁니다.'],
-            [/"geniusIdeas"/, '천재화 아이디어를 짓고 있습니다.'], [/"cutList"/, '잘라낼 것을 고릅니다.']] },
+            [/"brightest"/, '가장 빛나는 문장을 찾았습니다.', '원고'], [/"dullest"/, '힘이 빠지는 대목을 짚고 대안을 씁니다.'],
+            [/"geniusIdeas"/, '천재화 아이디어를 짓고 있습니다.', '태도'], [/"cutList"/, '잘라낼 것을 고릅니다.']] },
   formatRecommend: { first: '원고의 지금 흐름을 진단하는 중입니다.',
-    marks: [[/"currentShape"/, '이 원고가 실제로 하고 있는 전개를 파악했습니다.'], [/"best"/, '가장 어울리는 형식을 골랐습니다.'],
+    marks: [[/"currentShape"/, '이 원고가 실제로 하고 있는 전개를 파악했습니다.'], [/"best"/, '가장 어울리는 형식을 골랐습니다.', '형식'],
             [/"alternatives"/, '차선책도 함께 챙깁니다.']] },
   feedback: { first: '원고를 처음부터 점검하기 시작했습니다.',
     marks: [[/"oneIdea"/, '중심사상이 끝까지 유지되는지 봅니다.'], [/"theologyRisk"/, '신학적으로 오해될 곳을 살핍니다.'],
-            [/"delivery"/, '이제 전달을 점검합니다 — 입에서 걸리는 문장부터.'], [/"stress"/, '강조할 단어와 멈출 지점을 고릅니다.']] },
+            [/"delivery"/, '이제 전달을 점검합니다 — 입에서 걸리는 문장부터.', '전달'], [/"stress"/, '강조할 단어와 멈출 지점을 고릅니다.']] },
   formatConvert: { first: '원고를 해체했습니다. 새 그릇에 담습니다.' },
   weave: { first: '자료가 들어갈 자리를 찾았습니다.' },
   partial: { first: '요청하신 부분을 다시 씁니다.' },
@@ -325,7 +325,10 @@ function makeNarrator(key) {
       for (let i = 0; i < cfg.marks.length; i++) {
         if (done.has(i)) continue;
         if (cfg.marks[i][0].test(full)) {
-          if (narrate(cfg.marks[i][1])) done.add(i);   // 말한 것만 지운다
+          if (narrate(cfg.marks[i][1])) {
+            done.add(i);                       // 말한 것만 지운다
+            if (cfg.marks[i][2]) showTip(cfg.marks[i][2]);  // 그 대목에 맞는 노하우를 함께
+          }
           return;
         }
       }
@@ -367,22 +370,74 @@ const PREACH_TIPS = [
   ['전달', '제스처는 의미를 돕는 동작만. 과장된 손짓은 말을 가립니다.'],
   ['태도', '설교는 대신 생산되는 것이 아닙니다. AI는 재료를 다듬을 뿐, 첫 문장과 마지막 문장은 설교자의 손에서 나옵니다.'],
   ['태도', '믿지 않는 사람이 듣고 있다는 전제로 쓰세요. 교회 안의 언어가 교회 밖에서도 들리게.'],
+  ['서론', '서론은 문을 여는 일입니다. 문 앞에서 오래 서성이면 회중은 들어오기 전에 지칩니다.'],
+  ['서론', '첫 문장은 설교자의 손으로 쓰세요. 회중은 첫 문장에서 오늘 설교자의 마음 상태를 읽습니다.'],
+  ['본문 선택', '주제에 맞춰 본문을 끼워 맞추지 않습니다. 본문이 말하게 두고, 그 말이 오늘 어디에 닿는지를 찾습니다.'],
+  ['예화', '예화가 설교보다 오래 기억되면 그 예화는 실패한 것입니다. 창문이 벽을 이기면 안 됩니다.'],
+  ['적용', '적용은 "무엇을"에서 멈추지 않고 "어떻게 확인하는가"까지 갑니다. 그래야 다음 주가 있습니다.'],
+  ['결론', '결론에서 새 이야기를 꺼내지 마세요. 닫으려는 순간 열면 회중은 자리에서 마음을 놓칩니다.'],
+  ['형식', '형식을 바꾸면 무게 중심이 옮겨집니다. 무엇을 살리고 무엇을 잃는지 알고 고르세요.'],
+  ['형식', '원포인트는 한 가지만 남기는 형식입니다. 다 말하려는 욕심을 내려놓을 때 하나가 선명해집니다.'],
+  ['연습', '삼십 분 안에 끝내세요. 연습이 길어지면 설교가 아니라 낭독이 됩니다.'],
+  ['전달', '어미를 내리면 문장이 닫히고, 올리면 열립니다. 닫을 곳과 열 곳을 정해 두세요.'],
+  ['원고', '문어체 한 문장이 강단에서 세 번 걸립니다. 소리 내어 읽어 보면 바로 드러납니다.'],
+  ['중심사상', '중심사상이 흐려지면 원고가 길어집니다. 길이는 대개 생각이 정리되지 않았다는 신호입니다.'],
+  ['FCF', 'FCF는 죄목을 고르는 일이 아니라, 이 본문이 왜 필요한지를 묻는 일입니다.'],
+  ['태도', '설교는 설교자가 먼저 들은 말씀입니다. 내가 듣지 않은 말을 회중에게 건넬 수는 없습니다.'],
 ];
-let tipTimer = null, tipIdx = 0;
-function startTips() {
+/* 작업마다 어울리는 지식 갈래 */
+const TIP_SCOPE = {
+  sermon: ['원고', '서론', '예화', '적용', '결론', '태도'],
+  central: ['중심사상', 'FCF'],
+  centralRefine: ['중심사상'],
+  fcf: ['FCF', '중심사상'],
+  recommend: ['본문 선택'],
+  passageCheck: ['본문 선택'],
+  fetchPassage: ['본문 선택'],
+  titleSuggest: ['원고', '서론'],
+  partial: ['원고', '예화', '적용', '결론'],
+  weave: ['예화', '원고'],
+  formatRecommend: ['형식'],
+  formatConvert: ['형식'],
+  formatFit: ['형식'],
+  gestures: ['전달', '연습'],
+  stress: ['전달', '연습'],
+  breaths: ['연습', '전달'],
+  feedback: ['연습', '전달', '원고'],
+  sermonReport: ['연습', '전달', '원고', '태도'],
+  genius: ['원고', '적용', '결론', '태도'],
+  importAnalyze: ['원고'],
+};
+let tipTimer = null, tipPool = [], tipIdx = 0, tipSeen = new Set();
+function showTip(tag) {
   const el = $('#ai-progress-tip');
   if (!el) return;
-  tipIdx = Math.floor(Math.random() * PREACH_TIPS.length);
-  const show = () => {
-    const [tag, text] = PREACH_TIPS[tipIdx % PREACH_TIPS.length];
-    el.innerHTML = '<b>💡 ' + esc(tag) + '</b>' + esc(text);
-    el.classList.remove('hidden');
-    el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
-    tipIdx++;
-  };
-  show();
+  let pick = null;
+  if (tag) {   // 지금 하는 일과 같은 갈래에서 아직 안 보여준 것 우선
+    const same = PREACH_TIPS.filter(t => t[0] === tag);
+    pick = same.find(t => !tipSeen.has(t[1])) || same[Math.floor(Math.random() * same.length)] || null;
+  }
+  if (!pick) {
+    const pool = tipPool.length ? tipPool : PREACH_TIPS;
+    pick = pool[tipIdx % pool.length]; tipIdx++;
+  }
+  if (!pick) return;
+  tipSeen.add(pick[1]);
+  el.innerHTML = '<b>💡 ' + esc(pick[0]) + ' — 들끌 노트</b>' + esc(pick[1]);
+  el.classList.remove('hidden');
+  el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+}
+function startTips(key) {
+  const el = $('#ai-progress-tip');
+  if (!el) return;
+  const scope = TIP_SCOPE[key];
+  tipPool = scope ? PREACH_TIPS.filter(t => scope.includes(t[0])) : PREACH_TIPS.slice();
+  if (!tipPool.length) tipPool = PREACH_TIPS.slice();
+  tipSeen = new Set();
+  tipIdx = Math.floor(Math.random() * tipPool.length);
+  showTip();
   clearInterval(tipTimer);
-  tipTimer = setInterval(show, 11000);
+  tipTimer = setInterval(() => showTip(), 11000);
 }
 function stopTips() {
   clearInterval(tipTimer); tipTimer = null;
@@ -425,7 +480,7 @@ async function callAI(key, slots, opts = {}) {
     maxTokens: p.maxTokens,
   };
   aiAbort = new AbortController();
-  if (!opts.silent) showProgress(opts.label || p.label + ' — AI 작업 중…');
+  if (!opts.silent) showProgress(opts.label || p.label + ' — AI 작업 중…', key);
   const narrator = opts.silent ? null : makeNarrator(key);
   let full = '';
   try {
@@ -580,7 +635,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v51 · 2026-07-21';
+const APP_VERSION = 'v52 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
