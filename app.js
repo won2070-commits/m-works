@@ -131,7 +131,7 @@ function normProject(p) {
   p.central = Object.assign({ done: false }, p.central || {});
   p.draft = Object.assign({ html: '', versions: [], memo: '' }, p.draft || {});
   p.form = Object.assign({ selected: '', fits: {}, pending: null, rec: null }, p.form || {});
-  p.rehearsal = Object.assign({ feedback: null, gestures: null, genius: null, runs: [], checklist: {}, selfEval: '' }, p.rehearsal || {});
+  p.rehearsal = Object.assign({ feedback: null, gestures: null, genius: null, stress: null, runs: [], checklist: {}, selfEval: '' }, p.rehearsal || {});
   p.step = p.step || 0;
   p.favorite = !!p.favorite;
   return p;
@@ -416,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v43 · 2026-07-21';
+const APP_VERSION = 'v44 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -2027,10 +2027,13 @@ function renderStep5(m, p) {
         <button class="btn btn-primary" id="s5-feedback" ${aiConnected() ? '' : 'disabled'}>내용 + 전달 피드백 받기 🤖</button>
         <button class="btn btn-ghost" id="s5-gestures" ${aiConnected() ? '' : 'disabled'}>제스처 5~10개 제안 🤖</button>
         <button class="btn btn-ghost" id="s5-breaths" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 자리 찾기 🤖</button>
+        <button class="btn btn-ghost" id="s5-stress" ${aiConnected() ? '' : 'disabled'}>강약 자리 찾기 🤖</button>
+        <button class="btn btn-primary" id="s5-marked">📖 낭독 표시 원고 보기</button>
         <button class="btn btn-ai" id="s5-genius" ${aiConnected() ? '' : 'disabled'}>💎 천재화 — 평가와 아이디어 🤖</button>
         <button class="btn btn-gold" id="s5-rehearse">🎤 리허설 모드 시작</button>
       </div>
       <div id="s5-br">${r.breaths ? renderBreaths(r.breaths) : ''}</div>
+      <div id="s5-st">${r.stress ? renderStress(r.stress) : ''}</div>
       <div id="s5-fb">${r.feedback ? renderFeedback(r.feedback, p) : ''}</div>
       <div id="s5-gs">${r.gestures ? renderGestures(r.gestures) : ''}</div>
       <div id="s5-gn">${r.genius ? renderGenius(p, r.genius) : ''}</div>
@@ -2054,6 +2057,12 @@ function renderStep5(m, p) {
   $('#s5-gestures').addEventListener('click', () => getGestures(p));
   $('#s5-breaths').addEventListener('click', () => getBreaths(p));
   $('#s5-genius').addEventListener('click', () => getGenius(p));
+  $('#s5-stress').addEventListener('click', () => getStress(p));
+  $('#s5-marked').addEventListener('click', () => openMarkedScript(p, 'all'));
+  const stIns = $('#s5-st-insert');
+  if (stIns) stIns.addEventListener('click', () => insertStressMarks(p));
+  const stView = $('#s5-st-view');
+  if (stView) stView.addEventListener('click', () => openMarkedScript(p, 'stress'));
   const gnApply = $('#s5-gn-open');
   if (gnApply) gnApply.addEventListener('click', () => { syncEditor(); gotoStep(3); });
   const gnAgain = $('#s5-gn-again');
@@ -2193,6 +2202,73 @@ function renderBreaths(b) {
     <div class="btn-row"><button class="btn btn-primary btn-sm" id="s5-br-insert">원고에 ∕·⏸ 표시 자동 삽입</button><button class="btn btn-ghost btn-sm" id="s5-br-view">📄 원고에서 위치 보기</button>
     <span style="font-size:.74rem;opacity:.858">삽입 후 3단계 편집기와 리허설 모드에 표시됩니다</span></div>`;
 }
+/* 강약 자리 찾기 */
+async function getStress(p) {
+  syncEditor();
+  try {
+    setProgressEta(120, ['원고를 소리로 읽어 보는 중…', '힘이 실릴 낱말을 고르는 중…', '흘려보낼 대목을 찾는 중…', '정리하는 중…']);
+    const r = await callAIJson('stress', { draft: htmlToText(p.draft.html).slice(0, 16000) },
+      { label: '강약을 줄 자리를 찾는 중…' });
+    p.rehearsal.stress = r; touch(p); render();
+    const box = $('#s5-st'); if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
+const HOW_ICON = { '높여서': '↗', '낮춰서': '↘', '늘려서': '〜', '끊어서': '｜' };
+function renderStress(st) {
+  const list = (st.marks || []).filter(x => x && x.word);
+  const soft = (st.soften || []).filter(x => x && x.sentence);
+  if (!list.length) return '';
+  return `<h4 style="margin-top:18px">강약 자리 (${list.length}곳) <span class="opt" style="font-size:.75rem;font-weight:400">— 한 문장에 하나면 충분합니다</span></h4>
+    <div class="st-list">
+      ${list.map(x => `<div class="st-item ${x.level === '강' ? 'st-strong' : ''}">
+        <span class="st-word">${esc(x.word)}</span>
+        <span class="st-how">${HOW_ICON[x.how] || '↗'} ${esc(x.how || '')}</span>
+        <span class="st-lv">${esc(x.level || '')}</span>
+        <div class="st-why">${esc(x.why || '')}</div>
+      </div>`).join('')}
+    </div>
+    ${soft.length ? `<div class="ai-note" style="margin-top:10px"><b>힘을 빼고 흘릴 대목</b><br>${soft.map(x => '· ' + esc(x.sentence) + ' — ' + esc(x.why)).join('<br>')}</div>` : ''}
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" id="s5-st-insert">원고에 강약 표시 삽입</button>
+      <button class="btn btn-ghost btn-sm" id="s5-st-view">📄 원고에서 위치 보기</button>
+    </div>`;
+}
+/* 원고에 강약 표시(형광) 삽입 — 문장을 찾아 그 안의 낱말만 감싼다 */
+function insertStressMarks(p) {
+  const marks = (p.rehearsal.stress && p.rehearsal.stress.marks) || [];
+  const div = document.createElement('div');
+  div.innerHTML = p.draft.html;
+  const norm = t => t.replace(/\s+/g, ' ').trim();
+  let ok = 0;
+  for (const mk of marks) {
+    const word = (mk.word || '').trim();
+    if (word.length < 2) continue;
+    const tail = norm(mk.sentence || '').slice(-20);
+    const walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT);
+    let node, done = false;
+    while (!done && (node = walker.nextNode())) {
+      if (node.parentElement && node.parentElement.closest('.stress-mark')) continue;
+      const txt = node.textContent;
+      if (tail.length > 5 && norm(txt).indexOf(tail.slice(-10)) < 0 && norm(txt).indexOf(word) < 0) continue;
+      const idx = txt.indexOf(word);
+      if (idx < 0) continue;
+      const before = txt.slice(0, idx), after = txt.slice(idx + word.length);
+      const span = document.createElement('span');
+      span.className = 'stress-mark';
+      span.textContent = word;
+      span.title = (mk.how || '') + ' — ' + (mk.why || '');
+      const parent = node.parentNode;
+      parent.insertBefore(document.createTextNode(before), node);
+      parent.insertBefore(span, node);
+      parent.insertBefore(document.createTextNode(after), node);
+      parent.removeChild(node);
+      ok++; done = true;
+    }
+  }
+  p.draft.html = div.innerHTML;
+  touch(p); render();
+  toast(ok + '곳에 강약 표시를 넣었습니다.' + (ok < marks.length ? ' (' + (marks.length - ok) + '곳은 문장을 찾지 못했습니다)' : ''));
+}
 async function getBreaths(p) {
   try {
     setProgressEta(80, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '정리하는 중…']);
@@ -2269,26 +2345,83 @@ function markScriptHtml(html, items, spanFor) {
   return { html: div.innerHTML, found };
 }
 function openMarkedScript(p, type) {
-  const isG = type === 'gestures';
-  const items = isG ? ((p.rehearsal.gestures && p.rehearsal.gestures.gestures) || [])
-                    : ((p.rehearsal.breaths && p.rehearsal.breaths.marks) || []);
-  if (!items.length) { toast('먼저 추천을 받아 주세요.'); return; }
-  const res = markScriptHtml(p.draft.html, items, (it, i) =>
-    isG ? `<button class="gmark" data-mi="${i}" title="누르면 설명이 나옵니다">🖐${CIRC[i] || (i + 1)}</button>`
-        : `<button class="gmark bmark" data-mi="${i}" title="누르면 설명이 나옵니다">${it.kind === '멈춤' ? '⏸' + (it.seconds || 2) + '초' : '∕'}${CIRC[i] || ''}</button>`);
-  const body = modal(isG ? '제스처 위치 — 설교 원고' : '쉼·멈춤 위치 — 설교 원고', `
-    <p style="font-size:.8rem;color:var(--ink-soft);margin-bottom:10px">본문 속 주황/남색 표시를 누르면 오른쪽에 설명이 나옵니다. (${res.found}/${items.length}곳 표시됨)</p>
+  const r = p.rehearsal || {};
+  const G = (r.gestures && r.gestures.gestures) || [];
+  const B = (r.breaths && r.breaths.marks) || [];
+  const S = (r.stress && r.stress.marks) || [];
+  // 한 종류만 볼 때 / 세 가지를 함께 볼 때
+  const want = type === 'all' ? ['gestures', 'breaths', 'stress']
+             : type === 'gestures' ? ['gestures'] : type === 'stress' ? ['stress'] : ['breaths'];
+  const pool = [];
+  if (want.includes('gestures')) G.forEach((x, i) => pool.push({ kindType: 'gestures', it: x, n: i }));
+  if (want.includes('breaths')) B.forEach((x, i) => pool.push({ kindType: 'breaths', it: x, n: i }));
+  if (want.includes('stress')) S.forEach((x, i) => pool.push({ kindType: 'stress', it: x, n: i }));
+  if (!pool.length) {
+    toast(type === 'all'
+      ? '먼저 위의 [제스처] · [쉼·멈춤] · [강약] 중 하나 이상을 받아 주세요.'
+      : '먼저 추천을 받아 주세요.', 4500);
+    return;
+  }
+  // ① 문장 끝에 붙는 표시(제스처·쉼멈춤)를 먼저 심는다
+  const endMarks = pool.filter(x => x.kindType !== 'stress');
+  const res = markScriptHtml(p.draft.html, endMarks.map(x => x.it), (it, i) => {
+    const e = endMarks[i];
+    const gi = pool.indexOf(e);
+    return e.kindType === 'gestures'
+      ? `<button class="gmark" data-mi="${gi}" title="누르면 설명이 나옵니다">🖐${CIRC[e.n] || (e.n + 1)}</button>`
+      : `<button class="gmark bmark" data-mi="${gi}" title="누르면 설명이 나옵니다">${it.kind === '멈춤' ? '⏸' + (it.seconds || 2) + '초' : '∕'}</button>`;
+  });
+  // ② 강약은 문장 속 낱말을 감싼다
+  let html = res.html, stressFound = 0;
+  if (want.includes('stress') && S.length) {
+    const d = document.createElement('div');
+    d.innerHTML = html;
+    for (const e of pool.filter(x => x.kindType === 'stress')) {
+      const word = (e.it.word || '').trim();
+      if (word.length < 2) continue;
+      const gi = pool.indexOf(e);
+      const walker = document.createTreeWalker(d, NodeFilter.SHOW_TEXT);
+      let node, done = false;
+      while (!done && (node = walker.nextNode())) {
+        if (node.parentElement && node.parentElement.closest('.smark,.gmark')) continue;
+        const idx = node.textContent.indexOf(word);
+        if (idx < 0) continue;
+        const txt = node.textContent;
+        const btn = document.createElement('button');
+        btn.className = 'smark' + (e.it.level === '강' ? ' smark-strong' : '');
+        btn.dataset.mi = gi; btn.textContent = word; btn.title = '누르면 설명이 나옵니다';
+        const parent = node.parentNode;
+        parent.insertBefore(document.createTextNode(txt.slice(0, idx)), node);
+        parent.insertBefore(btn, node);
+        parent.insertBefore(document.createTextNode(txt.slice(idx + word.length)), node);
+        parent.removeChild(node);
+        stressFound++; done = true;
+      }
+    }
+    html = d.innerHTML;
+  }
+  const titles = { all: '낭독 표시 원고 — 제스처 · 쉼멈춤 · 강약', gestures: '제스처 위치 — 설교 원고', breaths: '쉼·멈춤 위치 — 설교 원고', stress: '강약 위치 — 설교 원고' };
+  const legend = [
+    want.includes('gestures') && G.length ? '<span class="lg"><b class="gmark" style="pointer-events:none">🖐</b> 제스처</span>' : '',
+    want.includes('breaths') && B.length ? '<span class="lg"><b class="gmark bmark" style="pointer-events:none">∕ ⏸</b> 쉼·멈춤</span>' : '',
+    want.includes('stress') && S.length ? '<span class="lg"><b class="smark smark-strong" style="pointer-events:none">강약</b> 힘주는 낱말</span>' : '',
+  ].filter(Boolean).join('');
+  const body = modal(titles[type] || titles.all, `
+    <div class="ms-legend">${legend}<span style="opacity:.75;font-size:.76rem">표시를 누르면 오른쪽에 설명이 나옵니다 · ${res.found + stressFound}곳 표시됨</span></div>
     <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
-      <div class="stream-preview" id="ms-text" style="flex:2;min-width:260px;max-height:56vh;overflow:auto">${res.html}</div>
+      <div class="stream-preview" id="ms-text" style="flex:2;min-width:260px;max-height:56vh;overflow:auto">${html}</div>
       <div id="ms-side" style="flex:1;min-width:200px"><p style="font-size:.84rem;color:var(--ink-soft)">👈 본문의 표시를 눌러 보세요.</p></div>
     </div>`);
-  body.querySelectorAll('.gmark').forEach(el => el.addEventListener('click', () => {
-    body.querySelectorAll('.gmark.on').forEach(x => x.classList.remove('on'));
+  body.querySelectorAll('.gmark,.smark').forEach(el => el.addEventListener('click', () => {
+    body.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
     el.classList.add('on');
-    const i = +el.dataset.mi, it = items[i];
-    $('#ms-side').innerHTML = isG ? `
+    const e = pool[+el.dataset.mi];
+    if (!e) return;
+    const it = e.it;
+    $('#ms-side').innerHTML =
+      e.kindType === 'gestures' ? `
       <div class="gesture" style="margin:0">
-        <div class="g-sent">${CIRC[i] || ''} "${esc(it.sentence)}" <span class="badge">${esc(it.position || '')}</span></div>
+        <div class="g-sent">${CIRC[e.n] || ''} "${esc(it.sentence)}" <span class="badge">${esc(it.position || '')}</span></div>
         ${gestureArtHtml(it)}
         <div style="font-size:.9rem;margin:6px 0"><b>${esc(it.gesture)}</b></div>
         <div class="g-grid">
@@ -2297,6 +2430,13 @@ function openMarkedScript(p, type) {
           <span><b>속도</b> ${esc(it.pace)}</span><span><b>멈춤</b> ${esc(it.pauseSec)}초</span>
         </div>
         <div style="font-size:.8rem;color:var(--ink-soft);margin-top:6px">이유 — ${esc(it.why)}</div>
+      </div>`
+      : e.kindType === 'stress' ? `
+      <div class="fb-item" style="background:var(--lime);margin:0">
+        <b>${HOW_ICON[it.how] || '↗'} ${esc(it.word)}</b>
+        <div style="font-size:.84rem;margin-top:4px"><b>${esc(it.level || '')}</b> · ${esc(it.how || '')}</div>
+        <div style="font-size:.8rem;margin-top:6px;opacity:.9">"${esc(it.sentence)}"</div>
+        <div style="font-size:.78rem;opacity:.85;margin-top:4px">${esc(it.why || '')}</div>
       </div>` : `
       <div class="fb-item" style="background:${it.kind === '멈춤' ? 'var(--lilac)' : 'var(--mint)'};margin:0">
         <b>${it.kind === '멈춤' ? '⏸ 멈춤 ' + esc(it.seconds) + '초' : '∕ 쉼'}</b>

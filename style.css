@@ -697,3 +697,24 @@ body.serif-ui, body.serif-ui button, body.serif-ui input, body.serif-ui textarea
 body.resizing-editor { user-select: none; cursor: ns-resize; }
 body.resizing-editor #editor { pointer-events: none; }
 @media print { #editor-resize { display: none !important; } }
+
+/* 강약 표시 */
+.smark {
+  background: var(--lime); border: none; border-radius: 4px;
+  padding: 1px 3px; font: inherit; cursor: pointer; color: var(--ink);
+}
+.smark-strong { background: var(--gold); font-weight: 700; }
+.smark.on { outline: 2.5px solid var(--ink); outline-offset: 1px; }
+.ms-legend { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-size: .78rem; }
+.ms-legend .lg { display: inline-flex; align-items: center; gap: 5px; }
+.st-list { display: flex; flex-direction: column; gap: 6px; }
+.st-item {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;
+  background: var(--surface-soft); border-radius: var(--r-md); padding: 8px 12px;
+}
+.st-item.st-strong { background: var(--cream); }
+.st-word { font-weight: 700; font-size: .92rem; }
+.st-how { font-size: .76rem; opacity: .8; }
+.st-lv { font-size: .72rem; font-weight: 700; background: var(--lime); border-radius: var(--r-pill); padding: 1px 8px; }
+.st-item.st-strong .st-lv { background: var(--gold); }
+.st-why { grid-column: 1 / -1; font-size: .78rem; opacity: .82; line-height: 1.5; }
