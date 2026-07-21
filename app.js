@@ -416,7 +416,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v47 · 2026-07-21';
+const APP_VERSION = 'v49 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1248,7 +1248,7 @@ const PARTIAL_REQUESTS = [
   '예화 추가 (가상 예시는 표시)', '예화 교체', '유머 추가 (품위 있게)', '적용 구체화',
   '복음적 연결 점검', '결론 다시 작성', '결론 압축', '촌철살인의 한 문장 5개',
   '전체 분량 늘리기', '전체 분량 줄이기', '목표 시간에 맞게 조절',
-  'AI 냄새 제거', '설교자의 기존 문체에 맞게 수정',
+  'AI 냄새 제거', '설교자의 기존 문체에 맞게 수정', '지금의 설교로 (요즘 언어·표현으로)',
   '추천 도서 내용을 설교문에 추가 (책 제목 + A4 2쪽 요약)',
 ];
 function renderStep3(m, p) {
@@ -1796,7 +1796,7 @@ const PARTIAL_PLACE = [
   { re: /복음적 연결/, mode: 'section', heads: ['복음', '복음적 연결'] },
   { re: /예화/, mode: 'section', heads: ['예화'] },
   { re: /본론|본문 해설|논리|설명 보강/, mode: 'section', heads: ['본론', '본문 설명', '본문'] },
-  { re: /분량|목표 시간|AI 냄새|문체/, mode: 'whole' },
+  { re: /분량|목표 시간|AI 냄새|문체|지금의 설교로/, mode: 'whole' },
 ];
 function placeRuleFor(request) {
   const r = PARTIAL_PLACE.find(x => x.re.test(request));
@@ -1825,11 +1825,24 @@ function applyPartial(p, request, outMd) {
   if (rule.mode === 'whole') {
     const h1 = div.querySelector('h1');
     const keepTitle = h1 ? h1.outerHTML : '';
+    const titleTxt = h1 ? h1.textContent.replace(/\s/g, '') : '';
     const body = document.createElement('div');
     body.innerHTML = outHtml;
-    const bh1 = body.querySelector('h1');
-    if (bh1 && keepTitle) bh1.remove();
-    p.draft.html = keepTitle + body.innerHTML;
+    // 결과가 제목을 다시 달았으면(h1이든 첫 문단이든) 지운다
+    for (let i = 0; i < 3 && body.firstElementChild; i++) {
+      const el = body.firstElementChild;
+      const t = el.textContent.replace(/\s/g, '');
+      const isTitleDup = titleTxt && t === titleTxt;
+      const isRefLine = /^([가-힣]{1,10}\s?\d+[:：]\d+([-~]\d+)?)$/.test(el.textContent.trim());
+      if (el.tagName === 'H1' || isTitleDup || isRefLine) { el.remove(); continue; }
+      break;
+    }
+    // AI가 남긴 자리표시([날짜·시리즈] 같은 대괄호 안내)를 지운다
+    body.querySelectorAll('p,h1,h2,h3,li').forEach(el => {
+      const t = el.textContent.trim();
+      if (/^[\[［].{1,40}[\]］]$/.test(t)) el.remove();
+    });
+    p.draft.html = (keepTitle || '') + body.innerHTML;
     return '원고 전체를 새 원고로 바꿨습니다';
   }
   if (rule.mode === 'section' || rule.mode === 'before') {
@@ -1864,6 +1877,12 @@ async function partialRewrite(p, request) {
   syncEditor();
   // 짧은 메뉴 이름을 상세 지시로 확장
   let fullRequest = request;
+  if (request.includes('지금의 설교로')) {
+    fullRequest = '이 원고는 시간이 지난 설교다. **내용과 신학과 구조는 그대로 두고**, 오늘의 강단에서 그대로 읽어도 자연스럽도록 언어와 표현만 살짝 손보라. 큰 수술이 아니라 옷을 갈아입히는 작업이다.\n' +
+      '고칠 것: ①낡은 한자어·문어투를 지금 쓰는 말로(예: "~하는 바입니다" → "~합니다") ②지나치게 긴 문장을 끊어 짧게 — 다만 설교자의 호흡은 살릴 것 ③시대가 지난 예화의 배경·소품·물가·기기를 오늘의 것으로 바꾸되, 예화의 뼈대와 교훈은 그대로 둘 것 ④오늘 회중에게 어색하거나 상처가 될 수 있는 표현(성별 역할 고정, 장애·질병·가난·직업을 낮추는 말투, 시대에 맞지 않는 비유)을 자연스럽게 다듬을 것 ⑤설교체 상투구("~하시기 바랍니다"의 반복, 과장된 수사)를 덜어낼 것.\n' +
+      '지킬 것: 본문 해석과 신학적 주장, 중심사상, 대지 구조, 인용한 성경 구절, 설교자 개인의 경험과 목소리는 **바꾸지 마라**. 새 내용을 지어 넣지 마라. 분량은 원래와 비슷하게 유지하라.\n' +
+      '원고 맨 끝에 "---" 한 줄을 두고 그 아래 "### 손본 곳"이라는 제목으로, 무엇을 왜 바꿨는지 5~8줄로 정리하라(예: "「~하는 바입니다」 → 「~합니다」 · 문어투 정리").';
+  }
   if (request.includes('유머')) {
     fullRequest = '이 설교의 알맞은 자리에 넣을 유머를 만들라. 규칙: ①회중을 웃기려고 설교를 멈추지 말 것 — 유머는 메시지로 가는 다리여야 하고, 웃음 직후 반드시 본론으로 이어지는 한 문장이 따라붙어야 한다 ②설교자 자신을 낮추는 자기 비하형이나, 누구나 겪는 일상의 관찰형으로 할 것 ③특정 인물·직업·세대·성별·지역·외모를 웃음거리로 삼지 말 것 ④정치·시사 풍자 금지 ⑤성경 인물이나 하나님을 가볍게 만들지 말 것 ⑥한국 강단의 품위를 지킬 것 — 억지 개그·유행어 남용 금지 ⑦지어낸 실화를 설교자의 경험처럼 쓰지 말 것(가상 예시는 "(가상 예시)" 표시). 서로 다른 자리에 쓸 유머 2~3개를 제안하되, 각각 ⓐ들어갈 위치(어느 대목 뒤) ⓑ그대로 읽을 수 있는 완성된 문장 ⓒ이어지는 연결 문장 ⓓ웃음이 안 터졌을 때의 대비책 한 줄을 함께 쓰라.';
   }
@@ -1875,7 +1894,8 @@ async function partialRewrite(p, request) {
   }
   const rule = placeRuleFor(request);
   if (rule.mode === 'whole') {
-    fullRequest += ' 이 요청을 반영한 **설교문 전체**를 처음부터 끝까지 다시 출력하라(일부만 출력하지 말 것).';
+    fullRequest += ' 이 요청을 반영한 **설교문 전체**를 처음부터 끝까지 다시 출력하라(일부만 출력하지 말 것).' +
+      ' 원고 본문만 출력하라 — 제목 줄을 다시 붙이지 말고, [날짜·시리즈]·[여기에 ~]처럼 대괄호로 된 자리표시나 작성 안내를 넣지 마라.';
   } else if (rule.mode !== 'title') {
     fullRequest += ' 원고에 그대로 넣을 수 있는 완성된 문장으로, 해당 부분만 출력하라. 설명·머리말·"다음과 같이" 같은 안내 문구는 붙이지 마라.';
   }
