@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=52">
+<link rel="apple-touch-icon" href="icon-192.png?v=53">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -767,7 +767,18 @@ body.resizing-editor #editor { pointer-events: none; }
   display: flex; gap: 8px; align-items: flex-start;
   animation: sayIn .35s ease;
 }
-#ai-progress-say::before { content: "▸"; opacity: .55; flex-shrink: 0; }
+/* 살아 움직이는 신호 — 작은 점이 숨 쉬듯 퍼진다 */
+#ai-progress-say::before {
+  content: ""; flex-shrink: 0;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--fin); margin-top: 8px;
+  animation: livePulse 1.9s cubic-bezier(.4,0,.2,1) infinite;
+}
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,86,0,.45); transform: scale(1); }
+  65%  { box-shadow: 0 0 0 8px rgba(255,86,0,0); transform: scale(1.15); }
+  100% { box-shadow: 0 0 0 0 rgba(255,86,0,0); transform: scale(1); }
+}
 @keyframes sayIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
 
 </style>
@@ -2286,7 +2297,7 @@ async function callAIJson(key, slots, opts = {}) {
 }
 
 /* ═══════════════════ 브랜드 ═══════════════════ */
-const APP_VERSION = 'v52 · 2026-07-21';
+const APP_VERSION = 'v53 · 2026-07-21';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
