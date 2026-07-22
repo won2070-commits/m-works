@@ -916,6 +916,9 @@ html { scroll-behavior: smooth; }
 /* 배지 호흡 — AI 연결 상태 */
 .ai-badge { transition: background .25s; }
 
+/* 책 인용 머리 — [제목] -저자 (최종 원고까지 붉은 글씨) */
+.book-cite { color: #c62828; font-weight: 700; }
+
 /* 골라 넣기 — 자리 찍기 목록 */
 .pp-item {
   cursor: pointer; border-radius: 8px; padding: 5px 10px; margin: 0 0 3px;

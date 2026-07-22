@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=68">
+<link rel="apple-touch-icon" href="icon-192.png?v=69">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -929,6 +929,9 @@ html { scroll-behavior: smooth; }
 /* 배지 호흡 — AI 연결 상태 */
 .ai-badge { transition: background .25s; }
 
+/* 책 인용 머리 — [제목] -저자 (최종 원고까지 붉은 글씨) */
+.book-cite { color: #c62828; font-weight: 700; }
+
 /* 골라 넣기 — 자리 찍기 목록 */
 .pp-item {
   cursor: pointer; border-radius: 8px; padding: 5px 10px; margin: 0 0 3px;
@@ -1252,6 +1255,40 @@ const PROMPTS = {
 {"rows":[{"word":"본문의 단어·표현 (절 번호 포함)","note":"그 단어가 여는 질문·관찰 한 문장"}]}`,
   },
 
+  // 5단계: 곽안련 설교학 3원칙 — 전진·순서·통일
+  unity3: {
+    label: '5단계 · 전진·순서·통일 점검 (곽안련)',
+    maxTokens: 8000,
+    system: BASE_SYSTEM + `
+너는 곽안련(Charles Allen Clark, 『설교학』)의 전통을 잇는 설교 비평가다. 설교 원고를 세 시금석으로만 검사한다:
+① 전진(Progress) — 설교가 한 걸음씩 앞으로 걷는가. 같은 말의 반복, 제자리걸음, 이미 말한 것을 다시 설명하는 대목은 전진의 적이다.
+② 순서(Order) — 재료가 제자리에 있는가. 논리적으로(원인→결과), 심리적으로(관심→필요→해답→적용) 자연스러운 차례인가. 앞에 나와야 할 것이 뒤에 있지 않은가.
+③ 통일(Unity) — 모든 문단이 하나의 중심사상을 섬기는가. 좋은 이야기라도 중심사상과 끈이 닿지 않으면 잘라야 할 가지다.
+반드시 원고의 실제 문장을 인용하며 지적하라. 두루뭉술한 총평 금지.` + JSON_RULE,
+    user: `아래 설교 원고를 전진·순서·통일의 세 시금석으로 점검해 달라.
+
+[중심사상] {{homiletical}}
+[본문] {{ref}}
+[선택한 형식] {{form}}
+[목표 시간] {{targetMin}}분
+
+[원고]
+{{draft}}
+
+다음 JSON으로 답하라:
+{
+ "verdict":"세 시금석을 종합한 한 문장 진단",
+ "progression":{"score":1~10,"comment":"전진에 대한 총평 1~2문장",
+   "issues":[{"quote":"제자리걸음이 일어나는 실제 문장(짧게)","problem":"왜 전진을 막는가","fix":"구체적 처방 — 자르거나 잇는 법"}]},
+ "order":{"score":1~10,"comment":"순서에 대한 총평 1~2문장",
+   "issues":[{"quote":"자리가 어긋난 대목의 실제 문장","problem":"왜 이 자리가 아닌가","fix":"어디로 옮기고 어떻게 잇는가"}]},
+ "unity":{"score":1~10,"comment":"통일에 대한 총평 1~2문장",
+   "issues":[{"quote":"중심사상과 끈이 끊긴 실제 문장","problem":"무엇을 섬기고 있는가(중심사상이 아니라면)","fix":"잘라낼지, 중심사상에 잇는 다리를 놓을지"}]},
+ "oneFix":"세 가지 중 가장 먼저 고칠 한 가지 — 구체적으로"
+}
+각 축의 issues는 0~3개. 문제가 없으면 빈 배열로 두고 comment에 칭찬 대신 '통과'라고만 적어라.`,
+  },
+
   // 골라 넣기: 블럭을 지정한 자리의 문맥에 맞게 다듬기
   insertBlock: {
     label: '골라 넣기 · 문맥 맞춤',
@@ -1265,6 +1302,9 @@ const PROMPTS = {
 
 [넣을 블럭]
 {{block}}
+
+[특별 지시 — 있으면 아래 규칙보다 우선한다]
+{{citeNote}}
 
 규칙:
 ① 블럭의 사실·인용·책 제목·핵심 내용은 그대로 보존하라.
@@ -2033,6 +2073,7 @@ function wordCss() {
  blockquote p{text-align:left}
  hr{border:none;border-top:0.5pt solid #999;margin:8pt 0}
  .pause-mark{color:#a4443a;font-weight:bold} .stress-mark{background:#f6e7bf}
+ .book-cite{color:#c00000;font-weight:bold}
  .eye-mark{color:#2e7d4f;font-weight:bold} .note-mark{background:#e7ecf6;color:#3d5a80} .breath-mark{color:#2e7d4f;font-weight:bold}`;
 }
 /* 클로드 프로젝트에서 가져온 참조 프롬프트 — 사용자가 프롬프트 서재에서 계속 다듬는다 */
@@ -2788,7 +2829,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v68 · 2026-07-22';
+const APP_VERSION = 'v69 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -4477,7 +4518,8 @@ function applyPartial(p, request, outMd) {
 }
 /* ═══════════════ 골라 넣기 — 블럭을 지정해 원고의 원하는 자리에, 문맥에 맞게 ═══════════════ */
 /* 1) 내용을 보여주고 블럭(드래그·Shift+방향키)을 지정하게 한다 */
-function openBlockPicker(p, title, srcHtml) {
+function openBlockPicker(p, title, srcHtml, opts) {
+  opts = opts || {};
   const body = modal(title + ' — 넣을 부분을 블럭으로 지정', `
     <p style="font-size:.82rem;color:var(--ink-soft)">아래 내용에서 원고에 넣고 싶은 부분을 <b>마우스로 드래그</b>(또는 클릭 후 <b>Shift+방향키</b>)해 블럭을 지정하세요. 일부만 골라도 되고, 전체를 넣어도 됩니다.</p>
     <div id="bp-src" class="stream-preview" tabindex="0" style="max-height:52vh;user-select:text;cursor:text">${srcHtml}</div>
@@ -4498,13 +4540,32 @@ function openBlockPicker(p, title, srcHtml) {
     useBtn.disabled = !has;
     useBtn.textContent = has ? '선택한 부분 넣기 (' + picked.length.toLocaleString() + '자)' : '선택한 부분 넣기 — 먼저 블럭을 지정하세요';
   };
-  ['mouseup', 'keyup', 'touchend'].forEach(ev => src.addEventListener(ev, () => setTimeout(readSel, 10)));
-  useBtn.addEventListener('click', () => { if (picked) openPlacePicker(p, picked); });
-  body.querySelector('#bp-all').addEventListener('click', () => openPlacePicker(p, htmlToText(srcHtml).trim()));
+  // 책 인용 모드: 선택 지점 바로 위의 "### 제목 — 저자"를 찾아 인용 머리로 쓴다
+  let pickedNode = null;
+  ['mouseup', 'keyup', 'touchend'].forEach(ev => src.addEventListener(ev, () => setTimeout(() => {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.rangeCount) pickedNode = sel.getRangeAt(0).startContainer;
+    readSel();
+  }, 10)));
+  const citeOf = node => {
+    if (!opts.bookCite || !node) return null;
+    let el = node.nodeType === 1 ? node : node.parentElement;
+    while (el && el.parentElement !== src) el = el.parentElement; // src 직계 자식까지 올라간다
+    for (let cur2 = el; cur2; cur2 = cur2.previousElementSibling) {
+      if (/^H[23]$/.test(cur2.tagName)) {
+        const m = cur2.textContent.trim().replace(/^\d+\.\s*/, '').match(/^(.+?)\s*[—–-]\s*(.+)$/);
+        if (m) return { title: m[1].replace(/^『|』$/g, '').replace(/^\[|\]$/g, '').trim(), author: m[2].trim() };
+        return { title: cur2.textContent.trim(), author: '' };
+      }
+    }
+    return null;
+  };
+  useBtn.addEventListener('click', () => { if (picked) openPlacePicker(p, picked, citeOf(pickedNode)); });
+  body.querySelector('#bp-all').addEventListener('click', () => openPlacePicker(p, htmlToText(srcHtml).trim(), null));
   body.querySelector('#bp-cancel').addEventListener('click', closeModal);
 }
-/* 2) 원고 전체를 띄우고, 문단을 찍으면 그 자리에 넣는다 */
-function openPlacePicker(p, blockText) {
+/* 2) 원고 전체를 띄우고, 문단을 찍으면 그 자리에 넣는다 (cite가 있으면 책 인용 서식으로) */
+function openPlacePicker(p, blockText, cite) {
   syncEditor();
   const work = document.createElement('div'); work.innerHTML = p.draft.html;
   const blocks = [...work.querySelectorAll('h1,h2,h3,p,blockquote,ul,ol')].filter(el => el.textContent.trim());
@@ -4516,7 +4577,7 @@ function openPlacePicker(p, blockText) {
       <p class="pp-item" data-pi="-1" style="font-style:italic;opacity:.75">⬆ 원고 맨 앞에 넣기</p>
       ${blocks.map((el, i) => `<p class="pp-item" data-pi="${i}">${/^H[123]$/.test(el.tagName) ? '<b style="opacity:.55">§ </b>' : ''}${esc(el.textContent.trim().slice(0, 130))}${el.textContent.trim().length > 130 ? '…' : ''}</p>`).join('')}
     </div>
-    <div class="fb-item" style="margin-top:10px;max-height:96px;overflow:auto"><b>넣을 블럭 · ${blockText.length.toLocaleString()}자</b>${esc(blockText.slice(0, 280))}${blockText.length > 280 ? '…' : ''}</div>
+    <div class="fb-item" style="margin-top:10px;max-height:110px;overflow:auto"><b>넣을 블럭 · ${blockText.length.toLocaleString()}자</b>${cite ? `<span class="book-cite" style="display:block;margin-bottom:3px">[${esc(cite.title)}] -${esc(cite.author)}</span>` : ''}${esc(blockText.slice(0, 280))}${blockText.length > 280 ? '…' : ''}</div>
     <div class="btn-row">
       <button class="btn btn-primary" id="pp-ai" disabled>여기에 넣기 — 문맥에 맞게 다듬어 ${AI_ICO}</button>
       <button class="btn btn-ghost" id="pp-raw" disabled>그대로 넣기</button>
@@ -4531,7 +4592,7 @@ function openPlacePicker(p, blockText) {
     aiBtn.disabled = !aiConnected(); rawBtn.disabled = false;
   }));
   const doInsert = async (polish) => {
-    let md = blockText;
+    let md = blockText, leadIn = '';
     if (polish) {
       const beforeTxt = chosen >= 0 ? blocks.slice(Math.max(0, chosen - 1), chosen + 1).map(b => b.textContent.trim()).join('\n') : '(원고의 맨 앞)';
       const afterTxt = (blocks[chosen + 1] ? blocks[chosen + 1].textContent.trim() : '(원고의 끝)');
@@ -4540,12 +4601,32 @@ function openPlacePicker(p, blockText) {
         md = await callAI('insertBlock', {
           homiletical: p.central.homiletical, block: blockText,
           before: beforeTxt.slice(0, 2000), after: afterTxt.slice(0, 800),
+          citeNote: cite
+            ? `이 블럭은 『${cite.title}』(${cite.author})의 책 인용으로 들어간다. 다음 형식을 정확히 지켜 출력하라: 첫 줄에 "[이음새]"라고만 쓰고, 다음 줄에 앞 문맥에서 이 인용을 소개하며 넘어가는 설교자의 한두 문장. 그 다음 줄에 "[인용]"이라고만 쓰고, 그 아래에 인용 본문(원문의 표현을 존중해 가볍게만 다듬고, 따옴표는 붙이지 마라 — 앱이 붙인다). 책 제목·저자 줄은 앱이 따로 붙이므로 출력하지 마라.`
+            : '(해당 없음 — 규칙대로 다듬은 블럭만 출력)',
         }, { label: '문맥에 맞게 다듬는 중…' });
+        if (cite) { // [이음새] / [인용] 마커 분리
+          const mQ = md.match(/\[인용\]\s*([\s\S]*)$/);
+          const mL = md.match(/\[이음새\]\s*([\s\S]*?)(?=\[인용\]|$)/);
+          if (mQ) { leadIn = (mL ? mL[1] : '').trim(); md = mQ[1].trim(); }
+        }
       } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); return; }
     }
     snapshot(p, '골라 넣기 전 원고');
     const wrap = document.createElement('div');
-    wrap.innerHTML = mdToHtml(md.trim());
+    if (cite) {
+      // 책 인용 서식: [제목] -저자 (붉은 글씨) ↵ '인용 내용'
+      const q = document.createElement('div'); q.innerHTML = mdToHtml(md.trim());
+      const qs = [...q.querySelectorAll('p,li,blockquote,h1,h2,h3')].filter(el => el.textContent.trim());
+      if (qs.length) {
+        qs[0].innerHTML = '&#8216;' + qs[0].innerHTML;
+        qs[qs.length - 1].innerHTML += '&#8217;';
+      } else q.innerHTML = '<p>&#8216;' + esc(md.trim()) + '&#8217;</p>';
+      wrap.innerHTML = (leadIn ? '<p>' + esc(leadIn) + '</p>' : '') +
+        `<p><span class="book-cite">[${esc(cite.title)}] -${esc(cite.author)}</span></p>` + q.innerHTML;
+    } else {
+      wrap.innerHTML = mdToHtml(md.trim());
+    }
     const frag = document.createDocumentFragment();
     while (wrap.firstChild) frag.appendChild(wrap.firstChild);
     if (chosen === -1 || !blocks[chosen]) work.insertBefore(frag, work.firstChild);
@@ -4584,7 +4665,7 @@ async function openBookFlow(p) {
       srcHtml = mdToHtml(out);
     } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 6000); return; }
   }
-  openBlockPicker(p, '📚 추천 도서 2권', srcHtml);
+  openBlockPicker(p, '📚 추천 도서 2권', srcHtml, { bookCite: true });
 }
 /* 중심사상 분석 내용을 골라 넣기용 HTML로 */
 function centralSourceHtml(c) {
@@ -5069,6 +5150,7 @@ function renderStep5(m, p) {
       <h3>원고 점검</h3>
       <div class="btn-row" style="margin-top:0">
         <button class="btn btn-primary" id="s5-feedback" ${aiConnected() ? '' : 'disabled'}>내용 + 전달 피드백 받기 ${AI_ICO}</button>
+        <button class="btn btn-ghost" id="s5-unity" ${aiConnected() ? '' : 'disabled'}>전진·순서·통일 점검 (곽안련) ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s5-gestures" ${aiConnected() ? '' : 'disabled'}>제스처 5~10개 제안 ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s5-breaths" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 자리 찾기 ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s5-stress" ${aiConnected() ? '' : 'disabled'}>강약 자리 찾기 ${AI_ICO}</button>
@@ -5077,6 +5159,7 @@ function renderStep5(m, p) {
       </div>
       <div id="s5-br">${r.breaths ? renderBreaths(r.breaths) : ''}</div>
       <div id="s5-st">${r.stress ? renderStress(r.stress) : ''}</div>
+      <div id="s5-un">${r.unity3 ? renderUnity3(r.unity3) : ''}</div>
       <div id="s5-fb">${r.feedback ? renderFeedback(r.feedback, p) : ''}</div>
       <div id="s5-gs">${r.gestures ? renderGestures(r.gestures) : ''}</div>
       <div id="s5-gn">${r.genius ? renderGenius(p, r.genius) : ''}</div>
@@ -5119,6 +5202,8 @@ function renderStep5(m, p) {
   $('#s5-feedback').addEventListener('click', () => getFeedback(p));
   $('#s5-gestures').addEventListener('click', () => getGestures(p));
   $('#s5-breaths').addEventListener('click', () => getBreaths(p));
+  const unBtn = $('#s5-unity');
+  if (unBtn) unBtn.addEventListener('click', () => getUnity3(p));
   $('#s5-genius').addEventListener('click', () => getGenius(p));
   bindSongCard(p);
   $('#s5-stress').addEventListener('click', () => getStress(p));
@@ -5529,6 +5614,46 @@ function openMarkedScript(p, type) {
         <div style="font-size:.78rem;opacity:.85;margin-top:4px">${esc(it.why)}</div>
       </div>`;
   }));
+}
+/* 곽안련 설교학 3원칙 — 전진·순서·통일 점검 */
+async function getUnity3(p) {
+  syncEditor();
+  try {
+    setProgressEta(150, ['원고의 걸음을 따라 걷는 중…', '제자리걸음(전진)을 찾는 중…', '재료의 자리(순서)를 살피는 중…', '중심사상과의 끈(통일)을 당겨 보는 중…']);
+    const r = await callAIJson('unity3', {
+      homiletical: p.central.homiletical, ref: p.passage.ref,
+      form: formName(p.form.selected) || '(미정)', targetMin: p.inputs.targetMin,
+      draft: htmlToText(p.draft.html).slice(0, 16000),
+    }, { label: '전진·순서·통일 — 세 시금석으로 점검하는 중…' });
+    p.rehearsal.unity3 = r; touch(p); render();
+    const box = $('#s5-un'); if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
+function renderUnity3(r) {
+  const axis = (key, name, color, d) => {
+    if (!d) return '';
+    const issues = Array.isArray(d.issues) ? d.issues : [];
+    return `
+    <div class="gn-card" style="background:${color}">
+      <div class="gn-title">${name} — ${d.score != null ? d.score + '/10' : ''}</div>
+      ${d.comment ? `<p>${esc(d.comment)}</p>` : ''}
+      ${issues.map(x => `
+        <div class="gn-fix" style="margin-top:8px">
+          ${x.quote ? `<blockquote style="margin:0 0 4px">"${esc(x.quote)}"</blockquote>` : ''}
+          <p style="margin:0"><b>문제</b> ${esc(x.problem || '')}</p>
+          <p style="margin:2px 0 0"><b>처방</b> ${esc(x.fix || '')}</p>
+        </div>`).join('')}
+    </div>`;
+  };
+  return `
+    <div class="card genius-box">
+      <h3>⚖ 전진 · 순서 · 통일 <span class="opt" style="font-weight:400;font-size:.76rem">— 곽안련 설교학의 세 시금석</span></h3>
+      ${r.verdict ? `<div class="gn-verdict">${esc(r.verdict)}</div>` : ''}
+      ${axis('progression', '전진 — 설교가 앞으로 걷는가', 'var(--mint)', r.progression)}
+      ${axis('order', '순서 — 재료가 제자리에 있는가', 'var(--cream)', r.order)}
+      ${axis('unity', '통일 — 모든 것이 중심사상을 섬기는가', 'var(--lilac)', r.unity)}
+      ${r.oneFix ? `<div class="fb-item" style="background:var(--lime);margin-top:10px"><b>가장 먼저 고칠 한 가지</b>${esc(r.oneFix)}</div>` : ''}
+    </div>`;
 }
 async function getFeedback(p) {
   try {
