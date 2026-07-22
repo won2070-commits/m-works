@@ -916,6 +916,16 @@ html { scroll-behavior: smooth; }
 /* 배지 호흡 — AI 연결 상태 */
 .ai-badge { transition: background .25s; }
 
+/* 골라 넣기 — 자리 찍기 목록 */
+.pp-item {
+  cursor: pointer; border-radius: 8px; padding: 5px 10px; margin: 0 0 3px;
+  border: 1px solid transparent; transition: background .12s, border-color .12s;
+  font-size: .88rem; line-height: 1.55;
+}
+.pp-item:hover { background: var(--surface-soft); border-color: var(--hairline); }
+.pp-item.sel { background: var(--lime); border-color: var(--ink); font-weight: 600; }
+#bp-src::selection, #bp-src *::selection { background: var(--gold); }
+
 /* 움직임을 줄이고 싶은 사용자 존중 */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

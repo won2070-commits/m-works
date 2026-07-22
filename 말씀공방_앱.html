@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=67">
+<link rel="apple-touch-icon" href="icon-192.png?v=68">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -929,6 +929,16 @@ html { scroll-behavior: smooth; }
 /* 배지 호흡 — AI 연결 상태 */
 .ai-badge { transition: background .25s; }
 
+/* 골라 넣기 — 자리 찍기 목록 */
+.pp-item {
+  cursor: pointer; border-radius: 8px; padding: 5px 10px; margin: 0 0 3px;
+  border: 1px solid transparent; transition: background .12s, border-color .12s;
+  font-size: .88rem; line-height: 1.55;
+}
+.pp-item:hover { background: var(--surface-soft); border-color: var(--hairline); }
+.pp-item.sel { background: var(--lime); border-color: var(--ink); font-weight: 600; }
+#bp-src::selection, #bp-src *::selection { background: var(--gold); }
+
 /* 움직임을 줄이고 싶은 사용자 존중 */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -1240,6 +1250,28 @@ const PROMPTS = {
 
 다음 JSON으로 답하라:
 {"rows":[{"word":"본문의 단어·표현 (절 번호 포함)","note":"그 단어가 여는 질문·관찰 한 문장"}]}`,
+  },
+
+  // 골라 넣기: 블럭을 지정한 자리의 문맥에 맞게 다듬기
+  insertBlock: {
+    label: '골라 넣기 · 문맥 맞춤',
+    maxTokens: 5000,
+    system: BASE_SYSTEM,
+    user: `설교자가 [넣을 블럭]을 원고의 특정 자리에 넣기로 했다. 그 자리의 앞뒤 문맥에 자연스럽게 이어지도록 블럭을 다듬어 달라.
+
+[설교의 중심사상] {{homiletical}}
+[앞 문맥 — 블럭 바로 앞에 놓일 문단들] {{before}}
+[뒤 문맥 — 블럭 바로 뒤에 이어질 문단] {{after}}
+
+[넣을 블럭]
+{{block}}
+
+규칙:
+① 블럭의 사실·인용·책 제목·핵심 내용은 그대로 보존하라.
+② 앞 문맥을 자연스럽게 이어받는 첫 문장과, 뒤 문맥으로 넘겨주는 마지막 한 문장을 붙여라 — 이음새가 이 작업의 핵심이다.
+③ 설교 구어체("~습니다")로, 낭독했을 때 걸리지 않게.
+④ 분량은 블럭과 비슷하게(±30%). 새 내용을 지어 넣지 마라.
+⑤ 다듬은 블럭만 출력하라 — 앞뒤 문맥 원문, 머리말, 설명 문구를 붙이지 마라.`,
   },
 
   // 3단계: 세 축 기반 형식 추천 — 우선 1개 + 대안 1개 (원고 없이)
@@ -2572,6 +2604,7 @@ const SPEED_TIERS = {
   titleSuggest:  { effort: 'low' },
   centralRefine: { effort: 'low' },
   tparse:        { effort: 'low' },   // 관찰 보완 — 본문 지식 필요, 궁리는 얕게
+  insertBlock:   { effort: 'low' },   // 골라 넣기 이음새 — 빠르게
   formOutline:   { effort: 'low' },   // 개요만 — 빠르게
   introFive:     { effort: 'low' },   // 첫 세 줄 후보 — 빠르게
   // 나머지(sermon·central·recommend·partial·weave·formatConvert·formatRecommend·formPick·
@@ -2755,7 +2788,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v67 · 2026-07-22';
+const APP_VERSION = 'v68 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3655,6 +3688,7 @@ function renderCentral(c) {
         <button class="btn btn-primary" id="s2-go3">중심사상 확정 → 3단계 형식 결정</button>
         <button class="btn btn-ghost" id="s2-redo">처음부터 다시 분석 ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s2-fcf2">FCF 찾기 ${AI_ICO}</button>
+        <button class="btn btn-ghost" id="s2-pick">🧩 분석 내용 골라 원고에 넣기</button>
       </div>
       <p class="ai-note">AI 분석은 초안입니다. 설교자의 검토와 수정이 우선합니다 — 여기서 고친 문장이 이후 모든 단계에 쓰입니다.</p>
     </div>`;
@@ -3695,6 +3729,12 @@ function bindCentral(p) {
   $('#s2-redo').addEventListener('click', () => analyzeCentral(p));
   const fcf2 = $('#s2-fcf2');
   if (fcf2) fcf2.addEventListener('click', () => runFcf(p));
+  const pick2 = $('#s2-pick');
+  if (pick2) pick2.addEventListener('click', () => {
+    grab();
+    if (htmlToText(p.draft.html).trim().length < 50) { toast('원고가 아직 없습니다 — 4단계에서 원고가 생기면, 여기 분석 내용을 골라 넣을 수 있습니다.', 5500); return; }
+    openBlockPicker(p, '🧩 중심사상 분석', centralSourceHtml(c));
+  });
 }
 async function analyzeCentral(p) {
   try {
@@ -3720,7 +3760,7 @@ const PARTIAL_REQUESTS = [
   '적용 찬양 다시 추천 (가스펠 2곡 + 찬송가)',
   '전체 분량 늘리기', '전체 분량 줄이기', '목표 시간에 맞게 조절',
   'AI 냄새 제거', '설교자의 기존 문체에 맞게 수정', '지금의 설교로 (요즘 언어·표현으로)',
-  '추천 도서 내용을 설교문에 추가 (책 제목 + A4 2쪽 요약)',
+  '추천 도서 2권 — 요약 보고 골라 넣기',
 ];
 function renderStep3(m, p) {
   if (!p.central.done) {
@@ -4214,7 +4254,10 @@ function bindEditor(p) {
     grip.addEventListener('dblclick', () => { setEdH(0); save(true); toast('원고 길이에 맞춰 자동으로 되돌렸습니다.'); });
   }
 
-  $$('#main [data-partial]').forEach(b => b.addEventListener('click', () => partialRewrite(p, b.dataset.partial)));
+  $$('#main [data-partial]').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.partial.includes('추천 도서')) return openBookFlow(p); // 요약을 보고 → 블럭 지정 → 자리 찍어 넣기
+    partialRewrite(p, b.dataset.partial);
+  }));
   const weaveBtn = $('#s3-weave');
   if (weaveBtn) weaveBtn.addEventListener('click', () => weaveMaterials(p));
   const matFile = $('#s3-matfile');
@@ -4432,6 +4475,129 @@ function applyPartial(p, request, outMd) {
   p.draft.html = div.innerHTML + outHtml;
   return '원고 끝에 붙였습니다';
 }
+/* ═══════════════ 골라 넣기 — 블럭을 지정해 원고의 원하는 자리에, 문맥에 맞게 ═══════════════ */
+/* 1) 내용을 보여주고 블럭(드래그·Shift+방향키)을 지정하게 한다 */
+function openBlockPicker(p, title, srcHtml) {
+  const body = modal(title + ' — 넣을 부분을 블럭으로 지정', `
+    <p style="font-size:.82rem;color:var(--ink-soft)">아래 내용에서 원고에 넣고 싶은 부분을 <b>마우스로 드래그</b>(또는 클릭 후 <b>Shift+방향키</b>)해 블럭을 지정하세요. 일부만 골라도 되고, 전체를 넣어도 됩니다.</p>
+    <div id="bp-src" class="stream-preview" tabindex="0" style="max-height:52vh;user-select:text;cursor:text">${srcHtml}</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="bp-use" disabled>선택한 부분 넣기 — 먼저 블럭을 지정하세요</button>
+      <button class="btn btn-ghost" id="bp-all">전체 넣기</button>
+      <button class="btn btn-ghost" id="bp-cancel">닫기</button>
+    </div>`);
+  $('#modal').style.maxWidth = '940px';
+  const src = body.querySelector('#bp-src');
+  const useBtn = body.querySelector('#bp-use');
+  let picked = '';
+  const readSel = () => {
+    const sel = window.getSelection();
+    const ok = sel && !sel.isCollapsed && sel.rangeCount && src.contains(sel.getRangeAt(0).commonAncestorContainer);
+    picked = ok ? sel.toString().trim() : picked; // 버튼을 누를 때 선택이 풀려도 마지막 블럭을 기억
+    const has = picked.length >= 8;
+    useBtn.disabled = !has;
+    useBtn.textContent = has ? '선택한 부분 넣기 (' + picked.length.toLocaleString() + '자)' : '선택한 부분 넣기 — 먼저 블럭을 지정하세요';
+  };
+  ['mouseup', 'keyup', 'touchend'].forEach(ev => src.addEventListener(ev, () => setTimeout(readSel, 10)));
+  useBtn.addEventListener('click', () => { if (picked) openPlacePicker(p, picked); });
+  body.querySelector('#bp-all').addEventListener('click', () => openPlacePicker(p, htmlToText(srcHtml).trim()));
+  body.querySelector('#bp-cancel').addEventListener('click', closeModal);
+}
+/* 2) 원고 전체를 띄우고, 문단을 찍으면 그 자리에 넣는다 */
+function openPlacePicker(p, blockText) {
+  syncEditor();
+  const work = document.createElement('div'); work.innerHTML = p.draft.html;
+  const blocks = [...work.querySelectorAll('h1,h2,h3,p,blockquote,ul,ol')].filter(el => el.textContent.trim());
+  if (!blocks.length) { toast('원고가 아직 없습니다. 먼저 4단계에서 원고를 만든 뒤 넣을 수 있습니다.', 5000); return; }
+  let chosen = null;
+  const body = modal('어디에 넣을까요 — 원고에서 자리를 찍으세요', `
+    <p style="font-size:.82rem;color:var(--ink-soft)">문단을 누르면 <b>그 문단 바로 뒤</b>에 들어갑니다. §는 소제목입니다.</p>
+    <div class="stream-preview" id="pp-list" style="max-height:46vh">
+      <p class="pp-item" data-pi="-1" style="font-style:italic;opacity:.75">⬆ 원고 맨 앞에 넣기</p>
+      ${blocks.map((el, i) => `<p class="pp-item" data-pi="${i}">${/^H[123]$/.test(el.tagName) ? '<b style="opacity:.55">§ </b>' : ''}${esc(el.textContent.trim().slice(0, 130))}${el.textContent.trim().length > 130 ? '…' : ''}</p>`).join('')}
+    </div>
+    <div class="fb-item" style="margin-top:10px;max-height:96px;overflow:auto"><b>넣을 블럭 · ${blockText.length.toLocaleString()}자</b>${esc(blockText.slice(0, 280))}${blockText.length > 280 ? '…' : ''}</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="pp-ai" disabled>여기에 넣기 — 문맥에 맞게 다듬어 ${AI_ICO}</button>
+      <button class="btn btn-ghost" id="pp-raw" disabled>그대로 넣기</button>
+      <button class="btn btn-ghost" id="pp-cancel">취소</button>
+    </div>`);
+  $('#modal').style.maxWidth = '940px';
+  const aiBtn = body.querySelector('#pp-ai'), rawBtn = body.querySelector('#pp-raw');
+  body.querySelectorAll('.pp-item').forEach(el => el.addEventListener('click', () => {
+    body.querySelectorAll('.pp-item.sel').forEach(x => x.classList.remove('sel'));
+    el.classList.add('sel');
+    chosen = +el.dataset.pi;
+    aiBtn.disabled = !aiConnected(); rawBtn.disabled = false;
+  }));
+  const doInsert = async (polish) => {
+    let md = blockText;
+    if (polish) {
+      const beforeTxt = chosen >= 0 ? blocks.slice(Math.max(0, chosen - 1), chosen + 1).map(b => b.textContent.trim()).join('\n') : '(원고의 맨 앞)';
+      const afterTxt = (blocks[chosen + 1] ? blocks[chosen + 1].textContent.trim() : '(원고의 끝)');
+      try {
+        setProgressEta(60, ['앞뒤 문맥을 읽는 중…', '블럭을 그 자리에 맞게 다듬는 중…', '이음새를 만드는 중…']);
+        md = await callAI('insertBlock', {
+          homiletical: p.central.homiletical, block: blockText,
+          before: beforeTxt.slice(0, 2000), after: afterTxt.slice(0, 800),
+        }, { label: '문맥에 맞게 다듬는 중…' });
+      } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); return; }
+    }
+    snapshot(p, '골라 넣기 전 원고');
+    const wrap = document.createElement('div');
+    wrap.innerHTML = mdToHtml(md.trim());
+    const frag = document.createDocumentFragment();
+    while (wrap.firstChild) frag.appendChild(wrap.firstChild);
+    if (chosen === -1 || !blocks[chosen]) work.insertBefore(frag, work.firstChild);
+    else blocks[chosen].after(frag);
+    p.draft.html = work.innerHTML;
+    touch(p); closeModal(); render();
+    toast(polish ? '문맥에 맞게 다듬어 넣었습니다. (버전 기록에서 되돌리기 가능)' : '그대로 넣었습니다. (버전 기록에서 되돌리기 가능)', 5000);
+  };
+  aiBtn.addEventListener('click', () => doInsert(true));
+  rawBtn.addEventListener('click', () => doInsert(false));
+  body.querySelector('#pp-cancel').addEventListener('click', closeModal);
+}
+/* 추천 도서 — 요약을 먼저 보여주고 골라 넣게 한다 */
+async function openBookFlow(p) {
+  syncEditor();
+  // 원고에 이미 추천 도서 섹션이 있으면 그걸 먼저 쓴다
+  const div = document.createElement('div'); div.innerHTML = p.draft.html;
+  let srcHtml = '';
+  const heads = [...div.querySelectorAll('h2')];
+  const bh = heads.find(h => /추천 도서/.test(h.textContent));
+  if (bh) {
+    const parts = [];
+    let n = bh.nextElementSibling;
+    while (n && !/^H2$/.test(n.tagName)) { parts.push(n.outerHTML); n = n.nextElementSibling; }
+    if (parts.join('').length > 400) srcHtml = parts.join('');
+  }
+  if (!srcHtml) {
+    try {
+      setProgressEta(170, ['설교의 중심을 읽는 중…', '책 두 권을 고르는 중…', '첫째 책을 요약하는 중…', '둘째 책을 요약하는 중…']);
+      const out = await callAI('partial', {
+        homiletical: p.central.homiletical, ref: p.passage.ref,
+        needs: p.inputs.needs, purpose: p.inputs.purpose, rules: DB.settings.rules,
+        draft: draftText().slice(0, 10000),
+        request: '이 설교의 중심내용과 궤를 같이하는, 실제 존재하는 책 2권을 골라 요약하라. 각 책마다 ①"### 책 제목 — 저자" ②추천 이유(2~3문장) ③책 내용 요약(각각 약 A4 두 페이지, 3,000자 안팎 — 핵심 논지·구조·이 설교와 만나는 지점 중심). 존재가 불확실한 책은 추천하지 말고, 세부 정보가 불확실하면 "(확인 필요)"를 붙여라. 요약 본문만 출력하라.',
+      }, { label: '추천 도서 2권을 요약하는 중… (2~3분)', onDelta: (d, full) => progressPreview(full) });
+      srcHtml = mdToHtml(out);
+    } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 6000); return; }
+  }
+  openBlockPicker(p, '📚 추천 도서 2권', srcHtml);
+}
+/* 중심사상 분석 내용을 골라 넣기용 HTML로 */
+function centralSourceHtml(c) {
+  const f = c.fcf || {};
+  const row = (t, v) => v ? `<h3>${esc(t)}</h3><p>${esc(v)}</p>` : '';
+  return row('문학적 단위', c.unit) + row('문맥', c.context) + row('반복 단어·핵심 동사', c.keywords) +
+    row('인물과 갈등', c.characters) + row('구조', c.structure) + row('원청중을 향한 메시지', c.originalMessage) +
+    row('주요소', c.subject) + row('보조요소', c.complement) +
+    row('석의의 문장', c.exegetical) + row('원리의 문장', c.theological) + row('설교적 중심사상', c.homiletical) +
+    row('FCF — 본문 속 문제', f.textProblem) + row('FCF — 마음의 문제', f.heartProblem) +
+    row('FCF — 오늘의 문제', f.todayProblem) + row('FCF — 복음의 해답', f.gospelNeed);
+}
+
 async function partialRewrite(p, request) {
   syncEditor();
   // 짧은 메뉴 이름을 상세 지시로 확장
