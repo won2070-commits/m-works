@@ -113,7 +113,7 @@ function normalize(d) {
   d.settings = Object.assign({
     translation: '개역개정', cpm: 300, model: 'sonnet', apiKey: '',
     style: '', targetMin: 25, editorSize: 17, editorHeight: 0, rules: defaultRules(),
-    fontScale: 100, fontFace: 'basic', appPass: '', theme: 'white', brightness: 100, accessCode: '', syncId: '',
+    fontScale: 100, fontFace: 'basic', appPass: '', theme: 'white', brightness: 100, syncId: '',
   }, d.settings || {});
   d.projects = Array.isArray(d.projects) ? d.projects : [];
   d.customForms = Array.isArray(d.customForms) ? d.customForms : [];
@@ -202,6 +202,12 @@ function mergeRemote(remote) {
   DB.customForms = mergeById(DB.customForms, remote.customForms, null);
   DB.refPrompts = mergeById(DB.refPrompts, remote.refPrompts, null);
   DB.trash = mergeById(DB.trash, remote.trash, null);
+  // 휴지통 정합: 버린 시각과 마지막 수정 시각을 비교해
+  // '나중에 버림'이면 목록에서 빼고, '버린 뒤 복원(더 최근 수정)'이면 휴지통에서 뺀다 — 삭제·복원 모두 기기 간 전파
+  const trashAt = new Map(DB.trash.filter(t => t && t.id).map(t => [t.id, t._trashedAt || 0]));
+  DB.projects = DB.projects.filter(p => !(trashAt.has(p.id) && trashAt.get(p.id) >= (p.updatedAt || 0)));
+  const liveAt = new Map(DB.projects.map(p => [p.id, p.updatedAt || 0]));
+  DB.trash = DB.trash.filter(t => !(t && liveAt.has(t.id) && liveAt.get(t.id) > (t._trashedAt || 0)));
   DB.promptOverrides = Object.assign({}, remote.promptOverrides || {}, DB.promptOverrides || {});
   // AI 키: 이 기기에 아직 없으면 다른 기기에서 넣은 키를 받아 자동 연결
   if (remote.apiKey && !DB.settings.apiKey) { DB.settings.apiKey = remote.apiKey; syncAdoptedKey = true; }
@@ -222,6 +228,7 @@ async function cloudSync(silent) {
   if (!syncOn() || syncing) return;
   syncing = true;
   if (!silent) setSyncStatus('동기화 중…');
+  try { syncEditor(); } catch {} // 편집 중인 원고를 먼저 DB에 담고 병합 — 덮어쓰기 방지
   try {
     const p = await syncFetch({ action: 'pull' });
     if (p && p.data) { try { mergeRemote(JSON.parse(p.data)); } catch {} }
@@ -236,7 +243,9 @@ async function cloudSync(silent) {
     save(true);
     setSyncStatus('✓ 동기화됨 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
     if (syncAdoptedKey) { syncAdoptedKey = false; try { await fetchStatus(true); } catch {} } // 받은 AI 키로 연결 상태 갱신
-    try { if (curId && !cur()) curId = null; render(); } catch (e) { console.warn('동기화 후 화면 갱신 오류(무시):', e); }
+    // 원고를 한창 쓰는 중이면 화면 재구성을 보류 — 커서·입력이 끊기지 않게 (데이터는 이미 병합됨)
+    const editing = document.activeElement && document.activeElement.id === 'editor';
+    try { if (curId && !cur()) curId = null; if (!editing) render(); } catch (e) { console.warn('동기화 후 화면 갱신 오류(무시):', e); }
   } catch (e) {
     setSyncStatus('오프라인 — 연결되면 자동 재시도');
   }
@@ -255,8 +264,23 @@ function schedulePush() {
     } catch {}
   }, 5000);
 }
-// 다른 기기에서 창으로 돌아오면 전체 동기화
-document.addEventListener('visibilitychange', () => { if (!document.hidden && syncOn()) cloudSync(true); });
+// 대기 중인 올리기를 지금 바로 실행 (창을 떠나거나 닫기 직전)
+async function flushPush() {
+  if (!syncOn() || syncing) return;
+  clearTimeout(pushTimer);
+  try { syncEditor(); } catch {}
+  try {
+    const res = await syncFetch({ action: 'push', data: JSON.stringify(syncSubset()), baseRev: syncRev });
+    if (res && res.ok) syncRev = res.rev || syncRev;
+  } catch {}
+}
+// 창으로 돌아오면 전체 동기화, 창을 떠나면 그 순간까지의 작업을 즉시 올림
+document.addEventListener('visibilitychange', () => {
+  if (!syncOn()) return;
+  if (document.hidden) flushPush();
+  else cloudSync(true);
+});
+window.addEventListener('pagehide', () => { if (syncOn()) flushPush(); });
 
 /* ═══════════════════ AI 클라이언트 ═══════════════════ */
 let aiStatus = { backend: 'none', cli: false, envKey: false, serverless: false };
@@ -679,8 +703,11 @@ async function callDirect(body, opts) {
   });
   if (!r.ok) {
     let msg = '';
-    try { msg = (await r.json()).message || ''; } catch { msg = await r.text().catch(() => ''); }
+    try { const j = await r.json(); msg = j.message || (j.error && j.error.message) || ''; } catch { msg = await r.text().catch(() => ''); }
     if (r.status === 401) throw new Error('API 키가 올바르지 않습니다. 설정에서 확인해 주세요.');
+    if (r.status === 429) throw new Error('요청이 잠시 몰렸습니다. 1분쯤 뒤에 다시 시도해 주세요.');
+    if (r.status === 529 || /overloaded/i.test(msg)) throw new Error('AI 서버가 지금 붐빕니다. 잠시 후 다시 시도해 주세요.');
+    if (/credit balance is too low/i.test(msg)) throw new Error('Anthropic 계정의 크레딧이 부족합니다. console.anthropic.com → Billing에서 충전해 주세요.');
     throw new Error('AI 호출 오류 (' + r.status + '): ' + String(msg).slice(0, 200));
   }
   let full = '', buf = '';
@@ -770,7 +797,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v62 · 2026-07-22';
+const APP_VERSION = 'v63 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1098,6 +1125,7 @@ function trashProject(id) {
 function restoreProject(id) {
   const i = DB.trash.findIndex(p => p.id === id); if (i < 0) return;
   const [p] = DB.trash.splice(i, 1); delete p._trashedAt;
+  p.updatedAt = Date.now(); // 복원이 '버림'보다 최신임을 기록 — 동기화 병합에서 복원이 이긴다
   DB.projects.unshift(p); save(true); render(); toast('복원했습니다.');
 }
 

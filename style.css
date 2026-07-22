@@ -813,3 +813,111 @@ h3 .ai-spark, td .ai-spark, p .ai-spark { width: 14px; height: 14px; }
   background: none; border: none; padding: 0; font: inherit;
   color: var(--fin); text-decoration: underline; cursor: pointer;
 }
+
+/* ═════════════════════════════════════════════
+   폴리시 레이어 — 같은 디자인 언어, 한 급 위의 마감
+   (레이어드 섀도 · 글래스 상단바 · 모션 · 포커스 링)
+   ═════════════════════════════════════════════ */
+:root {
+  --shadow-xs: 0 1px 2px rgba(17, 17, 17, .04);
+  --shadow-sm: 0 1px 2px rgba(17, 17, 17, .05), 0 4px 12px rgba(17, 17, 17, .05);
+  --shadow-md: 0 2px 4px rgba(17, 17, 17, .05), 0 10px 28px rgba(17, 17, 17, .09);
+  --shadow-lg: 0 8px 20px rgba(17, 17, 17, .08), 0 28px 70px rgba(17, 17, 17, .18);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+}
+html { scroll-behavior: smooth; }
+
+/* 상단바 — 글래스 블러 (스크롤 시 내용이 은은히 비침) */
+#topbar {
+  background: rgba(255, 255, 255, .86);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+}
+
+/* 카드 — 미세한 깊이 + 호버 리프트 */
+.card { box-shadow: var(--shadow-xs); transition: box-shadow .25s var(--ease-out); }
+.card:hover { box-shadow: var(--shadow-sm); }
+.cand, .fcard {
+  box-shadow: var(--shadow-xs);
+  transition: transform .22s var(--ease-out), box-shadow .25s var(--ease-out), border-color .18s;
+}
+.cand:hover, .fcard:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.cand.selected, .fcard.selected { box-shadow: var(--shadow-sm); }
+.step-tile { transition: transform .22s var(--ease-out), box-shadow .25s var(--ease-out), filter .18s; }
+.step-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+#editor-wrap { box-shadow: var(--shadow-xs); }
+.proj-table { box-shadow: var(--shadow-xs); }
+.proj-table tr:hover td { transition: background .12s; }
+
+/* 버튼 — 부드러운 프레스감 + 프라이머리 호버 */
+.btn, .chip, .top-btn, .new-btn {
+  transition: transform .16s var(--ease-out), background .18s, border-color .18s,
+              box-shadow .22s var(--ease-out), filter .18s;
+}
+.btn-primary:hover, .btn-gold:hover, .new-btn:hover {
+  background: #1c1c1c; box-shadow: 0 6px 18px rgba(0, 0, 0, .22); transform: translateY(-1px);
+}
+.btn-primary:active, .btn-gold:active, .new-btn:active { transform: scale(.96); box-shadow: none; }
+.btn-ghost:hover, .chip:hover { box-shadow: var(--shadow-xs); }
+.btn-ai:hover { box-shadow: 0 6px 18px rgba(255, 86, 0, .32); transform: translateY(-1px); }
+.btn-ai:active { transform: scale(.96); box-shadow: none; }
+#home-new:hover { box-shadow: 0 6px 18px rgba(243, 201, 182, .8); transform: translateY(-1px); }
+
+/* 입력 — 호버 힌트 + 절제된 포커스 링 */
+.field input:hover, .field textarea:hover, .field select:hover,
+.proj-toolbar input:hover, .tool-row input:hover { border-color: #c9c9c9; }
+.field input:focus, .field textarea:focus, .field select:focus {
+  border-color: var(--ink); box-shadow: 0 0 0 3.5px rgba(220, 238, 177, .8);
+}
+
+/* 키보드 포커스 — 접근성 링 (마우스 클릭에는 안 뜸) */
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+.btn:focus-visible, .chip:focus-visible, .top-btn:focus-visible { outline-offset: 3px; }
+
+/* 모달 — 딥 블러 배경 + 스프링 등장 */
+#modal-backdrop {
+  background: rgba(15, 15, 15, .45);
+  -webkit-backdrop-filter: blur(7px) saturate(120%);
+  backdrop-filter: blur(7px) saturate(120%);
+  animation: bdIn .22s ease;
+}
+#modal { box-shadow: var(--shadow-lg); animation: modalIn .3s var(--ease-out); }
+@keyframes bdIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalIn { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+
+/* 토스트 — 아래에서 떠오름 */
+#toast { box-shadow: var(--shadow-md); animation: toastIn .3s var(--ease-out); }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* AI 진행 상자 — 깊이 + 은은한 배경 블러 */
+#ai-progress {
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+.ai-progress-box { box-shadow: var(--shadow-lg); animation: modalIn .32s var(--ease-out); }
+
+/* 왼쪽 내비 — 항목 전환을 부드럽게 */
+.step-nav li { transition: background .16s, transform .16s var(--ease-out); }
+.step-nav li:active { transform: scale(.98); }
+.step-nav .num { transition: background .2s, color .2s; }
+.nav-progress-bar { transition: width .55s var(--ease-out); }
+
+/* 스크롤바 — 가늘고 둥글게 */
+* { scrollbar-width: thin; scrollbar-color: #d4d4d0 transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #d9d9d5; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: #bdbdb8; border: 2px solid transparent; background-clip: padding-box; }
+
+/* 헤어라인 디테일 — 표·모달 머리 은은한 구분 */
+#modal-head { background: rgba(250, 250, 248, .6); border-radius: var(--r-lg) var(--r-lg) 0 0; }
+.proj-table th { background: #fbfbfa; }
+
+/* 배지 호흡 — AI 연결 상태 */
+.ai-badge { transition: background .25s; }
+
+/* 움직임을 줄이고 싶은 사용자 존중 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  html { scroll-behavior: auto; }
+}
