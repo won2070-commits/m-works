@@ -155,7 +155,7 @@ function touch(p) { (p || cur()).updatedAt = Date.now(); save(); refreshChrome()
 
 /* ═══════════════════ 기기 간 자동 동기화 (Netlify Blobs) ═══════════════════ */
 // 같은 '동기화 비밀번호'를 넣은 기기끼리 설교가 자동으로 합쳐진다.
-// 합집합 병합(id·최신시간 우선)이므로 설교가 사라지지 않는다. AI 키·화면 설정은 기기별로 유지.
+// 합집합 병합(id·최신시간 우선)이므로 설교가 사라지지 않는다. AI 키·작성 규칙도 함께 동기화(한 기기에서만 넣으면 됨). 화면 설정만 기기별.
 const SYNC_URL = 'https://hansung-tsj.netlify.app/api/mworks-sync';
 const SYNC_ARRAYS = ['projects', 'materials', 'reports', 'customForms', 'refPrompts', 'trash'];
 let syncRev = 0, syncing = false, pushTimer = null, syncStatus = '';
@@ -177,6 +177,8 @@ function syncSubset() {
   const o = {};
   SYNC_ARRAYS.forEach(k => { o[k] = Array.isArray(DB[k]) ? DB[k] : []; });
   o.promptOverrides = DB.promptOverrides || {};
+  o.apiKey = DB.settings.apiKey || ''; // AI 키도 함께 동기화(한 기기에서만 넣으면 됨)
+  o.rules = DB.settings.rules || '';   // 나의 작성 규칙도 함께
   return o;
 }
 function mergeById(local, remote, tsField) {
@@ -201,7 +203,12 @@ function mergeRemote(remote) {
   DB.refPrompts = mergeById(DB.refPrompts, remote.refPrompts, null);
   DB.trash = mergeById(DB.trash, remote.trash, null);
   DB.promptOverrides = Object.assign({}, remote.promptOverrides || {}, DB.promptOverrides || {});
+  // AI 키: 이 기기에 아직 없으면 다른 기기에서 넣은 키를 받아 자동 연결
+  if (remote.apiKey && !DB.settings.apiKey) { DB.settings.apiKey = remote.apiKey; syncAdoptedKey = true; }
+  // 나의 작성 규칙: 이 기기가 기본값 그대로면 다른 기기에서 다듬은 규칙을 받는다
+  if (remote.rules && DB.settings.rules === defaultRules()) DB.settings.rules = remote.rules;
 }
+let syncAdoptedKey = false;
 async function syncFetch(payload) {
   const r = await fetch(SYNC_URL, {
     method: 'POST',
@@ -228,6 +235,7 @@ async function cloudSync(silent) {
     syncRev = rev;
     save(true);
     setSyncStatus('✓ 동기화됨 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
+    if (syncAdoptedKey) { syncAdoptedKey = false; try { await fetchStatus(true); } catch {} } // 받은 AI 키로 연결 상태 갱신
     try { if (curId && !cur()) curId = null; render(); } catch (e) { console.warn('동기화 후 화면 갱신 오류(무시):', e); }
   } catch (e) {
     setSyncStatus('오프라인 — 연결되면 자동 재시도');
@@ -762,7 +770,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v61 · 2026-07-22';
+const APP_VERSION = 'v62 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3926,7 +3934,7 @@ function openSettings() {
         <button class="btn btn-primary btn-sm" id="set-sync-on">${s.syncId ? '재연결' : '켜기'}</button>
         ${s.syncId ? '<button class="btn btn-ghost btn-sm" id="set-sync-off">끄기</button>' : ''}
       </div>
-      <div class="hint">모든 기기에서 <b>같은 비밀번호</b>를 넣으면 설교·자료·규칙이 자동으로 함께 보입니다. 병합 방식이라 어느 기기의 설교도 사라지지 않습니다. 이 비밀번호는 본인만 알아야 하며, 잊으면 그 데이터에 접근할 수 없습니다. · AI 키·화면 설정은 동기화되지 않고 기기마다 따로입니다.</div>
+      <div class="hint">모든 기기에서 <b>같은 비밀번호</b>를 넣으면 설교·자료·규칙과 <b>AI 키까지</b> 자동으로 함께 넘어옵니다. 즉 <b>한 기기에서만 AI 키를 넣으면</b>, 다른 기기는 이 동기화만 켜도 자동으로 연결됩니다. 병합 방식이라 어느 기기의 설교도 사라지지 않습니다. ⚠️ 이 비밀번호는 <b>본인만</b> 알아야 하며(그 비밀번호를 아는 사람은 설교와 AI 키에 접근할 수 있습니다), 잊으면 데이터에 접근할 수 없으니 꼭 기억하세요. (화면 설정만 기기마다 따로입니다.)</div>
     </div>
     <div class="form-grid" style="margin-top:8px">
       <div class="field"><label>AI 모델</label>
