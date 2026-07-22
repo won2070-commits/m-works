@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=69">
+<link rel="apple-touch-icon" href="icon-192.png?v=70">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2829,7 +2829,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v69 · 2026-07-22';
+const APP_VERSION = 'v70 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -4632,12 +4632,28 @@ function openPlacePicker(p, blockText, cite) {
     if (chosen === -1 || !blocks[chosen]) work.insertBefore(frag, work.firstChild);
     else blocks[chosen].after(frag);
     p.draft.html = work.innerHTML;
+    const cleaned = cite ? removeBookSection(p) : false; // 인용을 마친 요약 재료는 곧바로 원고에서 뺀다
     touch(p); closeModal(); render();
-    toast(polish ? '문맥에 맞게 다듬어 넣었습니다. (버전 기록에서 되돌리기 가능)' : '그대로 넣었습니다. (버전 기록에서 되돌리기 가능)', 5000);
+    toast((polish ? '문맥에 맞게 다듬어 넣었습니다.' : '그대로 넣었습니다.') +
+      (cleaned ? ' 추천 도서 요약 목록은 원고에서 뺐습니다.' : '') + ' (버전 기록에서 되돌리기 가능)', 6000);
   };
   aiBtn.addEventListener('click', () => doInsert(true));
   rawBtn.addEventListener('click', () => doInsert(false));
   body.querySelector('#pp-cancel').addEventListener('click', closeModal);
+}
+/* 추천 도서 요약 섹션(## 추천 도서 ~ 다음 소제목 전)을 원고에서 걷어낸다 — 인용이 끝난 재료는 최종 원고에서 뺀다 */
+function removeBookSection(p) {
+  const div = document.createElement('div'); div.innerHTML = p.draft.html;
+  const h = [...div.querySelectorAll('h2')].find(x => /추천 도서/.test(x.textContent));
+  if (!h) return false;
+  // 인용 머리(.book-cite)가 섹션 안에 있으면 — 사용자가 그 자리에 넣은 것이므로 건드리지 않는다
+  const toRemove = [h];
+  let n = h.nextElementSibling;
+  while (n && !/^H2$/.test(n.tagName)) { toRemove.push(n); n = n.nextElementSibling; }
+  if (toRemove.some(el => el.querySelector && el.querySelector('.book-cite'))) return false;
+  toRemove.forEach(el => el.remove());
+  p.draft.html = div.innerHTML;
+  return true;
 }
 /* 추천 도서 — 요약을 먼저 보여주고 골라 넣게 한다 */
 async function openBookFlow(p) {
@@ -5140,6 +5156,12 @@ function renderStep5(m, p) {
       <div class="card"><p>먼저 4단계에서 원고를 작성해 주세요.</p>
       <div class="btn-row"><button class="btn btn-primary" onclick="gotoStep(3)">4단계 설교 작성으로 가기</button></div></div>`;
     return;
+  }
+  // 책 인용이 원고에 들어갔다면, 재료였던 '추천 도서' 요약 섹션은 최종 원고에서 뺀다 (버전 보관 후)
+  if (p.draft.html.includes('book-cite') && /추천 도서/.test(p.draft.html)) {
+    snapshot(p, '추천 도서 요약 제거 전');
+    if (removeBookSection(p)) { save(true); toast('책 인용을 마쳤으므로 추천 도서 요약 목록을 원고에서 뺐습니다. (버전 기록에서 복원 가능)', 6000); }
+    else p.draft.versions.pop(); // 뺀 것이 없으면 방금 버전은 되돌린다
   }
   const r = p.rehearsal;
   m.innerHTML = `
