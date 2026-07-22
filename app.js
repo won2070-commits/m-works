@@ -807,7 +807,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v74 · 2026-07-22';
+const APP_VERSION = 'v75 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3931,8 +3931,9 @@ function renderMaterials(m) {
     DB.materials.unshift({ id: uid(), type: $('#mat-type').value, title: t, content: c, tags: $('#mat-tags').value.trim(), createdAt: Date.now() });
     save(true); render(); toast('서랍에 넣었습니다.');
   });
-  $('#mat-q').addEventListener('input', e => { $('#mat-list').innerHTML = renderMatList(e.target.value); bindMatList(); });
+  $('#mat-q').addEventListener('input', e => { $('#mat-list').innerHTML = renderMatList(e.target.value); bindMatList(); bindMatPlace(); });
   bindMatList();
+  bindMatPlace(); // 서랍 안에서도 넣을 자리 지정
   bindRefDrop();
 }
 function renderMatList(q) {
@@ -3945,6 +3946,7 @@ function renderMatList(q) {
         <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span>
         <b style="flex:1">${esc(x.title)}</b>
         ${Date.now() - (x.createdAt || 0) < 180000 ? '<span class="badge" style="background:var(--lime);font-weight:700">✓ 방금 담김</span>' : ''}
+        <label style="font-size:.7rem;opacity:.75">넣을 자리</label>${matPlaceSelect(x)}
         ${x.tags ? `<span style="font-size:.7rem;opacity:.858">${esc(x.tags)}</span>` : ''}
         <button class="btn btn-danger btn-sm" data-matdel="${x.id}">삭제</button>
       </div>
@@ -3956,7 +3958,7 @@ function bindMatList() {
     if (confirm('이 자료를 삭제할까요?')) { DB.materials = DB.materials.filter(x => x.id !== b.dataset.matdel); save(true); render(); }
   }));
 }
-const MAT_PLACES = ['자동', '서론', '본론', '적용', '결론', '마무리'];
+const MAT_PLACES = ['자동', '서론', '본론', '1대지', '2대지', '3대지', '적용', '결론', '마무리'];
 function matPlaceSelect(x) {
   return `<select data-place="${x.id}" title="이 자료를 넣을 자리" style="flex-shrink:0;font-size:.74rem;padding:4px 10px;border:1px solid var(--hairline);border-radius:var(--r-pill);background:var(--canvas)">
     ${MAT_PLACES.map(o => `<option ${((x.place || '자동') === o) ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
