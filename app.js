@@ -807,7 +807,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v72 · 2026-07-22';
+const APP_VERSION = 'v73 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3907,9 +3907,10 @@ function renderMaterials(m) {
         <input id="ref-file" type="file" multiple accept=".docx,.txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
       </div>
       <div class="paste-row">
-        <textarea id="ref-paste" placeholder="한글(HWP)·워드 등에서 복사한 자료를 여기 붙여넣고 → 담기"></textarea>
-        <button class="btn btn-ghost btn-sm" id="ref-paste-add">담기</button>
+        <textarea id="ref-paste" placeholder="한글(HWP)·옛 워드(.doc)에서 복사한 글을 여기 붙여넣으세요"></textarea>
+        <button class="btn btn-primary btn-sm" id="ref-paste-add">붙여넣은 내용<br>서랍에 담기</button>
       </div>
+      <p class="ai-note" style="margin-top:8px">파일을 끌어다 놓으면 <b>단추 없이 그 즉시 저장</b>됩니다 — 아래 목록에 "✓ 방금 담김"으로 표시됩니다. 이 단추는 <b>붙여넣기 칸의 글</b>을 담을 때만 누릅니다.</p>
     </div>
     <div class="card">
       <h3>직접 적어 넣기</h3>
@@ -3919,7 +3920,7 @@ function renderMaterials(m) {
         <div class="field full"><label>내용 *</label><textarea id="mat-content" style="min-height:100px" placeholder="자료 본문. 출처가 있으면 함께 적어 두세요."></textarea></div>
         <div class="field full"><label>태그 <span class="opt">(쉼표로 구분 — 예: 위로, 믿음)</span></label><input id="mat-tags"></div>
       </div>
-      <div class="btn-row"><button class="btn btn-primary" id="mat-add">서랍에 넣기</button></div>
+      <div class="btn-row"><button class="btn btn-primary" id="mat-add">직접 적은 내용 서랍에 담기</button></div>
     </div>
     <div class="proj-toolbar"><input id="mat-q" placeholder="🔍 자료 검색 (제목·내용·태그)"></div>
     <div id="mat-list">${renderMatList('')}</div>`;
@@ -3942,6 +3943,7 @@ function renderMatList(q) {
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span>
         <b style="flex:1">${esc(x.title)}</b>
+        ${Date.now() - (x.createdAt || 0) < 180000 ? '<span class="badge" style="background:var(--lime);font-weight:700">✓ 방금 담김</span>' : ''}
         ${x.tags ? `<span style="font-size:.7rem;opacity:.858">${esc(x.tags)}</span>` : ''}
         <button class="btn btn-danger btn-sm" data-matdel="${x.id}">삭제</button>
       </div>
