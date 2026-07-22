@@ -805,7 +805,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v66 · 2026-07-22';
+const APP_VERSION = 'v67 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -962,6 +962,7 @@ function toast(msg, ms = 3200) {
 function modal(title, bodyHtml) {
   $('#modal-title').textContent = title;
   $('#modal-body').innerHTML = bodyHtml;
+  $('#modal').style.maxWidth = ''; // 넓힌 모달(낭독 표시 등) 뒤에는 기본 폭으로
   $('#modal-backdrop').classList.remove('hidden');
   return $('#modal-body');
 }
@@ -2955,7 +2956,6 @@ function renderStep5(m, p) {
         <button class="btn btn-ghost" id="s5-gestures" ${aiConnected() ? '' : 'disabled'}>제스처 5~10개 제안 ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s5-breaths" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 자리 찾기 ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s5-stress" ${aiConnected() ? '' : 'disabled'}>강약 자리 찾기 ${AI_ICO}</button>
-        <button class="btn btn-primary" id="s5-marked">📖 낭독 표시 원고 보기</button>
         <button class="btn btn-ai" id="s5-genius" ${aiConnected() ? '' : 'disabled'}>💎 천재화 — 평가와 아이디어 ${AI_ICO}</button>
         <button class="btn btn-gold" id="s5-rehearse">🎤 리허설 모드 시작</button>
       </div>
@@ -3006,7 +3006,6 @@ function renderStep5(m, p) {
   $('#s5-genius').addEventListener('click', () => getGenius(p));
   bindSongCard(p);
   $('#s5-stress').addEventListener('click', () => getStress(p));
-  $('#s5-marked').addEventListener('click', () => openMarkedScript(p, 'all'));
   const stIns = $('#s5-st-insert');
   if (stIns) stIns.addEventListener('click', () => insertStressMarks(p));
   const stView = $('#s5-st-view');
@@ -3094,11 +3093,28 @@ const GESTURE_ART = {
              svg: () => gestureFigure(`<path d="M74 52l12-6 2-12"/><path d="M46 52l-6 20 2 16"/>` + HAND(88, 33) + `<path d="M85 29V15M93 30V19" stroke-width="3"/>` + HAND(42, 90)) },
   still:   { label: '가만히 서기', tip: '침묵·멈춤 — 말없이 여백을 둘 때',
              svg: () => gestureFigure(`<path d="M46 52l-5 22 2 16"/><path d="M74 52l5 22-2 16"/>` + HAND(43, 92) + HAND(77, 92)) },
+  walk:    { label: '한 걸음 다가가기', tip: '거리 좁히기 — 결정적 문장 직전, 회중 쪽으로',
+             svg: () => gestureFigure(`<path d="M46 52l-12 16"/><path d="M74 52l14 10"/>` + HAND(32, 70) + HAND(90, 64) +
+               `<path d="M76 138h30m0 0l-7-6m7 6l-7 6" stroke-width="2.6"/>`) },
+  ear:     { label: '귀 기울이기', tip: '경청의 몸 — 질문을 던진 뒤, 회중의 마음을 들을 때',
+             svg: () => gestureFigure(`<path d="M74 52l10-16-4-12"/><path d="M46 52l-6 20 2 16"/>` + HAND(79, 22) + HAND(42, 90) +
+               `<path d="M98 20q6 6 0 12M104 16q9 9 0 20" stroke-width="2.4"/>`) },
+  wide:    { label: '크게 그리기', tip: '규모·지평 — 큰 그림, 넓은 세계를 펼칠 때',
+             svg: () => gestureFigure(`<path d="M46 52L18 36"/><path d="M74 52l28-16"/>` + HAND(14, 34) + HAND(106, 34) +
+               `<path d="M22 22q38-18 76 0" stroke-width="2.2" stroke-dasharray="4 5"/>`) },
+  give:    { label: '내려놓기 · 드리기', tip: '내려놓음·봉헌 — 무게를 두 손으로 내려놓을 때',
+             svg: () => gestureFigure(`<path d="M46 52l-6 24 12 6"/><path d="M74 52l6 24-12 6"/>` + HAND(53, 84) + HAND(67, 84) +
+               `<path d="M44 96h32" stroke-width="2.4" stroke-dasharray="3 4"/>`) },
 };
 /* AI가 쓴 제스처 설명을 읽고 어울리는 그림을 고른다 */
 function gestureArtFor(x) {
+  if (x.artKey && GESTURE_ART[x.artKey]) return GESTURE_ART[x.artKey]; // AI가 그림을 직접 지정
   const t = [x.gesture, x.hands, x.body, x.face].filter(Boolean).join(' ');
   const has = (...ws) => ws.some(w => t.includes(w));
+  if (has('걸음', '다가가', '걸어', '앞으로 나')) return GESTURE_ART.walk;
+  if (has('귀', '경청', '듣는')) return GESTURE_ART.ear;
+  if (has('내려놓', '드리', '봉헌', '바치')) return GESTURE_ART.give;
+  if (has('크게 그리', '지평', '넓은 세계', '광야', '하늘을')) return GESTURE_ART.wide;
   if (has('가만', '멈추', '멈춤', '정지', '침묵', '가만히')) return GESTURE_ART.still;
   if (has('주먹', '움켜', '쥐고', '단호')) return GESTURE_ART.fist;
   if (has('가리키', '지목', '손가락으로 청중', '짚')) return GESTURE_ART.point;
@@ -3358,11 +3374,12 @@ function openMarkedScript(p, type) {
     want.includes('stress') && S.length ? '<span class="lg"><b class="smark smark-strong" style="pointer-events:none">강약</b> 힘주는 낱말</span>' : '',
   ].filter(Boolean).join('');
   const body = modal(titles[type] || titles.all, `
-    <div class="ms-legend">${legend}<span style="opacity:.75;font-size:.76rem">표시를 누르면 오른쪽에 설명이 나옵니다 · ${res.found + stressFound}곳 표시됨</span></div>
-    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
-      <div class="stream-preview" id="ms-text" style="flex:2;min-width:260px;max-height:56vh;overflow:auto">${html}</div>
-      <div id="ms-side" style="flex:1;min-width:200px"><p style="font-size:.84rem;color:var(--ink-soft)">👈 본문의 표시를 눌러 보세요.</p></div>
+    <div class="ms-legend">${legend}<span style="opacity:.75;font-size:.76rem">본문의 표시를 누르면 오른쪽에 그림과 설명이 나옵니다 · ${res.found + stressFound}곳 표시됨</span></div>
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <div class="stream-preview" id="ms-text" style="flex:2;min-width:280px;max-height:62vh;overflow:auto">${html}</div>
+      <div id="ms-side" style="flex:1;min-width:230px;position:sticky;top:0;max-height:62vh;overflow-y:auto"><p style="font-size:.84rem;color:var(--ink-soft)">👈 본문의 표시를 눌러 보세요.</p></div>
     </div>`);
+  $('#modal').style.maxWidth = '1100px'; // 본문 + 우측 여백을 나란히 넉넉하게
   body.querySelectorAll('.gmark,.smark').forEach(el => el.addEventListener('click', () => {
     body.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
     el.classList.add('on');
@@ -3411,7 +3428,7 @@ async function getFeedback(p) {
 async function getGenius(p) {
   syncEditor();
   try {
-    setProgressEta(230, ['원고를 정독하는 중…', '가장 빛나는 문장을 찾는 중…', '힘 빠지는 대목을 짚는 중…', '천재화 아이디어를 짓는 중…', '정리하는 중…']);
+    setProgressEta(280, ['원고를 정독하는 중…', '가장 빛나는 문장을 찾는 중…', '힘 빠지는 대목을 짚는 중…', '열 가지 천재화 아이디어를 짓는 중…', '정리하는 중…']);
     const r = await callAIJson('genius', {
       ref: p.passage.ref, homiletical: p.central.homiletical,
       purpose: p.inputs.purpose, audience: p.inputs.audience, targetMin: p.inputs.targetMin,
