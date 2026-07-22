@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=73">
+<link rel="apple-touch-icon" href="icon-192.png?v=74">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2829,7 +2829,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v73 · 2026-07-22';
+const APP_VERSION = 'v74 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -5921,8 +5921,11 @@ function renderMaterials(m) {
     <div class="step-head">MATERIALS</div>
     <h1 class="step-title">자료 서랍</h1>
     <p class="step-desc">예화·통계·간증·인용·메모를 모아 두는 서랍입니다. 여기 담긴 자료는 설교문 작성 때 AI가 필요한 곳곳에 인용해 활용합니다.</p>
-    <div class="card">
-      <h3>자료 담기 — 끌어다 놓기 · 붙여넣기</h3>
+    <h3 style="margin:4px 0 10px">🗄 담긴 자료 <span class="badge" style="background:var(--lime);font-weight:700">${DB.materials.length}개</span></h3>
+    ${DB.materials.length > 3 ? '<div class="proj-toolbar"><input id="mat-q" placeholder="🔍 자료 검색 (제목·내용·태그)"></div>' : '<div style="display:none"><input id="mat-q"></div>'}
+    <div id="mat-list">${renderMatList('')}</div>
+    <div class="card" style="margin-top:22px">
+      <h3>＋ 자료 담기 — 끌어다 놓기 · 붙여넣기</h3>
       <div id="ref-drop" class="dropzone">
         <svg class="nav-ico" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
         <span>여기에 자료를 끌어다 놓으세요 (또는 클릭해서 파일 선택)<br><small>워드(.docx)·텍스트·마크다운은 바로 담고, 사진·PDF는 AI가 내용을 읽어 담습니다</small></span>
@@ -5932,20 +5935,18 @@ function renderMaterials(m) {
         <textarea id="ref-paste" placeholder="한글(HWP)·옛 워드(.doc)에서 복사한 글을 여기 붙여넣으세요"></textarea>
         <button class="btn btn-primary btn-sm" id="ref-paste-add">붙여넣은 내용<br>서랍에 담기</button>
       </div>
-      <p class="ai-note" style="margin-top:8px">파일을 끌어다 놓으면 <b>단추 없이 그 즉시 저장</b>됩니다 — 아래 목록에 "✓ 방금 담김"으로 표시됩니다. 이 단추는 <b>붙여넣기 칸의 글</b>을 담을 때만 누릅니다.</p>
+      <p class="ai-note" style="margin-top:8px">파일을 끌어다 놓으면 <b>단추 없이 그 즉시 저장</b>됩니다 — 위 목록에 "✓ 방금 담김"으로 표시됩니다. 이 단추는 <b>붙여넣기 칸의 글</b>을 담을 때만 누릅니다.</p>
     </div>
-    <div class="card">
-      <h3>직접 적어 넣기</h3>
-      <div class="form-grid">
+    <details class="card" style="display:block">
+      <summary style="cursor:pointer;font-weight:600">✍ 직접 적어 넣기</summary>
+      <div class="form-grid" style="margin-top:12px">
         <div class="field"><label>종류</label><select id="mat-type">${MAT_TYPES.map(t => `<option>${t}</option>`).join('')}</select></div>
         <div class="field"><label>제목 *</label><input id="mat-title" placeholder="예: 등대지기 이야기"></div>
         <div class="field full"><label>내용 *</label><textarea id="mat-content" style="min-height:100px" placeholder="자료 본문. 출처가 있으면 함께 적어 두세요."></textarea></div>
         <div class="field full"><label>태그 <span class="opt">(쉼표로 구분 — 예: 위로, 믿음)</span></label><input id="mat-tags"></div>
       </div>
       <div class="btn-row"><button class="btn btn-primary" id="mat-add">직접 적은 내용 서랍에 담기</button></div>
-    </div>
-    <div class="proj-toolbar"><input id="mat-q" placeholder="🔍 자료 검색 (제목·내용·태그)"></div>
-    <div id="mat-list">${renderMatList('')}</div>`;
+    </details>`;
   $('#mat-add').addEventListener('click', () => {
     const t = $('#mat-title').value.trim(), c = $('#mat-content').value.trim();
     if (!t || !c) { toast('제목과 내용을 채워 주세요.'); return; }
@@ -5959,7 +5960,7 @@ function renderMaterials(m) {
 function renderMatList(q) {
   let list = DB.materials;
   if (q) { const s = q.toLowerCase(); list = list.filter(x => (x.title + x.content + x.tags + x.type).toLowerCase().includes(s)); }
-  if (!list.length) return '<div class="card"><p style="opacity:.858">아직 자료가 없습니다. 위에서 첫 자료를 넣어 보세요.</p></div>';
+  if (!list.length) return '<div class="card"><p style="opacity:.858">아직 담긴 자료가 없습니다. 아래 <b>자료 담기</b>에 파일을 끌어다 놓거나 붙여넣어 보세요.</p></div>';
   return list.map(x => `
     <div class="card" style="padding:18px 20px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
