@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=76">
+<link rel="apple-touch-icon" href="icon-192.png?v=77">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2141,6 +2141,7 @@ function normalize(d) {
   d.projects = Array.isArray(d.projects) ? d.projects : [];
   d.customForms = Array.isArray(d.customForms) ? d.customForms : [];
   d.materials = Array.isArray(d.materials) ? d.materials : [];
+  d.materials.forEach(m0 => { if (m0 && typeof m0.content === 'string') m0.content = cleanExtractedText(m0.content); });
   d.reports = Array.isArray(d.reports) ? d.reports : [];
   d.refPrompts = Array.isArray(d.refPrompts) && d.refPrompts.length ? d.refPrompts : defaultRefPrompts();
   d.promptOverrides = d.promptOverrides || {};
@@ -2829,7 +2830,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v76 · 2026-07-22';
+const APP_VERSION = 'v77 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3342,7 +3343,7 @@ function renderStep0(m, p) {
 
 /* ── 자료 서랍 드롭존: 끌어다 놓기 + 붙여넣기 (자료는 설교 작성 때 곳곳에 인용) ── */
 function addRefMaterial(type, title, content) {
-  DB.materials.unshift({ id: uid(), type, title: title.slice(0, 60), content: String(content).slice(0, 12000), tags: '', createdAt: Date.now() });
+  DB.materials.unshift({ id: uid(), type, title: cleanExtractedText(title).slice(0, 60), content: cleanExtractedText(content).slice(0, 12000), tags: '', createdAt: Date.now() });
   save(true);
   if (curView === 'materials') render();
 }
@@ -4366,7 +4367,7 @@ function bindEditor(p) {
     }
     const fr = new FileReader();
     fr.onload = () => {
-      DB.materials.unshift({ id: uid(), type: '메모', title, content: String(fr.result).slice(0, 8000), tags: '', createdAt: Date.now() });
+      DB.materials.unshift({ id: uid(), type: '메모', title, content: cleanExtractedText(fr.result).slice(0, 8000), tags: '', createdAt: Date.now() });
       save(true); render(); toast('파일을 자료 서랍에 넣었습니다. 체크해서 원고에 녹여 보세요.');
     };
     fr.readAsText(f);
@@ -6282,6 +6283,17 @@ async function readDocx(file) {
   }
   return docxXmlToText(xml);
 }
+/* 추출 텍스트 정화 — 워드 기호 글꼴 찌꺼기(사설영역), 제어문자, 폭 없는 문자를 걷어낸다
+ * (평소엔 안 보이다가 블럭 선택 시 아이콘 덩어리·한자처럼 보이는 문자들) */
+function cleanExtractedText(s) {
+  return String(s || '')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')   // 제어문자
+    .replace(/[\uE000-\uF8FF]/g, '')                                          // 사설영역(PUA) — Wingdings 글머리표 등
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\uFFF9-\uFFFC\uFFFD]/g, '') // 폭 없는 문자·방향 제어·대체문자
+    .replace(/[ \t]{3,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 function docxXmlToText(xml) {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
   if (!doc.documentElement) throw new Error('문서를 읽지 못했습니다.');
@@ -6305,7 +6317,7 @@ function docxXmlToText(xml) {
     })(p);
     return t.trim();
   }).join('\n');
-  return text.replace(/\n{3,}/g, '\n\n').trim();
+  return cleanExtractedText(text);
 }
 /* 어떤 파일이든 알맞게 읽어 준다 */
 async function readDroppedFile(file, onStatus) {
