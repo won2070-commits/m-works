@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=59">
+<link rel="apple-touch-icon" href="icon-192.png?v=60">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1898,7 +1898,6 @@ async function fetchStatus(refresh) {
   const userKey = DB.settings.apiKey;
   if (aiStatus.serverless) {
     if (userKey) { badge.textContent = '● AI 연결됨 (내 API 키 · 직접 호출)'; badge.className = 'ai-badge ok'; }
-    else if (DB.settings.accessCode) { badge.textContent = '● AI 연결됨 (사용 코드)'; badge.className = 'ai-badge ok'; }
     else { badge.textContent = '○ AI 미연결 — 설정에서 연결'; badge.className = 'ai-badge bad'; }
   }
   else if (aiStatus.envKey) { badge.textContent = '● AI 연결됨 (서버 API 키)'; badge.className = 'ai-badge ok'; }
@@ -1907,8 +1906,8 @@ async function fetchStatus(refresh) {
   else { badge.textContent = '○ AI 미연결 — 설정에서 연결'; badge.className = 'ai-badge bad'; }
 }
 function aiConnected() {
-  if (aiStatus.serverless) return !!(DB.settings.apiKey || DB.settings.accessCode);
-  return aiStatus.envKey || aiStatus.cli || !!DB.settings.apiKey || !!DB.settings.accessCode;
+  if (aiStatus.serverless) return !!DB.settings.apiKey;
+  return aiStatus.envKey || aiStatus.cli || !!DB.settings.apiKey;
 }
 
 function getPrompt(key) {
@@ -2284,23 +2283,18 @@ async function callAI(key, slots, opts = {}) {
 }
 /* 단일 파일 모드: 브라우저에서 Anthropic API를 직접 호출 (키는 이 브라우저에만 저장) */
 const MODEL_IDS = { sonnet: 'claude-sonnet-5', opus: 'claude-opus-4-8', haiku: 'claude-haiku-4-5-20251001' };
-const PROXY_URL = 'https://hansung-tsj.netlify.app/api/mworks-ai';
 async function callDirect(body, opts) {
-  // 내 API 키가 있으면 Anthropic 직접, 없고 사용 코드가 있으면 중계 서버로
-  const useProxy = !DB.settings.apiKey && DB.settings.accessCode;
-  const r = await fetch(useProxy ? PROXY_URL : 'https://api.anthropic.com/v1/messages', {
+  // 각자 본인 API 키로 Anthropic에 직접 호출 (키는 이 브라우저에만 저장)
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     signal: aiAbort.signal,
-    headers: useProxy ? {
-      'content-type': 'application/json',
-      'x-mworks-code': DB.settings.accessCode,
-    } : {
+    headers: {
       'x-api-key': DB.settings.apiKey,
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify(useProxy ? body : {
+    body: JSON.stringify({
       model: MODEL_IDS[body.model] || body.model || 'claude-sonnet-5',
       max_tokens: body.maxTokens || 8000,
       system: body.system || undefined,
@@ -2311,7 +2305,6 @@ async function callDirect(body, opts) {
   if (!r.ok) {
     let msg = '';
     try { msg = (await r.json()).message || ''; } catch { msg = await r.text().catch(() => ''); }
-    if (useProxy && msg) throw new Error(msg);
     if (r.status === 401) throw new Error('API 키가 올바르지 않습니다. 설정에서 확인해 주세요.');
     throw new Error('AI 호출 오류 (' + r.status + '): ' + String(msg).slice(0, 200));
   }
@@ -2402,7 +2395,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v59 · 2026-07-22';
+const APP_VERSION = 'v60 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -2473,9 +2466,9 @@ function openManual() {
     <p>⑤ <b>연습하기</b> — 피드백·제스처·쉼멈춤 추천을 받고, <b>📄 원고에서 위치 보기</b>로 본문 속 표시(🖐①·∕·⏸)를 확인합니다. 표시를 누르면 옆에 설명이 나옵니다. 리허설 모드로 시간을 재세요.</p>
 
     <h4>2. AI 연결</h4>
-    <p><b>배포받은 분들</b>: 설정의 <b>사용 코드로 연결</b>에 발급받은 코드(MW-XXXX-XXXX)를 넣으면 끝입니다. API 키는 서버에만 있고, 월 사용 한도 안에서 쓸 수 있습니다.</p>
-    <p><b>관리자</b>: 설정 → 🛠 배포 관리에서 코드를 발급·중지하고 사용량을 봅니다. 교회 비밀번호를 아는 분은 <b>간편 연결</b>도 됩니다.</p>
-    <p>그 외에 Anthropic API 키를 직접 넣거나, 이 컴퓨터에서 claude 로그인이 되어 있으면 자동 연결됩니다. 왼쪽 아래 배지에서 연결 상태를 확인하세요.</p>
+    <p>이 앱은 <b>각자 본인의 Anthropic 계정</b>으로 작동하며, AI 사용료는 <b>본인 계정에 직접 청구</b>됩니다(설교 한 편에 보통 수백 원 안팎).</p>
+    <p><b>처음 연결(3단계, 한 번만)</b>: ① <b>console.anthropic.com</b> 가입·로그인 → ② <b>Billing(결제)</b>에서 크레딧 충전(최소 약 US$5, 해외결제 되는 카드) → ③ <b>API Keys</b>에서 <b>Create Key</b>로 키(sk-ant-…)를 만들어 복사 → <b>설정 → 내 Anthropic API 키</b>에 붙여넣고 <b>연결</b>. 키는 이 브라우저에만 저장됩니다.</p>
+    <p>이 컴퓨터 터미널에서 claude 로그인이 되어 있으면 키 없이도 자동 연결됩니다. 왼쪽 아래 배지에서 연결 상태를 확인하세요.</p>
     <p>설교문 생성은 처음 1~3분간 조용히 구상한 뒤 글이 흐르기 시작합니다.</p>
 
     <h4>3. 자료 서랍</h4>
@@ -5539,28 +5532,23 @@ function htmlToMd(html) {
 function openSettings() {
   const s = DB.settings;
   const body = modal('설정', `
-    <h4 style="margin-top:0">AI 연결</h4>
+    <h4 style="margin-top:0">AI 연결 — 본인 계정으로 사용</h4>
     <div id="set-ai-status" class="fb-item">확인 중…</div>
-    <div class="field" style="margin-top:10px">
-      <label>사용 코드로 연결 <span class="opt">(배포받은 분들은 이 방법 — 발급받은 코드를 넣으세요)</span></label>
-      <div style="display:flex;gap:8px">
-        <input id="set-acode" value="${esc(s.accessCode || '')}" placeholder="MW-XXXX-XXXX" style="flex:1;font-family:var(--mono)" autocomplete="off">
-        <button class="btn btn-primary btn-sm" id="set-acode-go">연결</button>
-      </div>
-      <div class="hint">코드는 관리자(도원욱 목사)가 발급합니다. 월 사용 한도가 있으며, API 키는 서버에만 보관됩니다.</div>
+    <div class="ai-note" style="margin-top:10px">
+      이 앱은 <b>각자 본인의 Anthropic 계정</b>으로 작동합니다. AI 사용료는 <b>본인 계정에 직접 청구</b>되며(설교 한 편 준비에 보통 수백 원 안팎), 아래 3단계로 한 번만 준비하면 계속 쓸 수 있습니다.
     </div>
-    <div class="field" style="margin-top:10px">
-      <label>간편 연결 <span class="opt">(교회 비밀번호만 넣으면 연결 — 다른 기기에서 이 방법을 쓰세요)</span></label>
+    <ol style="margin:10px 0 4px;padding-left:22px;font-size:.9rem;line-height:1.75">
+      <li><a href="https://console.anthropic.com" target="_blank" rel="noopener"><b>console.anthropic.com</b></a> 접속 → 이메일로 가입·로그인</li>
+      <li>왼쪽 <b>Billing(결제)</b> → <b>크레딧 충전</b>(최소 약 US$5) — 해외결제 되는 본인 카드로</li>
+      <li><b>API Keys</b> → <b>Create Key</b> → 만들어진 키(<span style="font-family:var(--mono)">sk-ant-…</span>)를 복사해 아래에 붙여넣기</li>
+    </ol>
+    <div class="field" style="margin-top:6px">
+      <label>내 Anthropic API 키</label>
       <div style="display:flex;gap:8px">
-        <input id="set-proxy-pass" type="password" placeholder="연결 비밀번호" style="flex:1" autocomplete="off">
-        <button class="btn btn-primary btn-sm" id="set-proxy-go">🔑 연결</button>
+        <input id="set-key" type="password" value="${esc(s.apiKey)}" placeholder="sk-ant-..." style="flex:1;font-family:var(--mono)" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="set-key-go">연결</button>
       </div>
-      <div class="hint">한 번 연결하면 이 기기에 저장되어 계속 사용됩니다.</div>
-    </div>
-    <div class="field" style="margin-top:10px">
-      <label>Anthropic API 키 직접 입력 <span class="opt">(이 브라우저에만 저장되며, AI 호출에만 사용됩니다)</span></label>
-      <input id="set-key" type="password" value="${esc(s.apiKey)}" placeholder="sk-ant-...  (선택 사항)">
-      <div class="hint">키가 없어도, 이 컴퓨터의 터미널에서 <b>claude</b> 를 실행해 로그인돼 있으면 자동으로 연결됩니다.</div>
+      <div class="hint">키는 <b>이 브라우저에만</b> 저장되고 AI 호출에만 쓰이며, 다른 곳으로 전송되지 않습니다. · 이 컴퓨터 터미널에서 <b>claude</b> 로그인이 돼 있으면 키 없이도 자동 연결됩니다.</div>
     </div>
     <div class="form-grid" style="margin-top:8px">
       <div class="field"><label>AI 모델</label>
@@ -5612,22 +5600,21 @@ function openSettings() {
       <button class="btn btn-ghost" id="set-rules">📏 나의 작성 규칙</button>
       <button class="btn btn-ghost" id="set-prompts">🧩 설교작성·세부작성 프롬프트</button>
       <button class="btn btn-ghost" id="set-manual">📖 사용 설명서</button>
-      <button class="btn btn-ghost" id="set-dist">🛠 배포 관리 (관리자)</button>
     </div>
     <p class="ai-note"><b>개인정보</b> — 모든 설교 데이터는 이 컴퓨터의 브라우저에만 저장됩니다. AI 호출 시 해당 프로젝트의 입력 내용만 Anthropic 서버로 전송됩니다.</p>`);
   const updStatus = () => {
     const el = $('#set-ai-status');
     if (aiStatus.serverless) {
       el.innerHTML = DB.settings.apiKey
-        ? '<b>연결됨</b> 단일 파일 모드 — 입력한 API 키로 Anthropic에 직접 호출합니다'
-        : `<b style="color:var(--red)">미연결</b> 단일 파일 모드입니다. 아래에 Anthropic API 키를 입력해 주세요 (console.anthropic.com에서 발급).<br>Claude 로그인(터미널) 방식은 <b>M.WORKS 실행.command</b>로 열었을 때만 사용할 수 있습니다.`;
+        ? '<b>연결됨</b> 본인 API 키로 Anthropic에 직접 호출합니다 — 사용료는 본인 계정에 청구됩니다.'
+        : `<b style="color:var(--red)">미연결</b> 아래 3단계로 본인 Anthropic 키를 발급받아 붙여넣어 주세요.`;
       return;
     }
     if (aiStatus.envKey) el.innerHTML = '<b>연결됨</b> 서버 환경변수 API 키 사용 중';
-    else if (DB.settings.apiKey) el.innerHTML = '<b>연결됨</b> 입력한 API 키 사용 중';
+    else if (DB.settings.apiKey) el.innerHTML = '<b>연결됨</b> 본인 API 키 사용 중 — 사용료는 본인 계정에 청구됩니다.';
     else if (aiStatus.cli) el.innerHTML = '<b>연결됨</b> 이 컴퓨터의 Claude 로그인(claude CLI) 사용 중';
-    else el.innerHTML = `<b style="color:var(--red)">미연결</b> 두 가지 방법 중 하나를 선택하세요:<br>
-      ① 아래에 Anthropic API 키 입력 (console.anthropic.com에서 발급)<br>
+    else el.innerHTML = `<b style="color:var(--red)">미연결</b> 두 가지 방법 중 하나:<br>
+      ① 아래 3단계로 본인 Anthropic API 키 발급·입력<br>
       ② 터미널을 열고 <b>claude</b> 실행 → <b>/login</b> 으로 로그인 후 "다시 확인"`;
   };
   updStatus();
@@ -5644,27 +5631,12 @@ function openSettings() {
     $('#set-ai-status').textContent = '확인 중…';
     await fetchStatus(true); updStatus();
   });
-  body.querySelector('#set-proxy-go').addEventListener('click', async () => {
-    const pw = $('#set-proxy-pass').value.trim();
-    if (!pw) { toast('비밀번호를 입력해 주세요.'); return; }
-    if (!(window.crypto && crypto.subtle)) { toast('이 환경에서는 간편 연결을 쓸 수 없습니다. API 키를 직접 입력해 주세요.', 5000); return; }
-    const btn = $('#set-proxy-go'); btn.disabled = true; btn.textContent = '연결 중…';
-    try {
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-      const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-      const res = await fetch('https://hansung-tsj.netlify.app/.netlify/functions/mworks-key', {
-        method: 'POST', headers: { 'x-auth': hash },
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 401) { toast('비밀번호가 다릅니다.'); }
-      else if (res.status === 503) { toast('서버에 API 키가 아직 등록되지 않았습니다. 관리자(Netlify 환경변수) 설정이 필요합니다.', 6000); }
-      else if (res.ok && data.key) {
-        s.apiKey = data.key; $('#set-key').value = data.key;
-        save(true); await fetchStatus(true); updStatus();
-        toast('연결되었습니다! 이제 이 기기에서 AI를 쓸 수 있습니다.');
-      } else { toast('연결에 실패했습니다. 인터넷 연결을 확인해 주세요.', 5000); }
-    } catch (e) { toast('연결 실패: ' + e.message, 5000); }
-    btn.disabled = false; btn.textContent = '🔑 연결';
+  body.querySelector('#set-key-go').addEventListener('click', async () => {
+    s.apiKey = $('#set-key').value.trim();
+    save(true);
+    $('#set-ai-status').textContent = '확인 중…';
+    await fetchStatus(true); updStatus();
+    toast(s.apiKey ? '키를 저장했습니다. 연결 상태를 확인했습니다.' : '키를 지웠습니다.');
   });
   body.querySelector('#set-bright').addEventListener('input', e => {
     DB.settings.brightness = +e.target.value;
@@ -5676,28 +5648,6 @@ function openSettings() {
   });
   body.querySelector('#set-rules').addEventListener('click', openRules);
   body.querySelector('#set-manual').addEventListener('click', () => { closeModal(); openManual(); });
-  body.querySelector('#set-dist').addEventListener('click', async () => {
-    const pw = prompt('관리자 비밀번호를 입력하세요');
-    if (pw === null) return;
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-    const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-    openDistAdmin(hash);
-  });
-  body.querySelector('#set-acode-go').addEventListener('click', async () => {
-    const code = $('#set-acode').value.trim().toUpperCase();
-    if (!code) { s.accessCode = ''; save(true); fetchStatus(); toast('사용 코드를 지웠습니다.'); return; }
-    const btn = body.querySelector('#set-acode-go'); btn.disabled = true; btn.textContent = '확인 중…';
-    try {
-      const r = await (await fetch(ADMIN_URL, { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'check', code }) })).json();
-      if (r.ok) {
-        s.accessCode = code; save(true); await fetchStatus(true);
-        toast('연결되었습니다' + (r.name ? ' — ' + r.name + '님' : '') + '. 이번 달 사용량 ' + (r.usedPct || 0) + '%');
-        closeModal();
-      } else toast(r.message || '코드를 확인하지 못했습니다.', 5000);
-    } catch (e) { toast('연결 실패: ' + e.message, 5000); }
-    btn.disabled = false; btn.textContent = '연결';
-  });
   body.querySelector('#set-pass').addEventListener('click', () => {
     if (s.appPass) {
       const cur = prompt('현재 비밀번호를 입력하세요');
@@ -5720,83 +5670,6 @@ function openSettings() {
   });
   body.querySelector('#set-prompts').addEventListener('click', () => { closeModal(); curView = 'prompts'; render(); });
 }
-/* ═══════════════════ 배포 관리 — 사용 코드 발급·사용량 (관리자) ═══════════════════ */
-const ADMIN_URL = 'https://hansung-tsj.netlify.app/.netlify/functions/mworks-admin';
-async function adminCall(hash, payload) {
-  const r = await fetch(ADMIN_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-auth': hash },
-    body: JSON.stringify(payload),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.message || j.error || ('오류 ' + r.status));
-  return j;
-}
-const fmtTok = n => n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? Math.round(n / 1000) + 'k' : String(n);
-async function openDistAdmin(hash) {
-  let data;
-  try { data = await adminCall(hash, { action: 'list' }); }
-  catch (e) { toast(e.message, 5000); return; }
-  const body = modal('배포 관리 — 사용 코드', `
-    <div class="fb-item" style="background:${data.keyConfigured ? 'var(--mint)' : 'var(--pink)'}">
-      <b>서버 API 키</b>${data.keyConfigured
-        ? '등록되어 있습니다. 코드만 발급하면 바로 쓸 수 있습니다.'
-        : '아직 등록되지 않았습니다 — 코드를 발급해도 AI가 작동하지 않습니다. (Netlify 환경변수 MWORKS_ANTHROPIC_KEY)'}
-    </div>
-    <div class="btn-row" style="margin-top:12px">
-      <button class="btn btn-primary btn-sm" id="da-new">＋ 새 코드 발급</button>
-      <span style="font-size:.76rem;opacity:.8">${data.month} 사용량 기준 · 한도는 월 가중 토큰(기본 3M ≈ 설교 40편)</span>
-    </div>
-    <div id="da-list" style="margin-top:10px">
-      ${data.rows.length ? data.rows.map(r => `
-        <div class="fb-item" style="background:var(--surface-soft);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <div style="flex:1;min-width:180px">
-            <b style="font-family:var(--mono)">${esc(r.code)}</b> ${esc(r.name || '')}
-            ${r.active ? '' : '<span class="badge" style="background:var(--pink)">중지됨</span>'}
-            <div style="font-size:.74rem;opacity:.8;margin-top:3px">
-              이번 달 ${fmtTok(r.usedTokens)} / ${fmtTok(r.limitTokens)} (${Math.min(100, Math.round(r.usedTokens / r.limitTokens * 100))}%) · ${r.calls}회
-              ${r.lastUsed ? ' · 마지막 ' + new Date(r.lastUsed).toLocaleDateString('ko-KR') : ''}
-            </div>
-            <div class="mini-progress" style="margin-top:4px"><i style="width:${Math.min(100, Math.round(r.usedTokens / r.limitTokens * 100))}%"></i></div>
-          </div>
-          <button class="btn btn-ghost btn-sm" data-da-copy="${esc(r.code)}">복사</button>
-          <button class="btn btn-ghost btn-sm" data-da-toggle="${esc(r.code)}" data-active="${r.active ? 1 : 0}">${r.active ? '중지' : '재개'}</button>
-          <button class="btn btn-ghost btn-sm" data-da-limit="${esc(r.code)}">한도</button>
-          <button class="btn btn-danger btn-sm" data-da-del="${esc(r.code)}">삭제</button>
-        </div>`).join('') : '<p style="font-size:.86rem;opacity:.75">발급된 코드가 없습니다. [＋ 새 코드 발급]으로 시작하세요.</p>'}
-    </div>
-    <p class="ai-note" style="margin-top:12px">코드를 받은 사람은 <b>설정 → 사용 코드로 연결</b>에 넣기만 하면 됩니다. API 키는 서버 밖으로 나가지 않으며, 모든 사용 요금은 서버에 등록된 키(관리자)에게 청구됩니다.</p>`);
-  const reopen = () => openDistAdmin(hash);
-  body.querySelector('#da-new').addEventListener('click', async () => {
-    const name = prompt('누구에게 드리는 코드인가요? (이름 또는 메모)');
-    if (name === null) return;
-    try {
-      const r = await adminCall(hash, { action: 'create', name });
-      await navigator.clipboard.writeText(r.code).catch(() => {});
-      toast('발급 완료: ' + r.code + ' (복사됨)');
-      reopen();
-    } catch (e) { toast(e.message, 5000); }
-  });
-  body.querySelectorAll('[data-da-copy]').forEach(b => b.addEventListener('click', () => {
-    navigator.clipboard.writeText(b.dataset.daCopy); toast('복사했습니다: ' + b.dataset.daCopy);
-  }));
-  body.querySelectorAll('[data-da-toggle]').forEach(b => b.addEventListener('click', async () => {
-    try { await adminCall(hash, { action: 'toggle', code: b.dataset.daToggle, active: b.dataset.active !== '1' }); reopen(); }
-    catch (e) { toast(e.message, 5000); }
-  }));
-  body.querySelectorAll('[data-da-limit]').forEach(b => b.addEventListener('click', async () => {
-    const v = prompt('월 한도 (가중 토큰 수 — 예: 3000000 ≈ 설교 40편)', '3000000');
-    if (v === null) return;
-    try { await adminCall(hash, { action: 'limit', code: b.dataset.daLimit, limitTokens: +v }); reopen(); }
-    catch (e) { toast(e.message, 5000); }
-  }));
-  body.querySelectorAll('[data-da-del]').forEach(b => b.addEventListener('click', async () => {
-    if (!confirm(b.dataset.daDel + ' 코드를 삭제할까요? 그 사람은 더 이상 연결할 수 없습니다.')) return;
-    try { await adminCall(hash, { action: 'delete', code: b.dataset.daDel }); reopen(); }
-    catch (e) { toast(e.message, 5000); }
-  }));
-}
-
 /* 프롬프트 관리(관리자) */
 function openPromptManager() {
   const keys = Object.keys(window.MSGB_PROMPTS);
