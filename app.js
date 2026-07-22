@@ -113,7 +113,7 @@ function normalize(d) {
   d.settings = Object.assign({
     translation: '개역개정', cpm: 300, model: 'sonnet', apiKey: '',
     style: '', targetMin: 25, editorSize: 17, editorHeight: 0, rules: defaultRules(),
-    fontScale: 100, fontFace: 'basic', appPass: '', theme: 'white', brightness: 100, accessCode: '',
+    fontScale: 100, fontFace: 'basic', appPass: '', theme: 'white', brightness: 100, accessCode: '', syncId: '',
   }, d.settings || {});
   d.projects = Array.isArray(d.projects) ? d.projects : [];
   d.customForms = Array.isArray(d.customForms) ? d.customForms : [];
@@ -143,6 +143,7 @@ function save(immediate) {
   const doIt = () => {
     localStorage.setItem(LS_KEY, JSON.stringify(DB));
     $('#save-status').textContent = '✓ 저장됨 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    schedulePush();
   };
   if (immediate) doIt(); else saveTimer = setTimeout(doIt, 600);
 }
@@ -151,6 +152,103 @@ function save(immediate) {
 let curId = null;
 function cur() { return DB.projects.find(p => p.id === curId) || null; }
 function touch(p) { (p || cur()).updatedAt = Date.now(); save(); refreshChrome(); }
+
+/* ═══════════════════ 기기 간 자동 동기화 (Netlify Blobs) ═══════════════════ */
+// 같은 '동기화 비밀번호'를 넣은 기기끼리 설교가 자동으로 합쳐진다.
+// 합집합 병합(id·최신시간 우선)이므로 설교가 사라지지 않는다. AI 키·화면 설정은 기기별로 유지.
+const SYNC_URL = 'https://hansung-tsj.netlify.app/api/mworks-sync';
+const SYNC_ARRAYS = ['projects', 'materials', 'reports', 'customForms', 'refPrompts', 'trash'];
+let syncRev = 0, syncing = false, pushTimer = null, syncStatus = '';
+
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function syncOn() { return !!(DB.settings.syncId && window.crypto && crypto.subtle); }
+function setSyncStatus(t) {
+  syncStatus = t;
+  const el = document.querySelector('#set-sync-status');
+  if (el) el.innerHTML = t;
+  const badge = document.querySelector('#save-status');
+  if (badge && syncOn() && t) badge.title = '동기화: ' + t.replace(/<[^>]+>/g, '');
+}
+// 동기화할 부분만 추린다(설정·AI키 제외)
+function syncSubset() {
+  const o = {};
+  SYNC_ARRAYS.forEach(k => { o[k] = Array.isArray(DB[k]) ? DB[k] : []; });
+  o.promptOverrides = DB.promptOverrides || {};
+  return o;
+}
+function mergeById(local, remote, tsField) {
+  local = Array.isArray(local) ? local : [];
+  remote = Array.isArray(remote) ? remote : [];
+  const map = new Map(local.map(x => [x.id, x]));
+  remote.forEach(r => {
+    if (!r || r.id == null) return;
+    const l = map.get(r.id);
+    if (!l) map.set(r.id, r);
+    else if (tsField && (r[tsField] || 0) > (l[tsField] || 0)) map.set(r.id, r);
+  });
+  return Array.from(map.values());
+}
+// 원격 데이터를 로컬 DB에 합친다(설교가 사라지지 않도록 합집합)
+function mergeRemote(remote) {
+  if (!remote || typeof remote !== 'object') return;
+  DB.projects = mergeById(DB.projects, remote.projects, 'updatedAt').map(normProject);
+  DB.materials = mergeById(DB.materials, remote.materials, 'createdAt');
+  DB.reports = mergeById(DB.reports, remote.reports, 'createdAt');
+  DB.customForms = mergeById(DB.customForms, remote.customForms, null);
+  DB.refPrompts = mergeById(DB.refPrompts, remote.refPrompts, null);
+  DB.trash = mergeById(DB.trash, remote.trash, null);
+  DB.promptOverrides = Object.assign({}, remote.promptOverrides || {}, DB.promptOverrides || {});
+}
+async function syncFetch(payload) {
+  const r = await fetch(SYNC_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-sync-id': DB.settings.syncId },
+    body: JSON.stringify(payload),
+  });
+  return r.json();
+}
+// 시작·복귀 때: 내려받아 병합하고 다시 올린다(화면 갱신 포함)
+async function cloudSync(silent) {
+  if (!syncOn() || syncing) return;
+  syncing = true;
+  if (!silent) setSyncStatus('동기화 중…');
+  try {
+    const p = await syncFetch({ action: 'pull' });
+    if (p && p.data) { try { mergeRemote(JSON.parse(p.data)); } catch {} }
+    let rev = (p && p.rev) || 0;
+    for (let i = 0; i < 3; i++) {
+      const res = await syncFetch({ action: 'push', data: JSON.stringify(syncSubset()), baseRev: rev });
+      if (res && res.conflict) { try { mergeRemote(JSON.parse(res.data || '{}')); } catch {} rev = res.rev || rev; continue; }
+      if (res && res.ok) { rev = res.rev || rev; break; }
+      break;
+    }
+    syncRev = rev;
+    save(true);
+    setSyncStatus('✓ 동기화됨 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
+    try { if (curId && !cur()) curId = null; render(); } catch (e) { console.warn('동기화 후 화면 갱신 오류(무시):', e); }
+  } catch (e) {
+    setSyncStatus('오프라인 — 연결되면 자동 재시도');
+  }
+  syncing = false;
+}
+// 편집 후: 조용히 올리기만(충돌이면 다음 복귀 때 전체 동기화로 해소 — 편집 중 화면 안 흔듦)
+function schedulePush() {
+  if (!syncOn()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    if (!syncOn() || syncing) return;
+    try {
+      const res = await syncFetch({ action: 'push', data: JSON.stringify(syncSubset()), baseRev: syncRev });
+      if (res && res.ok) { syncRev = res.rev || syncRev; setSyncStatus('✓ 동기화됨 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })); }
+      // 충돌이면 그대로 두고, 다음 복귀(cloudSync) 때 병합
+    } catch {}
+  }, 5000);
+}
+// 다른 기기에서 창으로 돌아오면 전체 동기화
+document.addEventListener('visibilitychange', () => { if (!document.hidden && syncOn()) cloudSync(true); });
 
 /* ═══════════════════ AI 클라이언트 ═══════════════════ */
 let aiStatus = { backend: 'none', cli: false, envKey: false, serverless: false };
@@ -664,7 +762,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v60 · 2026-07-22';
+const APP_VERSION = 'v61 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3819,6 +3917,17 @@ function openSettings() {
       </div>
       <div class="hint">키는 <b>이 브라우저에만</b> 저장되고 AI 호출에만 쓰이며, 다른 곳으로 전송되지 않습니다. · 이 컴퓨터 터미널에서 <b>claude</b> 로그인이 돼 있으면 키 없이도 자동 연결됩니다.</div>
     </div>
+    <h4>기기 간 자동 동기화 <span class="opt" style="font-weight:400;font-size:.8rem">(폰·태블릿·PC에서 설교를 함께 보기)</span></h4>
+    <div id="set-sync-status" class="fb-item" style="margin-bottom:8px"></div>
+    <div class="field">
+      <label>동기화 비밀번호</label>
+      <div style="display:flex;gap:8px">
+        <input id="set-sync-pass" type="password" placeholder="${s.syncId ? '연결됨 — 다시 넣어 재연결' : '나만 아는 비밀번호 (6자 이상)'}" style="flex:1" autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="set-sync-on">${s.syncId ? '재연결' : '켜기'}</button>
+        ${s.syncId ? '<button class="btn btn-ghost btn-sm" id="set-sync-off">끄기</button>' : ''}
+      </div>
+      <div class="hint">모든 기기에서 <b>같은 비밀번호</b>를 넣으면 설교·자료·규칙이 자동으로 함께 보입니다. 병합 방식이라 어느 기기의 설교도 사라지지 않습니다. 이 비밀번호는 본인만 알아야 하며, 잊으면 그 데이터에 접근할 수 없습니다. · AI 키·화면 설정은 동기화되지 않고 기기마다 따로입니다.</div>
+    </div>
     <div class="form-grid" style="margin-top:8px">
       <div class="field"><label>AI 모델</label>
         <select id="set-model">
@@ -3887,6 +3996,32 @@ function openSettings() {
       ② 터미널을 열고 <b>claude</b> 실행 → <b>/login</b> 으로 로그인 후 "다시 확인"`;
   };
   updStatus();
+  // 동기화 현재 상태 표시
+  const showSyncState = () => {
+    if (!(window.crypto && crypto.subtle)) { setSyncStatus('이 환경에서는 동기화를 쓸 수 없습니다.'); return; }
+    if (!s.syncId) setSyncStatus('<b style="color:var(--ink-soft)">꺼짐</b> — 비밀번호를 넣고 [켜기]를 누르면 이 기기의 설교가 클라우드에 안전하게 보관되고, 같은 비밀번호를 넣은 다른 기기와 자동으로 합쳐집니다.');
+    else setSyncStatus(syncStatus || '<b>켜짐</b> — 자동 동기화 중입니다.');
+  };
+  showSyncState();
+  body.querySelector('#set-sync-on').addEventListener('click', async () => {
+    if (!(window.crypto && crypto.subtle)) { toast('이 환경에서는 동기화를 쓸 수 없습니다.', 5000); return; }
+    const pw = $('#set-sync-pass').value.trim();
+    if (pw.length < 6) { toast('비밀번호는 6자 이상으로 정해 주세요.'); return; }
+    const btn = $('#set-sync-on'); btn.disabled = true; btn.textContent = '연결 중…';
+    try {
+      s.syncId = await sha256hex('mworks-sync:' + pw);
+      syncRev = 0; save(true);
+      await cloudSync(false);
+      toast('동기화를 켰습니다. 다른 기기에도 같은 비밀번호를 넣으세요.');
+      closeModal(); openSettings();
+    } catch (e) { toast('동기화 연결 실패: ' + e.message, 5000); btn.disabled = false; btn.textContent = '켜기'; }
+  });
+  const syncOff = body.querySelector('#set-sync-off');
+  if (syncOff) syncOff.addEventListener('click', () => {
+    s.syncId = ''; syncRev = 0; save(true);
+    toast('이 기기에서 동기화를 껐습니다. (클라우드의 데이터는 그대로 있습니다)');
+    closeModal(); openSettings();
+  });
   body.querySelector('#set-save').addEventListener('click', () => {
     s.apiKey = $('#set-key').value.trim(); s.model = $('#set-model').value;
     s.translation = $('#set-trans').value; s.cpm = +$('#set-cpm').value || 300;
@@ -4028,6 +4163,7 @@ window.gotoStep = gotoStep; // 잠금 카드의 onclick 용
   if (DB.projects.length) { curId = DB.projects[0].id; curView = 'home'; }
   render();
   fetchStatus();
+  if (syncOn()) cloudSync(true); // 시작 시 다른 기기의 설교 내려받아 병합
   setInterval(() => { syncEditor(); }, 30000); // 편집 중 주기 저장
   window.addEventListener('beforeunload', () => { syncEditor(); save(true); });
 })();
