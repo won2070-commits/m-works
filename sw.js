@@ -1,6 +1,6 @@
 /* M-WORKS 서비스워커 — 네트워크 우선, 실패 시 캐시 (오프라인 지원) */
-const CACHE = 'mworks-v63';
-const CORE = ['.', 'index.html', 'style.css?v=63', 'app.js?v=63', 'prompts.js?v=63', 'manifest.json', 'icon-192.png?v=63', 'icon-512.png?v=63'];
+const CACHE = 'mworks-v64';
+const CORE = ['.', 'index.html', 'style.css?v=64', 'app.js?v=64', 'prompts.js?v=64', 'manifest.json', 'icon-192.png?v=64', 'icon-512.png?v=64'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
