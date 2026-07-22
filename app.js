@@ -349,7 +349,7 @@ function showProgress(label, key) {
   clearInterval(aiTimerInt); // 앞선 타이머가 남아 겹치지 않게
   $('#ai-progress-label').textContent = label;
   const sub = $('#ai-progress-sub');
-  if (progressSub) { sub.textContent = progressSub; sub.classList.remove('hidden'); }
+  if (progressSub) { sub.innerHTML = progressSub; sub.classList.remove('hidden'); }
   else { sub.textContent = ''; sub.classList.add('hidden'); }
   progressSub = '';
   const eta = progressEta || 90;           // 지정이 없으면 90초로 가정
@@ -805,7 +805,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v65 · 2026-07-22';
+const APP_VERSION = 'v66 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1766,6 +1766,7 @@ const PARTIAL_REQUESTS = [
   '본론 설명 보강', '논리 점검', '본문 해설 보강', '배경 설명 추가 (역사·문화·지리)',
   '예화 추가 (가상 예시는 표시)', '예화 교체', '유머 추가 (품위 있게)', '적용 구체화',
   '복음적 연결 점검', '결론 다시 작성', '결론 압축', '촌철살인의 한 문장 5개',
+  '적용 찬양 다시 추천 (가스펠 2곡 + 찬송가)',
   '전체 분량 늘리기', '전체 분량 줄이기', '목표 시간에 맞게 조절',
   'AI 냄새 제거', '설교자의 기존 문체에 맞게 수정', '지금의 설교로 (요즘 언어·표현으로)',
   '추천 도서 내용을 설교문에 추가 (책 제목 + A4 2쪽 요약)',
@@ -1791,9 +1792,12 @@ function renderStep3(m, p) {
         <div class="field"><label>문체·어조 요청</label><input id="s3-style" value="${esc(DB.settings.style)}" placeholder="예: 따뜻한 구어체, 존댓말"></div>
       </div>
       ${DB.materials.length ? `
-      <h4 style="margin-top:16px">자료 서랍에서 넣을 자료 <span class="opt" style="font-weight:400;font-size:.74rem">— 선택한 자료를 AI가 적절한 자리에 반영합니다</span></h4>
+      <h4 style="margin-top:16px">자료 서랍에서 넣을 자료 <span class="opt" style="font-weight:400;font-size:.74rem">— 넣을 자리를 정하면 그 자리에, '자동'이면 AI가 가장 알맞은 곳에</span></h4>
       <div class="checklist" id="s3-mats">
-        ${DB.materials.map(x => `<label><input type="checkbox" data-mat="${x.id}" checked> <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span> ${esc(x.title)}</label>`).join('')}
+        ${DB.materials.map(x => `<div style="display:flex;align-items:center;gap:8px">
+          <label style="flex:1;min-width:0"><input type="checkbox" data-mat="${x.id}" checked> <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span> ${esc(x.title)}</label>
+          ${matPlaceSelect(x)}
+        </div>`).join('')}
       </div>` : `<p class="ai-note">🗄 <b>자료 서랍</b>(왼쪽 메뉴)에 예화·통계·자료를 담아 두면, 설교문 곳곳에 인용해 활용합니다.</p>`}
       <p class="ai-note">📏 <b>나의 작성 규칙</b>이 자동 적용됩니다 — 적용 찬송 2곡(이유 포함)과 기도문이 원고 끝에 함께 작성됩니다.</p>
       <div class="btn-row">
@@ -1860,13 +1864,14 @@ function renderStep3(m, p) {
           <p style="font-size:.8rem;line-height:1.8;margin-top:4px;opacity:.85">① 첫 세 줄에 청중을 향한 배려가 있는가 ② 본문과 청중 사이에 다리를 놓는가 ③ 답을 너무 빨리 말하지 않는가 ④ 설교가 이미 전진하고 있는가</p>
         </details>
       </div>
-      <details class="tool-fold" style="margin-top:16px">
-      <summary style="cursor:pointer;font-weight:600;padding:10px 4px">🛠 다듬기 도구 — 자료 투입 · 제목 · 부분 재작성 · 적용 찬양</summary>
-      <div class="card" style="margin-top:10px">
-        <h3>자료 투입 <span class="opt" style="font-weight:400;font-size:.78rem">— 모아둔 예화·통계·간증을 골라 원고의 적절한 자리에 녹입니다</span></h3>
+      <div class="card" style="margin-top:16px">
+        <h3>자료 투입 <span class="opt" style="font-weight:400;font-size:.78rem">— 모아둔 예화·통계·간증을 골라, 정한 자리(서론·본론·적용·결론)에 녹입니다</span></h3>
         ${DB.materials.length ? `
         <div class="checklist" id="s3w-mats">
-          ${DB.materials.map(x => `<label><input type="checkbox" data-wmat="${x.id}"> <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span> ${esc(x.title)}</label>`).join('')}
+          ${DB.materials.map(x => `<div style="display:flex;align-items:center;gap:8px">
+            <label style="flex:1;min-width:0"><input type="checkbox" data-wmat="${x.id}"> <span class="badge" style="background:${MAT_COLORS[x.type] || 'var(--surface-soft)'}">${esc(x.type)}</span> ${esc(x.title)}</label>
+            ${matPlaceSelect(x)}
+          </div>`).join('')}
         </div>` : '<p style="font-size:.84rem;opacity:.7">자료 서랍이 비어 있습니다. 아래 버튼이나 왼쪽 메뉴에서 자료를 넣어 두세요.</p>'}
         <div class="btn-row">
           <button class="btn btn-primary btn-sm" id="s3-weave" ${aiConnected() && DB.materials.length ? '' : 'disabled'}>선택한 자료를 원고에 녹이기 ${AI_ICO}</button>
@@ -1891,7 +1896,6 @@ function renderStep3(m, p) {
         <p style="font-size:.84rem;line-height:1.9;opacity:.88">한 문장에 한 생각인가 · 각 단락이 설교를 앞으로 움직이는가 · 모든 내용이 중심사상을 섬기는가 · 선택한 형식의 움직임이 살아 있는가 · 예화가 설명과 중심사상을 돕는가 · 적용이 은혜에서 시작하는 초대인가 · 경계선의 청중도 이해할 수 있는가 · 확인되지 않은 통계·인용은 없는가 · 설교자의 경험을 AI가 지어내지 않았는가</p>
         <p style="font-size:.82rem;opacity:.8;margin-top:6px"><b>적용의 네 질문</b> — 누구에게? · 무엇을 요청하는가? · 언제까지인가? · 어떻게 확인할 수 있는가?</p>
       </div>
-      </details>
       <div class="card">
         <h3>버전 기록</h3>
         <div id="s3-versions">${renderVersions(p)}</div>
@@ -1920,6 +1924,7 @@ function renderStep3(m, p) {
     touch(p); render();
   });
   if (hasDraft || $('#editor')) bindEditor(p);
+  bindMatPlace(); // 자료별 '넣을 자리' 저장
 }
 /* ═══════════════════ 적용 찬양 — 악보·듣기 찾아보기 ═══════════════════ */
 /* 원고의 "적용 찬양/찬송" 단락에서 곡을 뽑아낸다 */
@@ -2119,9 +2124,10 @@ async function generateSermon(p, regen) {
   if (streamEl) streamEl.innerHTML = '<div class="stream-preview" id="s3-preview">…</div>';
   hideProgressSafeLabel();
   const matIds = $$('#s3-mats [data-mat]:checked').map(cb => cb.dataset.mat);
+  const SUB_ICO = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px;margin-right:7px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M12 19l7-7a3.5 3.5 0 00-5-5l-7 7-1.6 6.6L12 19z"/><path d="M9.5 14.5L14 10"/></svg>';
   setProgressSub(matIds.length
-    ? '🗂 자료 서랍의 자료 ' + matIds.length + '개가 함께 섞여 설교가 만들어지고 있습니다'
-    : '📖 중심사상과 나의 작성 규칙을 따라 설교가 지어지고 있습니다');
+    ? SUB_ICO + '자료 서랍의 자료 ' + matIds.length + '개가 함께 섞여 설교가 만들어지고 있습니다'
+    : SUB_ICO + '중심사상과 나의 작성 규칙을 따라 설교가 지어지고 있습니다');
   setProgressEta(90 + targetMin * 11, [
     '본문과 자료를 읽는 중…', '설교의 뼈대를 세우는 중…', '서론과 본론을 쓰는 중…',
     '예화와 적용을 잇는 중…', '찬양·기도문·추천 도서를 붙이는 중…',
@@ -2389,6 +2395,7 @@ function applyTitle(p, title) {
 const PARTIAL_PLACE = [
   // 구체적인 규칙을 먼저 — '추천 도서…(책 제목…)'이 제목 규칙에 걸리지 않도록
   { re: /추천 도서|유머/, mode: 'end' },
+  { re: /찬양|찬송/, mode: 'section', heads: ['적용 찬양', '적용 찬송', '찬양'] },
   { re: /배경 설명/, mode: 'before', heads: ['본문', '설명', '본론'] },
   { re: /제목/, mode: 'title' },
   { re: /서론/, mode: 'section', heads: ['서론', '도입'] },
@@ -3153,7 +3160,7 @@ async function getStress(p) {
     const r = await callAIJson('stress', { draft: htmlToText(p.draft.html).slice(0, 16000) },
       { label: '강약을 줄 자리를 찾는 중…' });
     p.rehearsal.stress = r; touch(p); render();
-    const box = $('#s5-st'); if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    openMarkedScript(p, 'stress'); // 먼저 본문 속 위치부터 — 표시를 누르면 오른편에 설명
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
 }
 const HOW_ICON = { '높여서': '↗', '낮춰서': '↘', '늘려서': '〜', '끊어서': '｜' };
@@ -3217,6 +3224,7 @@ async function getBreaths(p) {
     setProgressEta(45, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '정리하는 중…']);
     const r = await callAIJson('breaths', { draft: htmlToText(p.draft.html) }, { label: '낭독 호흡을 분석하는 중…' });
     p.rehearsal.breaths = r; touch(p); render();
+    openMarkedScript(p, 'breaths'); // 먼저 본문 속 위치부터
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
 }
 function insertBreathMarks(p) {
@@ -3496,6 +3504,7 @@ async function getGestures(p) {
     setProgressEta(55, ['원고의 결을 읽는 중…', '몸짓이 필요한 자리를 찾는 중…', '동작을 적는 중…']);
     const r = await callAIJson('gestures', { draft: htmlToText(p.draft.html) }, { label: '제스처 지점을 찾는 중…' });
     p.rehearsal.gestures = r; touch(p); render();
+    openMarkedScript(p, 'gestures'); // 먼저 본문 속 위치부터 — 🖐 표시를 누르면 오른편에 그림과 설명
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
 }
 /* FCF 찾기 (채플) */
@@ -3634,10 +3643,21 @@ function bindMatList() {
     if (confirm('이 자료를 삭제할까요?')) { DB.materials = DB.materials.filter(x => x.id !== b.dataset.matdel); save(true); render(); }
   }));
 }
+const MAT_PLACES = ['자동', '서론', '본론', '적용', '결론', '마무리'];
+function matPlaceSelect(x) {
+  return `<select data-place="${x.id}" title="이 자료를 넣을 자리" style="flex-shrink:0;font-size:.74rem;padding:4px 10px;border:1px solid var(--hairline);border-radius:var(--r-pill);background:var(--canvas)">
+    ${MAT_PLACES.map(o => `<option ${((x.place || '자동') === o) ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+}
+function bindMatPlace() {
+  $$('#main [data-place]').forEach(sel => sel.addEventListener('change', () => {
+    const m0 = DB.materials.find(m => m.id === sel.dataset.place);
+    if (m0) { m0.place = sel.value; save(true); }
+  }));
+}
 function materialsSlot(ids) {
   const sel = DB.materials.filter(x => !ids || ids.includes(x.id));
   if (!sel.length) return '(없음)';
-  return sel.map(x => `- [${x.type}] ${x.title}: ${x.content}${x.tags ? ' (태그: ' + x.tags + ')' : ''}`).join('\n');
+  return sel.map(x => `- [${x.type}] ${x.title}: ${x.content}${x.tags ? ' (태그: ' + x.tags + ')' : ''}${x.place && x.place !== '자동' ? ' 【넣을 자리: ' + x.place + '】' : ''}`).join('\n');
 }
 
 /* ═══════════════════ 설교 피드백 클리닉 ═══════════════════ */
