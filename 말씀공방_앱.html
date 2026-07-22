@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=71">
+<link rel="apple-touch-icon" href="icon-192.png?v=72">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2829,7 +2829,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v71 · 2026-07-22';
+const APP_VERSION = 'v72 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -3348,7 +3348,15 @@ function addRefMaterial(type, title, content) {
 }
 async function ingestRefFile(f) {
   const name = f.name.replace(/\.[^.]+$/, '');
-  if (/\.(txt|md|text)$/i.test(f.name) || f.type.startsWith('text/')) {
+  if (/\.docx$/i.test(f.name)) {
+    // 워드 파일 — 앱 내장 해제기로 본문을 뽑아 담는다
+    try {
+      const text = await readDocx(f);
+      if (!text || text.trim().length < 5) return toast('⚠ "' + name + '" 에서 글을 찾지 못했습니다.', 5000);
+      addRefMaterial('메모', name, text);
+      toast('📄 워드 "' + name + '" 을 읽어 담았습니다 (' + text.length.toLocaleString() + '자).', 5000);
+    } catch (e) { toast('⚠ 워드 읽기 실패: ' + e.message + ' — 내용을 복사해 붙여넣기 칸에 넣어 주세요.', 6000); }
+  } else if (/\.(txt|md|text)$/i.test(f.name) || f.type.startsWith('text/')) {
     const fr = new FileReader();
     fr.onload = () => { addRefMaterial('메모', name, fr.result); toast('"' + name + '" 을 담았습니다.'); };
     fr.readAsText(f);
@@ -3365,7 +3373,7 @@ async function ingestRefFile(f) {
     };
     fr.readAsDataURL(f);
   } else {
-    toast('한글(HWP)·워드 파일은 내용을 복사해서 붙여넣기 칸에 넣어 주세요.', 5000);
+    toast('한글(HWP)·옛 워드(.doc) 파일은 내용을 복사해서 붙여넣기 칸에 넣어 주세요. (.docx는 그대로 담깁니다)', 5500);
   }
 }
 function bindRefDrop() {
@@ -3907,7 +3915,7 @@ function renderStep3(m, p) {
         </div>` : '<p style="font-size:.84rem;opacity:.7">자료 서랍이 비어 있습니다. 아래 버튼이나 왼쪽 메뉴에서 자료를 넣어 두세요.</p>'}
         <div class="btn-row">
           <button class="btn btn-primary btn-sm" id="s3-weave" ${aiConnected() && DB.materials.length ? '' : 'disabled'}>선택한 자료를 원고에 녹이기 ${AI_ICO}</button>
-          <label class="btn btn-ghost btn-sm" style="cursor:pointer">파일에서 자료 추가 (.txt .md)<input id="s3-matfile" type="file" accept=".txt,.md,.text" style="display:none"></label>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">파일에서 자료 추가 (.docx .txt .md)<input id="s3-matfile" type="file" accept=".docx,.txt,.md,.text" style="display:none"></label>
           <button class="btn btn-ghost btn-sm" id="s3-matgo">자료 서랍 열기</button>
         </div>
       </div>
@@ -4155,8 +4163,12 @@ async function generateSermon(p, regen) {
   const streamEl = $('#s3-stream');
   if (streamEl) streamEl.innerHTML = '<div class="stream-preview" id="s3-preview">…</div>';
   hideProgressSafeLabel();
-  const matIds = $$('#s3-mats [data-mat]:checked').map(cb => cb.dataset.mat);
-  const SUB_ICO = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px;margin-right:7px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M12 19l7-7a3.5 3.5 0 00-5-5l-7 7-1.6 6.6L12 19z"/><path d="M9.5 14.5L14 10"/></svg>';
+  // 자료 목록: 체크목록이 화면에 있으면 체크된 것만, 없으면(재생성 등) 서랍의 자료 전부 — 매뉴얼대로 몽땅 녹인다
+  const matBoxes = $$('#s3-mats [data-mat]');
+  const matIds = matBoxes.length
+    ? matBoxes.filter(cb => cb.checked).map(cb => cb.dataset.mat)
+    : DB.materials.map(x => x.id);
+  const SUB_ICO ='<svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px;margin-right:7px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"><path d="M12 19l7-7a3.5 3.5 0 00-5-5l-7 7-1.6 6.6L12 19z"/><path d="M9.5 14.5L14 10"/></svg>';
   setProgressSub(matIds.length
     ? SUB_ICO + '자료 서랍의 자료 ' + matIds.length + '개가 함께 섞여 설교가 만들어지고 있습니다'
     : SUB_ICO + '중심사상과 나의 작성 규칙을 따라 설교가 지어지고 있습니다');
@@ -4303,11 +4315,20 @@ function bindEditor(p) {
   const weaveBtn = $('#s3-weave');
   if (weaveBtn) weaveBtn.addEventListener('click', () => weaveMaterials(p));
   const matFile = $('#s3-matfile');
-  if (matFile) matFile.addEventListener('change', e => {
+  if (matFile) matFile.addEventListener('change', async e => {
     const f = e.target.files[0]; if (!f) return;
+    const title = f.name.replace(/\.[^.]+$/, '');
+    if (/\.docx$/i.test(f.name)) {
+      try {
+        const text = await readDocx(f);
+        DB.materials.unshift({ id: uid(), type: '메모', title, content: String(text).slice(0, 12000), tags: '', createdAt: Date.now() });
+        save(true); render(); toast('📄 워드 파일을 자료 서랍에 넣었습니다. 체크해서 원고에 녹여 보세요.');
+      } catch (err) { toast('⚠ 워드 읽기 실패: ' + err.message, 6000); }
+      return;
+    }
     const fr = new FileReader();
     fr.onload = () => {
-      DB.materials.unshift({ id: uid(), type: '메모', title: f.name.replace(/\.(txt|md|text)$/i, ''), content: String(fr.result).slice(0, 8000), tags: '', createdAt: Date.now() });
+      DB.materials.unshift({ id: uid(), type: '메모', title, content: String(fr.result).slice(0, 8000), tags: '', createdAt: Date.now() });
       save(true); render(); toast('파일을 자료 서랍에 넣었습니다. 체크해서 원고에 녹여 보세요.');
     };
     fr.readAsText(f);
@@ -5904,8 +5925,8 @@ function renderMaterials(m) {
       <h3>자료 담기 — 끌어다 놓기 · 붙여넣기</h3>
       <div id="ref-drop" class="dropzone">
         <svg class="nav-ico" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
-        <span>여기에 자료를 끌어다 놓으세요 (또는 클릭해서 파일 선택)<br><small>텍스트·마크다운은 바로 담고, 사진·PDF는 AI가 내용을 읽어 담습니다</small></span>
-        <input id="ref-file" type="file" multiple accept=".txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
+        <span>여기에 자료를 끌어다 놓으세요 (또는 클릭해서 파일 선택)<br><small>워드(.docx)·텍스트·마크다운은 바로 담고, 사진·PDF는 AI가 내용을 읽어 담습니다</small></span>
+        <input id="ref-file" type="file" multiple accept=".docx,.txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
       </div>
       <div class="paste-row">
         <textarea id="ref-paste" placeholder="한글(HWP)·워드 등에서 복사한 자료를 여기 붙여넣고 → 담기"></textarea>
