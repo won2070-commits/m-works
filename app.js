@@ -805,7 +805,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v64 · 2026-07-22';
+const APP_VERSION = 'v65 · 2026-07-22';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
@@ -1577,11 +1577,34 @@ function renderStep2(m, p) {
 }
 
 /* ── T-파싱 관찰 노트 — 본문이 말하게 하는 첫 작업 (설교자가 먼저, AI는 보완만) ── */
+/* 본문을 절 단위로 나눠 절 번호를 또렷하게 — 파싱하며 읽기 좋게 */
+function versesHtml(text) {
+  const t = String(text || '').trim();
+  if (!t) return '';
+  const parts = [];
+  const re = /(?:^|\s)(\d{1,3})\s+/g;
+  let m, last = null;
+  while ((m = re.exec(t))) {
+    if (last) parts.push({ num: last.num, body: t.slice(last.end, m.index).trim() });
+    last = { num: m[1], end: re.lastIndex };
+  }
+  if (last) parts.push({ num: last.num, body: t.slice(last.end).trim() });
+  if (!parts.length) return `<p style="margin:0">${esc(t)}</p>`;
+  const head = t.slice(0, t.search(re) < 0 ? 0 : t.match(/(?:^|\s)\d{1,3}\s+/).index).trim();
+  return (head ? `<p style="margin:0 0 6px">${esc(head)}</p>` : '') + parts.map(v =>
+    `<p style="margin:0 0 6px;display:flex;gap:8px"><b style="flex-shrink:0;min-width:24px;text-align:right;font-family:var(--mono);font-size:.78em;color:var(--fin);padding-top:2px">${esc(v.num)}</b><span>${esc(v.body)}</span></p>`).join('');
+}
 function renderTparse(p) {
   const rows = p.tparse;
+  const vh = versesHtml(p.passage.text);
   return `
     <div class="card" id="tparse-card">
       <h3>T-파싱 관찰 노트 <span class="opt" style="font-weight:400;font-size:.78rem">— 본문에서 멈춘 단어를 적고, 곁에 질문을 적습니다</span></h3>
+      ${vh ? `
+      <div style="background:var(--surface-soft);border-radius:var(--r-md);padding:14px 16px;margin-bottom:14px;max-height:300px;overflow-y:auto;line-height:1.75;font-size:.95rem">
+        <div style="font-size:.68rem;font-family:var(--mono);letter-spacing:.05em;opacity:.7;margin-bottom:8px">${esc(p.passage.ref)}</div>
+        ${vh}
+      </div>` : `<p class="ai-note">⚠ 본문 전문이 비어 있습니다. 1단계에서 본문을 붙여넣으면 여기에 절과 함께 표시되어 파싱하기 쉬워집니다. <button class="chip" onclick="gotoStep(1)" style="margin-left:6px">1단계로</button></p>`}
       <div style="display:grid;grid-template-columns:1fr 1.4fr 34px;gap:6px;align-items:center">
         <div style="font-size:.7rem;font-family:var(--mono);opacity:.7">본문에서 멈춘 단어·표현</div>
         <div style="font-size:.7rem;font-family:var(--mono);opacity:.7">질문·관찰</div><div></div>
