@@ -808,7 +808,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v79 · 2026-07-23';
+const APP_VERSION = 'v80 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -997,24 +997,47 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 /* ═══════════════════ 원고 도우미 ═══════════════════ */
 function mdToHtml(md) {
   const lines = md.split('\n');
-  let html = '', inList = null, inQuote = false;
+  let html = '', inList = null, inQuote = false, newPara = false; // newPara: 빈 줄 뒤 = 새 단락 시작
   const closeAll = () => { if (inList) { html += `</${inList}>`; inList = null; } if (inQuote) { html += '</blockquote>'; inQuote = false; } };
   for (let raw of lines) {
     const line = raw.trimEnd();
     const inline = s => esc(s)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
-    if (/^### /.test(line)) { closeAll(); html += '<h3>' + inline(line.slice(4)) + '</h3>'; }
-    else if (/^## /.test(line)) { closeAll(); html += '<h2>' + inline(line.slice(3)) + '</h2>'; }
-    else if (/^# /.test(line)) { closeAll(); html += '<h1>' + inline(line.slice(2)) + '</h1>'; }
-    else if (/^> ?/.test(line)) { if (inList) { html += `</${inList}>`; inList = null; } if (!inQuote) { html += '<blockquote>'; inQuote = true; } html += '<p>' + inline(line.replace(/^> ?/, '')) + '</p>'; }
-    else if (/^[-•] /.test(line)) { if (inQuote) { html += '</blockquote>'; inQuote = false; } if (inList !== 'ul') { if (inList) html += `</${inList}>`; html += '<ul>'; inList = 'ul'; } html += '<li>' + inline(line.slice(2)) + '</li>'; }
-    else if (/^\d+\. /.test(line)) { if (inQuote) { html += '</blockquote>'; inQuote = false; } if (inList !== 'ol') { if (inList) html += `</${inList}>`; html += '<ol>'; inList = 'ol'; } html += '<li>' + inline(line.replace(/^\d+\. /, '')) + '</li>'; }
-    else if (line === '') { closeAll(); }
-    else { closeAll(); html += '<p>' + inline(line) + '</p>'; }
+    if (/^### /.test(line)) { closeAll(); html += '<h3>' + inline(line.slice(4)) + '</h3>'; newPara = false; }
+    else if (/^## /.test(line)) { closeAll(); html += '<h2>' + inline(line.slice(3)) + '</h2>'; newPara = false; }
+    else if (/^# /.test(line)) { closeAll(); html += '<h1>' + inline(line.slice(2)) + '</h1>'; newPara = false; }
+    else if (/^> ?/.test(line)) { if (inList) { html += `</${inList}>`; inList = null; } if (!inQuote) { html += '<blockquote>'; inQuote = true; } html += '<p>' + inline(line.replace(/^> ?/, '')) + '</p>'; newPara = false; }
+    else if (/^[-•] /.test(line)) { if (inQuote) { html += '</blockquote>'; inQuote = false; } if (inList !== 'ul') { if (inList) html += `</${inList}>`; html += '<ul>'; inList = 'ul'; } html += '<li>' + inline(line.slice(2)) + '</li>'; newPara = false; }
+    else if (/^\d+\. /.test(line)) { if (inQuote) { html += '</blockquote>'; inQuote = false; } if (inList !== 'ol') { if (inList) html += `</${inList}>`; html += '<ol>'; inList = 'ol'; } html += '<li>' + inline(line.replace(/^\d+\. /, '')) + '</li>'; newPara = false; }
+    else if (line === '') { closeAll(); newPara = true; }
+    else { closeAll(); html += '<p' + (newPara ? ' class="pgap"' : '') + '>' + inline(line) + '</p>'; newPara = false; }
   }
   closeAll();
   return html;
+}
+/* 원고 가독성 정리 — 여러 문장이 붙은 문단을 '한 문장 = 한 줄'로 나눈다.
+ * 빈 줄로 시작한 단락 표시(pgap)는 첫 문장에 남겨 단락 사이 여백이 유지된다. */
+function formatDraftHtml(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  div.querySelectorAll('p').forEach(p0 => {
+    if (p0.closest('blockquote')) return;   // 성경 인용은 그대로
+    if (p0.children.length) return;         // 굵게·표시 등 서식이 든 문단은 건드리지 않는다
+    const t = p0.textContent.replace(/\s+/g, ' ').trim();
+    if (t.length < 30) return; // 아주 짧은 문단은 그대로
+    const parts = t.split(/(?<=[.?!…])\s+(?=[^)\]”’"'』」])/).map(s => s.trim()).filter(Boolean);
+    if (parts.length < 2) return;
+    const frag = document.createDocumentFragment();
+    parts.forEach((s, i) => {
+      const np = document.createElement('p');
+      if (i === 0 && p0.className) np.className = p0.className;
+      np.textContent = s;
+      frag.appendChild(np);
+    });
+    p0.replaceWith(frag);
+  });
+  return div.innerHTML;
 }
 function htmlToText(html) {
   const div = document.createElement('div');
@@ -1074,6 +1097,9 @@ function refreshChrome() {
   const prog = progressOf(p);
   $('#nav-progress-bar').style.width = prog + '%';
   $('#nav-progress-label').textContent = '진행률 ' + prog + '%';
+  // 자료 서랍 개수 배지 — 담긴 자료를 잊지 않도록 메뉴 오른편에 숫자 표시
+  const mc = $('#nav-mat-count');
+  if (mc) { const n = DB.materials.length; mc.textContent = n; mc.classList.toggle('hidden', !n); }
   renderContext();
 }
 function renderContext() {
@@ -1886,6 +1912,7 @@ function renderStep3(m, p) {
           <button data-cmd="insertUnorderedList" title="목록">•≡</button>
           <button data-cmd="insertOrderedList" title="번호 목록">1≡</button>
           <span class="sep"></span>
+          <button id="tb-para" title="단락 정리 — 여러 문장이 붙은 문단을 한 문장씩 나눔 (현재 원고는 버전 보관)">¶단락</button>
           <button id="tb-stress" title="강세 표시 (노랑 형광)">강세</button>
           <button id="tb-pause" title="멈춤 표시 삽입">⏸멈춤</button>
           <button id="tb-eye" title="시선 표시 삽입">👁시선</button>
@@ -1930,7 +1957,7 @@ function renderStep3(m, p) {
         <div class="btn-row">
           <button class="btn btn-primary btn-sm" id="s3-weave" ${aiConnected() && DB.materials.length ? '' : 'disabled'}>선택한 자료를 원고에 녹이기 ${AI_ICO}</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">파일에서 자료 추가 (.docx .txt .md)<input id="s3-matfile" type="file" accept=".docx,.txt,.md,.text" style="display:none"></label>
-          <button class="btn btn-ghost btn-sm" id="s3-matgo">자료 서랍 열기</button>
+          <button class="btn btn-ghost btn-sm" id="s3-matgo">자료 서랍 열기${DB.materials.length ? ' (' + DB.materials.length + ')' : ''}</button>
         </div>
       </div>
       <div class="card">
@@ -2256,7 +2283,7 @@ async function generateSermonRun(p, regen, matIds) {
       },
     });
     if (regen) snapshot(p, '재생성 전 원고');
-    p.draft.html = mdToHtml(md);
+    p.draft.html = formatDraftHtml(mdToHtml(md)); // 한 문장 = 한 줄 + 단락 사이 여백
     touch(p); render();
     toast('초안이 완성됐습니다. 이제 깎을 차례입니다 — 첫 문장과 마지막 문장은 직접 쓰세요.');
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 6000); }
@@ -2314,6 +2341,13 @@ function bindEditor(p) {
     const span = document.createElement('span'); span.className = cls;
     try { sel.getRangeAt(0).surroundContents(span); } catch { toast('한 문단 안에서만 선택해 주세요.'); }
   };
+  $('#tb-para').addEventListener('click', () => {
+    snapshot(p, '단락 정리 전');
+    const before = ed.innerHTML;
+    ed.innerHTML = formatDraftHtml(before);
+    p.draft.html = ed.innerHTML; touch(p); updateEditorStatus(p);
+    toast(before === ed.innerHTML ? '나눌 문단이 없습니다 — 이미 한 문장씩 정리되어 있습니다.' : '여러 문장이 붙은 문단을 한 문장씩 나눴습니다. (버전 기록에서 되돌릴 수 있습니다)');
+  });
   $('#tb-stress').addEventListener('click', () => { wrapMark('stress-mark'); ed.focus(); });
   $('#tb-pause').addEventListener('click', () => { wrapMark('pause-mark', '⏸'); ed.focus(); });
   $('#tb-eye').addEventListener('click', () => { wrapMark('eye-mark', '👁'); ed.focus(); });
@@ -2450,7 +2484,7 @@ async function weaveMaterials(p) {
     body.querySelector('#wv-cancel').addEventListener('click', closeModal);
     body.querySelector('#wv-apply').addEventListener('click', () => {
       snapshot(p, '자료 투입 전');
-      p.draft.html = mdToHtml(script.trim());
+      p.draft.html = formatDraftHtml(mdToHtml(script.trim()));
       touch(p); closeModal(); render();
       toast('자료를 원고에 반영했습니다.');
     });
@@ -3224,7 +3258,7 @@ async function convertFormat(p, key) {
     body.querySelector('#cv-cancel').addEventListener('click', closeModal);
     body.querySelector('#cv-apply').addEventListener('click', () => {
       snapshot(p, '형식 변환 전 (' + (formName(p.form.selected) || '기본') + ')');
-      p.draft.html = mdToHtml(script.trim());
+      p.draft.html = formatDraftHtml(mdToHtml(script.trim()));
       p.form.selected = key;
       touch(p); closeModal(); render();
       toast(f.name + ' 형식으로 반영했습니다.');

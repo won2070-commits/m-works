@@ -335,6 +335,16 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 #editor h2 { font-size: 1.25rem; font-weight: 600; margin: 1.3em 0 .4em; border-bottom: 1px solid var(--hairline-soft); padding-bottom: .25em; }
 #editor h3 { font-size: 1.06rem; font-weight: 600; margin: 1em 0 .3em; }
 #editor p { margin: .55em 0; }
+/* 단락 시작(pgap) — 빈 줄로 구분된 단락 사이에 넉넉한 여백을 둬 눈으로 단락이 나뉘게 */
+#editor p.pgap, .stream-preview p.pgap, #rehearsal-text p.pgap { margin-top: 1.35em; }
+/* 왼쪽 메뉴 자료 서랍 개수 배지 */
+.nav-count {
+  margin-left: auto; flex-shrink: 0;
+  min-width: 20px; height: 18px; padding: 0 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ink); color: var(--canvas, #fff);
+  border-radius: 999px; font-size: .66rem; font-weight: 700; font-family: var(--mono);
+}
 #editor blockquote {
   background: var(--cream); padding: 14px 18px;
   margin: .8em 0; color: var(--ink); border-radius: var(--r-md);
