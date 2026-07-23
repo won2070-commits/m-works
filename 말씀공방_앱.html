@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=84">
+<link rel="apple-touch-icon" href="icon-192.png?v=85">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1018,8 +1018,8 @@ html { scroll-behavior: smooth; }
       <button class="nav-link" id="btn-save"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>저장</button>
       <button class="nav-link" id="btn-export"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>내보내기</button>
       <button class="nav-link" id="btn-nav-materials"><svg class="nav-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 7h6"/></svg>자료 서랍<span id="nav-mat-count" class="nav-count hidden"></span></button>
-      <button class="nav-link" id="btn-nav-files"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>설교 파일</button>
-      <button class="nav-link" id="btn-nav-exit"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>나가기</button>
+      <button class="nav-link" id="btn-nav-files"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>파일 보기</button>
+      <button class="nav-link" id="btn-nav-exit" title="원고를 저장하고 앱을 닫습니다. 앱 잠금을 설정했다면 다시 잠깁니다."><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>앱 종료</button>
       <div class="ai-badge" id="ai-badge">AI 연결 확인 중…</div>
       <div class="app-ver" id="app-ver"></div>
     </div>
@@ -2882,7 +2882,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v84 · 2026-07-23';
+const APP_VERSION = 'v85 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -5476,6 +5476,24 @@ function renderStep5(m, p) {
     </div>
     ${renderSongCard(p)}
     <div class="card">
+      <h3>⏱ 시간·분량 조정 <span class="opt" style="font-weight:400;font-size:.78rem">— 어느 대목을 늘리고 줄일지, 그 자리에서 바로 누르세요</span></h3>
+      ${(() => {
+        const total = readingMinutes(htmlToText(p.draft.html));
+        const diff = total - p.inputs.targetMin;
+        const div = document.createElement('div'); div.innerHTML = p.draft.html;
+        const heads = [...div.querySelectorAll('h2')].map(h => h.textContent.trim()).filter(t => t && !/추천 도서/.test(t));
+        return `
+        <p style="font-size:.9rem;margin-bottom:10px">현재 예상 <b>${fmtMin(total)}</b> / 목표 <b>${p.inputs.targetMin}분</b> —
+          <span style="color:${Math.abs(diff) < 1.5 ? 'var(--success)' : 'var(--red)'};font-weight:700">${Math.abs(diff) < 1.5 ? '목표에 맞음 👍' : (diff > 0 ? fmtMin(diff) + ' 초과 → 줄일 대목을 고르세요' : fmtMin(-diff) + ' 여유 → 늘릴 대목을 고르세요')}</span></p>
+        ${heads.length ? heads.map(h => `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--hairline-soft)">
+            <b style="flex:1;font-size:.9rem">${esc(h)}</b>
+            <button class="btn btn-ghost btn-sm" data-rs-grow="${esc(h)}" ${aiConnected() ? '' : 'disabled'}>＋ 늘리기 ${AI_ICO}</button>
+            <button class="btn btn-ghost btn-sm" data-rs-cut="${esc(h)}" ${aiConnected() ? '' : 'disabled'}>－ 줄이기 ${AI_ICO}</button>
+          </div>`).join('') : '<p style="font-size:.84rem;opacity:.7">원고에 소제목(서론·본론·결론 등)이 있어야 대목별 조정이 가능합니다.</p>'}
+      `; })()}
+    </div>
+    <div class="card">
       <h3>연습 기록 <span class="opt" style="font-weight:400;font-size:.78rem">— 원고를 말로 바꾸고 말씀을 내면화합니다</span></h3>
       <details style="margin-bottom:12px"><summary style="cursor:pointer;font-size:.8rem;opacity:.75">리허설 순서 여덟 가지</summary>
         <p style="font-size:.8rem;line-height:1.9;margin-top:6px;opacity:.85">① 설교의 전체 지도를 한 문장씩 정리한다 ② 각 단락의 핵심어만 남긴다 ③ 원고를 소리 내어 읽는다 ④ 입에서 걸리는 문장을 표시한다 ⑤ 강세·속도·어미·멈춤을 점검한다 ⑥ 실제 시간을 기록한다 ⑦ 시선과 제스처를 점검한다 ⑧ 마지막에는 핵심어만으로 설교한다</p>
@@ -5514,6 +5532,13 @@ function renderStep5(m, p) {
   $('#s5-bs').addEventListener('click', () => getBreathsStress(p));
   const unBtn = $('#s5-unity');
   if (unBtn) unBtn.addEventListener('click', () => getUnity3(p));
+  const fbCmp = $('#fb-compare');
+  if (fbCmp) fbCmp.addEventListener('click', () => {
+    const fb = p.rehearsal.feedback;
+    openCompareFix(p, fb ? renderFeedback(fb, p).replace('id="fb-compare"', 'style="display:none"') : '<p>피드백이 없습니다.</p>');
+  });
+  $$('#main [data-rs-grow]').forEach(b => b.addEventListener('click', () => resizeSection(p, b.dataset.rsGrow, +1)));
+  $$('#main [data-rs-cut]').forEach(b => b.addEventListener('click', () => resizeSection(p, b.dataset.rsCut, -1)));
   $('#s5-genius').addEventListener('click', () => getGenius(p));
   bindSongCard(p);
   const stIns = $('#s5-st-insert');
@@ -5539,10 +5564,59 @@ function renderStep5(m, p) {
   $$('#main [data-chk]').forEach(cb => cb.addEventListener('change', () => { r.checklist[cb.dataset.chk] = cb.checked; touch(p); }));
   $('#s5-export').addEventListener('click', openExport);
 }
+/* 지적 사항을 왼쪽에 두고, 오른쪽에서 원고를 바로 고친다 (5단계 전용 — 편집기와 충돌 없음) */
+function openCompareFix(p, leftHtml) {
+  const body = modal('지적 사항 보며 원고 고치기', `
+    <p style="font-size:.8rem;color:var(--ink-soft)">왼쪽 지적을 보며 <b>오른쪽 원고를 바로 고치세요</b> — 고친 내용은 자동 저장됩니다. 열기 전 원고는 버전에 보관했습니다.</p>
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+      <div class="stream-preview" style="flex:1;min-width:300px;max-height:66vh;overflow:auto">${leftHtml}</div>
+      <div id="cf-edit" contenteditable="true" spellcheck="false" style="flex:1.25;min-width:320px;max-height:66vh;overflow:auto;border:1px solid var(--hairline);border-radius:var(--r-md);padding:18px 20px;line-height:1.75;background:#fff;outline:none">${p.draft.html}</div>
+    </div>`);
+  $('#modal').style.maxWidth = '1280px';
+  snapshot(p, '나란히 고치기 전 원고');
+  const ed = body.querySelector('#cf-edit');
+  let t;
+  const sync = () => { p.draft.html = ed.innerHTML; touch(p); };
+  ed.addEventListener('input', () => { clearTimeout(t); t = setTimeout(sync, 700); });
+  ed.addEventListener('blur', sync);
+}
+/* 원고의 특정 섹션만 늘리거나 줄인다 */
+async function resizeSection(p, head, dir) {
+  syncEditor();
+  const grow = dir > 0;
+  try {
+    setProgressEta(100, ['그 대목을 읽는 중…', grow ? '설명과 살을 붙이는 중…' : '군더더기를 걷어내는 중…', '이음새를 다듬는 중…']);
+    const out = await callAI('partial', {
+      homiletical: p.central.homiletical, ref: p.passage.ref,
+      needs: p.inputs.needs, purpose: p.inputs.purpose, rules: DB.settings.rules,
+      draft: draftText(),
+      request: `원고에서 「${head}」 섹션(그 소제목 아래 본문)만 ${grow
+        ? '약 40% 더 길게 다시 써라 — 설명을 깊게, 필요한 곳에 예시·질문을 더해 낭독 시간이 늘도록. 새 신학적 주장을 지어내지는 마라.'
+        : '약 30% 짧게 다시 써라 — 반복과 군더더기를 걷어내되 핵심 논지·인용·예화의 뼈대는 지켜라.'} 그 섹션의 본문만 출력하라(소제목·다른 섹션 출력 금지).`,
+    }, { label: '「' + head + '」 ' + (grow ? '늘리는' : '줄이는') + ' 중…', onDelta: (d, full) => progressPreview(full) });
+    snapshot(p, '「' + head + '」 ' + (grow ? '늘리기' : '줄이기') + ' 전');
+    // 해당 섹션 본문 교체
+    const div = document.createElement('div'); div.innerHTML = p.draft.html;
+    const h = [...div.querySelectorAll('h2,h3')].find(x => x.textContent.trim().includes(head));
+    if (!h) { toast('원고에서 「' + head + '」 소제목을 찾지 못했습니다.', 5000); return; }
+    let n = h.nextElementSibling;
+    while (n && !/^H[23]$/.test(n.tagName)) { const nx = n.nextElementSibling; n.remove(); n = nx; }
+    const wrap = document.createElement('div'); wrap.innerHTML = mdToHtml(out.trim());
+    const frag = document.createDocumentFragment();
+    while (wrap.firstChild) frag.appendChild(wrap.firstChild);
+    h.after(frag);
+    p.draft.html = div.innerHTML;
+    touch(p); render();
+    toast('「' + head + '」 섹션을 ' + (grow ? '늘렸' : '줄였') + '습니다. 예상 시간을 확인하세요. (버전 기록에서 되돌리기 가능)', 6000);
+  } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
 function renderFeedback(fb, p) {
   const c = fb.content || {}, d = fb.delivery || {};
   const li = arr => Array.isArray(arr) && arr.length ? '<ul>' + arr.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '—';
   return `
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-primary btn-sm" id="fb-compare">📄 지적 사항 보며 원고 바로 고치기 (나란히 보기)</button>
+    </div>
     <h4 style="margin-top:18px">A. 내용 피드백</h4>
     <div class="fb-section">
       ${[['중심사상 유지', c.oneIdea], ['단락 점검', c.paragraphCheck], ['본문 설명', c.textExplain], ['본문↔적용 다리', c.bridge], ['목적 달성', c.purpose], ['중복', c.duplicates], ['삭제 후보', c.cuttable], ['보강할 부분', c.needMore], ['소외될 수 있는 청중', c.excluded]]
