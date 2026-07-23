@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=81">
+<link rel="apple-touch-icon" href="icon-192.png?v=82">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -350,6 +350,17 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 #editor p { margin: .55em 0; }
 /* 단락 시작(pgap) — 빈 줄로 구분된 단락 사이에 넉넉한 여백을 둬 눈으로 단락이 나뉘게 */
 #editor p.pgap, .stream-preview p.pgap, #rehearsal-text p.pgap { margin-top: 1.35em; }
+/* 설교 파일 탐색기 */
+.fx-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 10px; border-radius: var(--r-md);
+  font-size: .9rem; cursor: pointer;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.fx-row:last-child { border-bottom: none; }
+.fx-row:hover { background: var(--surface-soft); }
+.fx-row.fx-dim { opacity: .55; cursor: default; }
+.fx-ico { flex-shrink: 0; }
 /* T-파싱 단어 주해 상자 — 해당 행 바로 아래에 펼쳐진다 */
 .tp-ex {
   background: var(--surface-soft); border-left: 3px solid var(--ink);
@@ -1007,6 +1018,7 @@ html { scroll-behavior: smooth; }
       <button class="nav-link" id="btn-save"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>저장</button>
       <button class="nav-link" id="btn-export"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>내보내기</button>
       <button class="nav-link" id="btn-nav-materials"><svg class="nav-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 7h6"/></svg>자료 서랍<span id="nav-mat-count" class="nav-count hidden"></span></button>
+      <button class="nav-link" id="btn-nav-files"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>설교 파일</button>
       <button class="nav-link" id="btn-nav-exit"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>나가기</button>
       <div class="ai-badge" id="ai-badge">AI 연결 확인 중…</div>
       <div class="app-ver" id="app-ver"></div>
@@ -2870,7 +2882,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v81 · 2026-07-23';
+const APP_VERSION = 'v82 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -3196,6 +3208,7 @@ $('#nav-backdrop').addEventListener('click', () => document.body.classList.remov
 $('#sidenav').addEventListener('click', e => { if (e.target.closest('button, li')) document.body.classList.remove('nav-open'); });
 $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
+$('#btn-nav-files').addEventListener('click', () => { curView = 'files'; render(); });
 $('#btn-nav-exit').addEventListener('click', () => {
   syncEditor(); save(true);
   sessionStorage.removeItem('mworks_unlock'); // 다음에 열 때 비밀번호 다시 묻기
@@ -3293,6 +3306,7 @@ function render() {
   if (curView === 'archive') return renderArchive(m);
   if (curView === 'forms') return renderFormsManager(m);
   if (curView === 'materials') return renderMaterials(m);
+  if (curView === 'files') return renderFilesView(m);
   if (curView === 'clinic') return renderClinic(m);
   if (curView === 'prompts') return renderPromptLibrary(m);
   if (curView === 'home') return renderHome(m);
@@ -6145,6 +6159,170 @@ function startRehearsal(p) {
 function htmlToParas(html) {
   const div = document.createElement('div'); div.innerHTML = html;
   return Array.from(div.children).map(el => el.outerHTML).filter(h => htmlToText(h).trim().length > 0);
+}
+
+/* ═══════════════════ 설교 파일 탐색기 — 내 컴퓨터 폴더를 앱 안에서 바로 (크롬 File System Access) ═══════════════════ */
+let fsRoot = null;      // 연결된 최상위 폴더 핸들
+let fsStack = [];       // 하위 폴더 탐색 경로 [{name, handle}]
+let fsQuery = '';       // 파일 이름 검색어
+const FS_OPENABLE = /\.(docx|txt|md|markdown|text)$/i;
+/* 폴더 핸들은 localStorage에 못 담는다 — IndexedDB에 보관해 다음 방문에도 기억 */
+function fsIdb() {
+  return new Promise((res, rej) => {
+    const rq = indexedDB.open('mworks_fs', 1);
+    rq.onupgradeneeded = () => rq.result.createObjectStore('handles');
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function fsSaveRoot(h) {
+  try { const db = await fsIdb();
+    await new Promise((res, rej) => { const tx = db.transaction('handles', 'readwrite'); tx.objectStore('handles').put(h, 'root'); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+  } catch {}
+}
+async function fsLoadRoot() {
+  try { const db = await fsIdb();
+    return await new Promise((res, rej) => { const tx = db.transaction('handles', 'readonly'); const rq = tx.objectStore('handles').get('root'); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => rej(rq.error); });
+  } catch { return null; }
+}
+async function fsConnect() {
+  try {
+    const h = await window.showDirectoryPicker({ id: 'mworks-sermons', mode: 'read', startIn: 'desktop' });
+    fsRoot = h; fsStack = []; fsQuery = '';
+    await fsSaveRoot(h);
+    render();
+    toast('"' + h.name + '" 폴더를 연결했습니다. 이제 앱 안에서 바로 열어 볼 수 있습니다.');
+  } catch (e) { if (e && e.name !== 'AbortError') toast('폴더 연결 실패: ' + e.message, 5000); }
+}
+async function renderFilesView(m) {
+  m.innerHTML = `
+    <div class="step-head">FILES</div>
+    <h1 class="step-title">설교 파일</h1>
+    <p class="step-desc">내 컴퓨터의 설교 저장 폴더를 앱 안에서 바로 엽니다. 파일을 열어 <b>원고에 골라 넣거나</b> <b>자료 서랍에 담을</b> 수 있습니다. 파일은 컴퓨터 밖으로 나가지 않습니다.</p>
+    <div id="fx-body"><p style="opacity:.6;font-size:.85rem">폴더를 여는 중…</p></div>`;
+  const body = $('#fx-body');
+  if (!window.showDirectoryPicker) {
+    body.innerHTML = `<div class="card"><p style="font-size:.9rem;line-height:1.8">이 브라우저는 폴더 직접 열기(File System Access)를 지원하지 않습니다.<br>
+    <b>크롬(Chrome) 또는 엣지(Edge)</b>에서 앱을 열면 사용할 수 있습니다.<br>
+    지금은 <b>자료 서랍</b>에 파일을 끌어다 놓는 방식을 이용해 주세요.</p>
+    <div class="btn-row"><button class="btn btn-primary" onclick="curView='materials';render()">자료 서랍으로</button></div></div>`;
+    return;
+  }
+  if (!fsRoot) fsRoot = await fsLoadRoot();
+  if (!fsRoot) {
+    body.innerHTML = `<div class="card">
+      <h3>📂 폴더 연결</h3>
+      <p style="font-size:.88rem;line-height:1.8">데스크탑의 설교 저장 폴더(예: <b>바탕화면 → 설교저장</b>)를 한 번 연결해 두면, 이후로는 앱 왼쪽 메뉴 <b>설교 파일</b>에서 언제든 바로 열립니다.</p>
+      <div class="btn-row"><button class="btn btn-primary" id="fx-connect">📂 내 컴퓨터 폴더 연결</button></div>
+      <p class="ai-note" style="margin-top:10px">읽기 전용으로만 연결됩니다 — 앱이 파일을 고치거나 지우지 않습니다.</p></div>`;
+    $('#fx-connect').addEventListener('click', fsConnect);
+    return;
+  }
+  // 저장된 폴더 — 권한 확인 (브라우저를 다시 열면 한 번 눌러 다시 허용)
+  let perm = 'prompt';
+  try { perm = await fsRoot.queryPermission({ mode: 'read' }); } catch {}
+  if (perm !== 'granted') {
+    body.innerHTML = `<div class="card">
+      <h3>📂 ${esc(fsRoot.name)} — 다시 열기</h3>
+      <p style="font-size:.88rem">지난번에 연결한 폴더입니다. 브라우저 보안 정책상 한 번 눌러 다시 허용해 주세요.</p>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="fx-reopen">폴더 다시 열기</button>
+        <button class="btn btn-ghost" id="fx-change">다른 폴더 연결</button>
+      </div></div>`;
+    $('#fx-reopen').addEventListener('click', async () => {
+      try {
+        const r = await fsRoot.requestPermission({ mode: 'read' });
+        if (r === 'granted') render(); else toast('허용을 눌러야 폴더를 읽을 수 있습니다.');
+      } catch (e) { toast('다시 열기 실패 — 다른 폴더를 연결해 주세요.', 5000); }
+    });
+    $('#fx-change').addEventListener('click', fsConnect);
+    return;
+  }
+  await fsRenderList(body);
+}
+async function fsRenderList(body) {
+  const dir = fsStack.length ? fsStack[fsStack.length - 1].handle : fsRoot;
+  let dirs = [], files = [];
+  try {
+    for await (const entry of dir.values()) {
+      if (entry.name.startsWith('.')) continue;
+      (entry.kind === 'directory' ? dirs : files).push(entry);
+    }
+  } catch (e) {
+    body.innerHTML = `<div class="card"><p>폴더를 읽지 못했습니다 — 폴더가 이동·삭제됐을 수 있습니다.</p>
+      <div class="btn-row"><button class="btn btn-primary" id="fx-re">📂 폴더 다시 연결</button></div></div>`;
+    $('#fx-re').addEventListener('click', fsConnect);
+    return;
+  }
+  const co = new Intl.Collator('ko');
+  dirs.sort((a, b) => co.compare(a.name, b.name));
+  files.sort((a, b) => co.compare(a.name, b.name));
+  const q = fsQuery.trim().toLowerCase();
+  const shown = q ? files.filter(f => f.name.toLowerCase().includes(q)) : files;
+  const crumbs = [`<button class="chip" data-fx-up="-1">📂 ${esc(fsRoot.name)}</button>`]
+    .concat(fsStack.map((s, i) => `<button class="chip" data-fx-up="${i}">${esc(s.name)}</button>`)).join('<span style="opacity:.5"> › </span>');
+  body.innerHTML = `
+    <div class="proj-toolbar" style="align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">${crumbs}</div>
+      <input id="fx-q" placeholder="🔍 파일 이름 검색" value="${esc(fsQuery)}" style="margin-left:auto;max-width:220px">
+      <button class="btn btn-ghost btn-sm" id="fx-change2">다른 폴더 연결</button>
+    </div>
+    <div class="card" style="padding:8px 10px">
+      ${dirs.map(d => `<div class="fx-row" data-fx-dir="${esc(d.name)}"><span class="fx-ico">📁</span><b>${esc(d.name)}</b><span style="margin-left:auto;opacity:.5;font-size:.76rem">폴더</span></div>`).join('')}
+      ${shown.map(f => {
+        const ok = FS_OPENABLE.test(f.name);
+        return `<div class="fx-row ${ok ? '' : 'fx-dim'}" ${ok ? `data-fx-file="${esc(f.name)}"` : ''} title="${ok ? '눌러서 열기' : '이 형식은 직접 열 수 없습니다 — 한글(HWP)·PDF는 내용을 복사해 자료 서랍에 붙여넣어 주세요'}">
+          <span class="fx-ico">${/\.docx?$/i.test(f.name) ? '📄' : /\.(txt|md|markdown|text)$/i.test(f.name) ? '📝' : /\.hwp/i.test(f.name) ? '🇰🇷' : /\.pdf$/i.test(f.name) ? '📕' : '📎'}</span>
+          ${esc(f.name)}${ok ? '' : '<span style="margin-left:auto;opacity:.5;font-size:.72rem">열기 미지원</span>'}
+        </div>`;
+      }).join('') || '<p style="opacity:.6;font-size:.84rem;padding:8px 4px">' + (q ? '검색과 맞는 파일이 없습니다.' : '이 폴더에 파일이 없습니다.') + '</p>'}
+    </div>
+    <p class="ai-note">📄 워드(.docx)·📝 텍스트·마크다운을 바로 열 수 있습니다. 한글(.hwp)·PDF는 열기가 지원되지 않으니, 내용을 복사해 <b>자료 서랍</b>에 붙여넣어 주세요.</p>`;
+  body.querySelectorAll('[data-fx-up]').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.fxUp;
+    fsStack = i < 0 ? [] : fsStack.slice(0, i + 1);
+    fsQuery = ''; render();
+  }));
+  body.querySelectorAll('[data-fx-dir]').forEach(el => el.addEventListener('click', async () => {
+    const h = await dir.getDirectoryHandle(el.dataset.fxDir);
+    fsStack.push({ name: el.dataset.fxDir, handle: h });
+    fsQuery = ''; render();
+  }));
+  body.querySelectorAll('[data-fx-file]').forEach(el => el.addEventListener('click', () => fsOpenFile(dir, el.dataset.fxFile)));
+  $('#fx-change2').addEventListener('click', fsConnect);
+  const qEl = $('#fx-q');
+  let qt; qEl.addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { fsQuery = qEl.value; fsRenderList(body).then(() => { const v = $('#fx-q'); v.focus(); v.setSelectionRange(v.value.length, v.value.length); }); }, 250); });
+}
+/* 파일 열기 — 미리보기 + 원고에 골라 넣기 + 자료 서랍에 담기 */
+async function fsOpenFile(dir, name) {
+  try {
+    const fh = await dir.getFileHandle(name);
+    const f = await fh.getFile();
+    let text = /\.docx$/i.test(name) ? await readDocx(f) : await f.text();
+    text = cleanExtractedText(String(text)).trim();
+    if (!text) { toast('파일이 비어 있거나 내용을 읽지 못했습니다.'); return; }
+    const title = name.replace(/\.[^.]+$/, '');
+    const p = cur();
+    const hasDraft = p && htmlToText(p.draft.html).trim().length >= 50;
+    const html = mdToHtml(text.slice(0, 60000));
+    const body = modal('📂 ' + name, `
+      <div class="stream-preview" style="max-height:52vh">${html}</div>
+      <div class="btn-row">
+        ${hasDraft ? '<button class="btn btn-primary" id="fxo-pick">🧩 원고에 골라 넣기 — 블럭 지정</button>' : ''}
+        <button class="btn ${hasDraft ? 'btn-ghost' : 'btn-primary'}" id="fxo-drawer">🗄 자료 서랍에 담기</button>
+        <button class="btn btn-ghost" id="fxo-close">닫기</button>
+      </div>
+      ${!hasDraft ? '<p class="ai-note" style="margin-top:8px">열려 있는 원고가 없어 "골라 넣기"는 숨겼습니다 — 4단계에서 원고가 생기면 이 파일을 다시 열어 골라 넣을 수 있습니다.</p>' : ''}`);
+    $('#modal').style.maxWidth = '940px';
+    body.querySelector('#fxo-close').addEventListener('click', closeModal);
+    body.querySelector('#fxo-drawer').addEventListener('click', () => {
+      DB.materials.unshift({ id: uid(), type: '메모', title: title.slice(0, 60), content: text.slice(0, 12000), tags: '설교파일', createdAt: Date.now() });
+      save(true); closeModal(); render();
+      toast('🗄 자료 서랍에 담았습니다. 설교문 작성 때 인용할 수 있습니다.');
+    });
+    const pick = body.querySelector('#fxo-pick');
+    if (pick) pick.addEventListener('click', () => openBlockPicker(p, '📂 ' + title, html));
+  } catch (e) { toast('파일 열기 실패: ' + e.message, 6000); }
 }
 
 /* ═══════════════════ 자료 서랍 ═══════════════════ */

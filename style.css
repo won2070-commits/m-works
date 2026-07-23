@@ -337,6 +337,17 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 #editor p { margin: .55em 0; }
 /* 단락 시작(pgap) — 빈 줄로 구분된 단락 사이에 넉넉한 여백을 둬 눈으로 단락이 나뉘게 */
 #editor p.pgap, .stream-preview p.pgap, #rehearsal-text p.pgap { margin-top: 1.35em; }
+/* 설교 파일 탐색기 */
+.fx-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 10px; border-radius: var(--r-md);
+  font-size: .9rem; cursor: pointer;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.fx-row:last-child { border-bottom: none; }
+.fx-row:hover { background: var(--surface-soft); }
+.fx-row.fx-dim { opacity: .55; cursor: default; }
+.fx-ico { flex-shrink: 0; }
 /* T-파싱 단어 주해 상자 — 해당 행 바로 아래에 펼쳐진다 */
 .tp-ex {
   background: var(--surface-soft); border-left: 3px solid var(--ink);
