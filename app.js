@@ -808,7 +808,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v83 · 2026-07-23';
+const APP_VERSION = 'v84 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -4124,6 +4124,7 @@ async function fsConnect() {
    파일을 누르면 한글·워드 등 원본 프로그램으로 바로 열린다 ── */
 let fxSrv;            // undefined=미확인, null=서버 없음, {home}=서버 모드
 let fxSrvPath = localStorage.getItem('mworks_fx_path') || '';
+let fxSort = localStorage.getItem('mworks_fx_sort') || 'time'; // 'time'=최신순 · 'name'=제목순
 async function fxProbe() {
   if (fxSrv !== undefined) return fxSrv;
   try {
@@ -4155,9 +4156,12 @@ async function fxSrvRender(body) {
   fxSrvPath = j.path; localStorage.setItem('mworks_fx_path', j.path);
   const co = new Intl.Collator('ko');
   j.dirs.sort((a, b) => co.compare(a.name, b.name));
-  j.files.sort((a, b) => co.compare(a.name, b.name));
+  // 정렬 — 최신순(수정 시각) 또는 제목순(가나다)
+  if (fxSort === 'time') j.files.sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
+  else j.files.sort((a, b) => co.compare(a.name, b.name));
   const q = fsQuery.trim().toLowerCase();
   const shown = q ? j.files.filter(f => f.name.toLowerCase().includes(q)) : j.files;
+  const fxDate = t => { if (!t) return ''; const d = new Date(t); return (d.getFullYear() % 100) + '.' + (d.getMonth() + 1) + '.' + d.getDate(); };
   // 빵부스러기 — 홈부터 현재 폴더까지
   const rel = j.path === j.home ? [] : j.path.slice(j.home.length + 1).split('/');
   let acc = j.home;
@@ -4168,6 +4172,10 @@ async function fxSrvRender(body) {
     <div class="proj-toolbar" style="align-items:center;gap:8px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">${crumbs}</div>
       <input id="fx-q" placeholder="🔍 파일 이름 검색" value="${esc(fsQuery)}" style="margin-left:auto;max-width:200px">
+      <select id="fx-sort" title="정렬 방식" style="font-size:.78rem;padding:6px 10px;border:1px solid var(--hairline);border-radius:var(--r-pill);background:var(--canvas)">
+        <option value="time" ${fxSort === 'time' ? 'selected' : ''}>🕐 최신순</option>
+        <option value="name" ${fxSort === 'name' ? 'selected' : ''}>가나다 제목순</option>
+      </select>
       <button class="btn btn-ghost btn-sm" id="fx-finder" title="이 폴더를 Finder로 열기">Finder</button>
     </div>
     <div class="card" style="padding:8px 10px">
@@ -4179,7 +4187,7 @@ async function fxSrvRender(body) {
         return `<div class="fx-row" data-fx-open="${esc(full)}" title="누르면 원본 프로그램(한글·워드 등)으로 열립니다">
           <span class="fx-ico">${/\.docx?$/i.test(f.name) ? '📄' : /\.(txt|md|markdown|text)$/i.test(f.name) ? '📝' : /\.hwpx?$/i.test(f.name) ? '🇰🇷' : /\.pdf$/i.test(f.name) ? '📕' : '📎'}</span>
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
-          <span style="margin-left:auto;opacity:.5;font-size:.72rem;flex-shrink:0">${fxSize(f.size)}</span>
+          <span style="margin-left:auto;opacity:.5;font-size:.72rem;flex-shrink:0">${fxDate(f.mtime)} · ${fxSize(f.size)}</span>
           ${ok ? `<button class="btn btn-ghost btn-sm" data-fx-pv="${esc(full)}" data-fx-nm="${esc(f.name)}" title="앱 안에서 읽어 원고에 골라 넣기·자료 서랍 담기" style="flex-shrink:0">🧩 골라넣기</button>` : ''}
         </div>`;
       }).join('') || '<p style="opacity:.6;font-size:.84rem;padding:8px 4px">' + (q ? '검색과 맞는 파일이 없습니다.' : '이 폴더에 파일이 없습니다.') + '</p>'}
@@ -4197,6 +4205,10 @@ async function fxSrvRender(body) {
     } catch (err) { toast('파일 읽기 실패: ' + err.message, 5000); }
   }));
   $('#fx-finder').addEventListener('click', () => fxSrvOpen(fxSrvPath, true));
+  $('#fx-sort').addEventListener('change', e => {
+    fxSort = e.target.value; localStorage.setItem('mworks_fx_sort', fxSort);
+    fxSrvRender(body);
+  });
   const qEl = $('#fx-q');
   let qt; qEl.addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { fsQuery = qEl.value; fxSrvRender(body).then(() => { const v = $('#fx-q'); if (v) { v.focus(); v.setSelectionRange(v.value.length, v.value.length); } }); }, 250); });
 }
@@ -4264,7 +4276,11 @@ async function fsRenderList(body) {
   }
   const co = new Intl.Collator('ko');
   dirs.sort((a, b) => co.compare(a.name, b.name));
-  files.sort((a, b) => co.compare(a.name, b.name));
+  if (fxSort === 'time') { // 최신순 — 파일마다 수정 시각을 읽어 정렬
+    const withM = await Promise.all(files.map(async f => { let m = 0; try { m = (await f.getFile()).lastModified; } catch {} return { f, m }; }));
+    withM.sort((a, b) => b.m - a.m);
+    files = withM.map(x => x.f);
+  } else files.sort((a, b) => co.compare(a.name, b.name));
   const q = fsQuery.trim().toLowerCase();
   const shown = q ? files.filter(f => f.name.toLowerCase().includes(q)) : files;
   const crumbs = [`<button class="chip" data-fx-up="-1">📂 ${esc(fsRoot.name)}</button>`]
@@ -4273,6 +4289,10 @@ async function fsRenderList(body) {
     <div class="proj-toolbar" style="align-items:center;gap:8px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">${crumbs}</div>
       <input id="fx-q" placeholder="🔍 파일 이름 검색" value="${esc(fsQuery)}" style="margin-left:auto;max-width:220px">
+      <select id="fx-sort2" title="정렬 방식" style="font-size:.78rem;padding:6px 10px;border:1px solid var(--hairline);border-radius:var(--r-pill);background:var(--canvas)">
+        <option value="time" ${fxSort === 'time' ? 'selected' : ''}>🕐 최신순</option>
+        <option value="name" ${fxSort === 'name' ? 'selected' : ''}>가나다 제목순</option>
+      </select>
       <button class="btn btn-ghost btn-sm" id="fx-change2">다른 폴더 연결</button>
     </div>
     <div class="card" style="padding:8px 10px">
@@ -4298,6 +4318,10 @@ async function fsRenderList(body) {
   }));
   body.querySelectorAll('[data-fx-file]').forEach(el => el.addEventListener('click', () => fsOpenFile(dir, el.dataset.fxFile)));
   $('#fx-change2').addEventListener('click', fsConnect);
+  $('#fx-sort2').addEventListener('change', e => {
+    fxSort = e.target.value; localStorage.setItem('mworks_fx_sort', fxSort);
+    fsRenderList(body);
+  });
   const qEl = $('#fx-q');
   let qt; qEl.addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { fsQuery = qEl.value; fsRenderList(body).then(() => { const v = $('#fx-q'); v.focus(); v.setSelectionRange(v.value.length, v.value.length); }); }, 250); });
 }
