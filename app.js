@@ -808,7 +808,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v85 · 2026-07-23';
+const APP_VERSION = 'v86 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -1136,14 +1136,32 @@ $('#logo').addEventListener('click', () => { curView = 'home'; render(); });
 $('#btn-nav-materials').addEventListener('click', () => { curView = 'materials'; render(); });
 $('#btn-nav-files').addEventListener('click', () => { curView = 'files'; render(); });
 $('#btn-nav-exit').addEventListener('click', () => {
+  // ① 원고 저장 (+ 동기화 켜져 있으면 클라우드에도 즉시)
   syncEditor(); save(true);
-  sessionStorage.removeItem('mworks_unlock'); // 다음에 열 때 비밀번호 다시 묻기
-  // 완전 종료: 창 닫기 시도 → 막히면 빈 화면으로 이탈
-  window.open('', '_self');
+  try { if (syncOn()) flushPush(); } catch {}
+  // ② 앱 잠금 — 비밀번호를 걸어 두었다면 그 자리에서 바로 잠근다 (눈에 보이는 잠금)
+  sessionStorage.removeItem('mworks_unlock');
+  if (DB.settings.appPass) {
+    toast('원고를 저장하고 앱을 잠갔습니다.');
+    curView = 'home'; curId = null; render(); // 잠금 뒤에 원고가 비치지 않도록
+    showLock();
+    return;
+  }
+  // ③ 창 닫기 시도 — 브라우저 보안 정책상 스크립트가 연 창만 닫을 수 있어, 안 되면 종료 화면을 띄운다
   window.close();
   setTimeout(() => {
-    if (!window.closed) location.replace('about:blank');
-  }, 250);
+    if (window.closed) return;
+    const ov = document.createElement('div');
+    ov.id = 'app-lock';
+    ov.innerHTML = `<div class="lock-box">
+      <div style="font-size:2.2rem;margin-bottom:8px;color:var(--success)">✓</div>
+      <h2 style="margin-bottom:6px">저장 완료 — 안전하게 정리되었습니다</h2>
+      <p style="font-size:.87rem;color:var(--ink-soft);line-height:1.75">원고와 설정이 모두 저장되었습니다.<br>이제 브라우저 탭을 닫으시면 됩니다.<br><small style="opacity:.65">브라우저 보안 정책상 앱이 창을 직접 닫지 못하는 경우가 있어 이 화면을 보여 드립니다.</small></p>
+      <div style="margin-top:16px"><button class="btn btn-primary" id="exit-resume">계속 쓰기</button></div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#exit-resume').addEventListener('click', () => ov.remove());
+  }, 200);
 });
 $('#top-settings').addEventListener('click', openSettings);
 $('#btn-back').addEventListener('click', goBack);
@@ -3952,29 +3970,37 @@ async function getUnity3(p) {
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
 }
 function renderUnity3(r) {
-  const axis = (key, name, color, d) => {
-    if (!d) return '';
-    const issues = Array.isArray(d.issues) ? d.issues : [];
-    return `
-    <div class="gn-card" style="background:${color}">
-      <div class="gn-title">${name} — ${d.score != null ? d.score + '/10' : ''}</div>
-      ${d.comment ? `<p>${esc(d.comment)}</p>` : ''}
-      ${issues.map(x => `
-        <div class="gn-fix" style="margin-top:8px">
-          ${x.quote ? `<blockquote style="margin:0 0 4px">"${esc(x.quote)}"</blockquote>` : ''}
-          <p style="margin:0"><b>문제</b> ${esc(x.problem || '')}</p>
-          <p style="margin:2px 0 0"><b>처방</b> ${esc(x.fix || '')}</p>
-        </div>`).join('')}
-    </div>`;
-  };
+  const STEP_ICO = { '전진': '<b style="color:var(--success)">↑ 전진</b>', '제자리': '<b style="color:#c98a00">→ 제자리</b>', '후퇴': '<b style="color:var(--red)">↓ 후퇴</b>' };
+  const TIE_ICO = { '강': '<span title="중심사상과 단단히 묶임">●</span>', '약': '<span style="color:#c98a00" title="끈이 느슨함">◐</span>', '끊김': '<span style="color:var(--red)" title="중심사상과 끊김">○</span>' };
+  const map = Array.isArray(r.map) ? r.map : [];
+  const moves = Array.isArray(r.orderMoves) ? r.orderMoves : [];
+  const cuts = Array.isArray(r.cutBranches) ? r.cutBranches : [];
   return `
     <div class="card genius-box">
-      <h3>⚖ 전진 · 순서 · 통일 <span class="opt" style="font-weight:400;font-size:.76rem">— 곽안련 설교학의 세 시금석</span></h3>
+      <h3>⚖ 전진 · 순서 · 통일 — 걸음 지도 <span class="opt" style="font-weight:400;font-size:.76rem">— 내용이 아니라 뼈대만 봅니다</span></h3>
       ${r.verdict ? `<div class="gn-verdict">${esc(r.verdict)}</div>` : ''}
-      ${axis('progression', '전진 — 설교가 앞으로 걷는가', 'var(--mint)', r.progression)}
-      ${axis('order', '순서 — 재료가 제자리에 있는가', 'var(--cream)', r.order)}
-      ${axis('unity', '통일 — 모든 것이 중심사상을 섬기는가', 'var(--lilac)', r.unity)}
-      ${r.oneFix ? `<div class="fb-item" style="background:var(--lime);margin-top:10px"><b>가장 먼저 고칠 한 가지</b>${esc(r.oneFix)}</div>` : ''}
+      ${map.length ? `
+      <table class="proj-table" style="margin-top:6px">
+        <tr><th>문단</th><th style="width:86px">걸음 (전진)</th><th style="width:60px;text-align:center">끈 (통일)</th><th>지적</th></tr>
+        ${map.map(m => `<tr>
+          <td><b>${esc(m.para || '')}</b></td>
+          <td>${STEP_ICO[m.step] || esc(m.step || '')}</td>
+          <td style="text-align:center;font-size:1.05rem">${TIE_ICO[m.tie] || esc(m.tie || '')}</td>
+          <td style="font-size:.8rem;opacity:.9">${esc(m.note || '')}</td>
+        </tr>`).join('')}
+      </table>
+      <p style="font-size:.72rem;opacity:.65;margin-top:5px">↑ 전진해야 정상 · ● 중심사상과 단단히 묶여야 정상 — 노랑·빨강 행이 손볼 자리입니다.</p>` : ''}
+      ${moves.length ? `
+      <div class="gn-card" style="background:var(--cream);margin-top:10px">
+        <div class="gn-title">순서 — 자리를 옮길 대목</div>
+        ${moves.map(x => `<div class="gn-fix" style="margin-top:6px"><blockquote style="margin:0 0 4px">"${esc(x.what || '')}"</blockquote><p style="margin:0"><b>→ ${esc(x.to || '')}</b> — ${esc(x.why || '')}</p></div>`).join('')}
+      </div>` : ''}
+      ${cuts.length ? `
+      <div class="gn-card" style="background:var(--pink);margin-top:10px">
+        <div class="gn-title">통일 — 가지치기 후보 (중심사상과 끈이 끊긴 가지)</div>
+        ${cuts.map(x => `<div class="gn-fix" style="margin-top:6px"><blockquote style="margin:0 0 4px">"${esc(x.quote || '')}"</blockquote><p style="margin:0">${esc(x.why || '')}</p></div>`).join('')}
+      </div>` : ''}
+      ${r.oneFix ? `<div class="fb-item" style="background:var(--lime);margin-top:10px"><b>지금 당장 할 한 가지</b>${esc(r.oneFix)}</div>` : ''}
     </div>`;
 }
 async function getFeedback(p) {
