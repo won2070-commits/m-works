@@ -808,7 +808,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v88 · 2026-07-23';
+const APP_VERSION = 'v89 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -1391,8 +1391,31 @@ function addRefMaterial(type, title, content) {
   save(true);
   if (curView === 'materials') render();
 }
+/* 에버노트 내보내기(.enex) — 노트들을 자료 서랍에 일괄로 담는다 */
+async function ingestEnex(f) {
+  const xml = await f.text();
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const notes = [...doc.querySelectorAll('note')];
+  if (!notes.length) { toast('⚠ 에버노트 파일에서 노트를 찾지 못했습니다.', 5000); return; }
+  let added = 0;
+  for (const n of notes.slice(0, 300)) {
+    const title = (n.querySelector('title') || {}).textContent || '에버노트 노트';
+    const raw = (n.querySelector('content') || {}).textContent || '';
+    // ENML(노트 본문 HTML)을 텍스트로
+    const inner = new DOMParser().parseFromString(raw, 'text/html');
+    const text = cleanExtractedText((inner.body ? inner.body.innerText || inner.body.textContent : '') || '');
+    if (text.trim().length < 3) continue;
+    const tags = [...n.querySelectorAll('tag')].map(t => t.textContent).join(', ');
+    DB.materials.unshift({ id: uid(), type: '메모', title: cleanExtractedText(title).slice(0, 60), content: text.slice(0, 12000), tags, createdAt: Date.now() });
+    added++;
+  }
+  save(true);
+  if (curView === 'materials') render();
+  toast('🐘 에버노트에서 노트 ' + added + '개를 자료 서랍에 담았습니다.' + (notes.length > 300 ? ' (최대 300개까지)' : ''), 6000);
+}
 async function ingestRefFile(f) {
   const name = f.name.replace(/\.[^.]+$/, '');
+  if (/\.enex$/i.test(f.name)) { await ingestEnex(f); return; }
   if (/\.docx$/i.test(f.name)) {
     // 워드 파일 — 앱 내장 해제기로 본문을 뽑아 담는다
     try {
@@ -4472,8 +4495,8 @@ function renderMaterials(m) {
       <h3>＋ 자료 담기 — 끌어다 놓기 · 붙여넣기</h3>
       <div id="ref-drop" class="dropzone">
         <svg class="nav-ico" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
-        <span>여기에 자료를 끌어다 놓으세요 (또는 클릭해서 파일 선택)<br><small>워드(.docx)·텍스트·마크다운은 바로 담고, 사진·PDF는 AI가 내용을 읽어 담습니다</small></span>
-        <input id="ref-file" type="file" multiple accept=".docx,.txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
+        <span>여기에 자료를 끌어다 놓으세요 (또는 클릭해서 파일 선택)<br><small>워드(.docx)·에버노트 내보내기(.enex)·텍스트는 바로 담고, 사진·PDF는 AI가 읽어 담습니다</small></span>
+        <input id="ref-file" type="file" multiple accept=".docx,.enex,.txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
       </div>
       <div class="paste-row">
         <textarea id="ref-paste" placeholder="한글(HWP)·옛 워드(.doc)에서 복사한 글을 여기 붙여넣으세요"></textarea>
@@ -4862,7 +4885,7 @@ function openImport() {
     <label class="dropzone" id="im-drop" style="margin-top:14px">
       <span>📄 <b>여기로 파일을 끌어다 놓으세요</b> — 워드(.docx) · 텍스트(.txt .md) · 사진 · PDF</span>
       <small>또는 눌러서 파일 고르기 · 워드 파일은 바로 열려 이어서 작업할 수 있습니다</small>
-      <input id="im-file" type="file" accept=".docx,.txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
+      <input id="im-file" type="file" accept=".docx,.enex,.txt,.md,.text,image/png,image/jpeg,image/webp,application/pdf" style="display:none">
     </label>
     <div class="field" style="margin-top:10px"><label>▶ 유튜브 설교 영상 (자막을 원고로 추출)</label>
       <div style="display:flex;gap:8px"><input id="im-yt" placeholder="https://www.youtube.com/watch?v=..." style="flex:1">
@@ -5487,6 +5510,20 @@ function looksLikeRef(q) {
   const sGo = () => run('#tool-syn-in', '#tool-syn-out', 'thesaurus', 'word', '단어를 입력해 주세요.');
   $('#tool-verse-go').addEventListener('click', vGo);
   $('#tool-syn-go').addEventListener('click', sGo);
+  // 로고스 바이블 — 데스크톱 앱(logos4:) 우선, 웹(app.logos.com) 보조
+  const logosQ = () => ($('#tool-logos-in') ? $('#tool-logos-in').value.trim() : '');
+  const lGo = () => {
+    const q = logosQ(); if (!q) { toast('검색어를 넣어 주세요.'); return; }
+    location.href = 'logos4:Search;kind=EverythingSearch;q=' + encodeURIComponent(q);
+    toast('로고스 앱을 여는 중… 앱이 설치되어 있지 않으면 아래 [로고스 웹]을 쓰세요.', 5000);
+  };
+  const lWeb = () => {
+    const q = logosQ(); if (!q) { toast('검색어를 넣어 주세요.'); return; }
+    window.open('https://app.logos.com/search?q=' + encodeURIComponent(q) + '&kind=everything', '_blank');
+  };
+  if ($('#tool-logos-go')) $('#tool-logos-go').addEventListener('click', lGo);
+  if ($('#tool-logos-in')) $('#tool-logos-in').addEventListener('keydown', e => { if (e.key === 'Enter') lGo(); });
+  if ($('#tool-logos-web')) $('#tool-logos-web').addEventListener('click', lWeb);
   $('#tool-verse-in').addEventListener('keydown', e => { if (e.key === 'Enter') vGo(); });
   $('#tool-syn-in').addEventListener('keydown', e => { if (e.key === 'Enter') sGo(); });
 })();
