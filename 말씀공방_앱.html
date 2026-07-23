@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=82">
+<link rel="apple-touch-icon" href="icon-192.png?v=83">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2882,7 +2882,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v82 · 2026-07-23';
+const APP_VERSION = 'v83 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -6194,13 +6194,95 @@ async function fsConnect() {
     toast('"' + h.name + '" 폴더를 연결했습니다. 이제 앱 안에서 바로 열어 볼 수 있습니다.');
   } catch (e) { if (e && e.name !== 'AbortError') toast('폴더 연결 실패: ' + e.message, 5000); }
 }
+/* ── 서버 모드: 로컬 서버(server.cjs)로 실행 중이면 진짜 파일 탐색기가 된다 —
+   파일을 누르면 한글·워드 등 원본 프로그램으로 바로 열린다 ── */
+let fxSrv;            // undefined=미확인, null=서버 없음, {home}=서버 모드
+let fxSrvPath = localStorage.getItem('mworks_fx_path') || '';
+async function fxProbe() {
+  if (fxSrv !== undefined) return fxSrv;
+  try {
+    const r = await fetch('/api/fs/list' + (fxSrvPath ? '?path=' + encodeURIComponent(fxSrvPath) : ''));
+    if (!r.ok) throw 0;
+    let j = await r.json();
+    if (j.error && fxSrvPath) { // 기억한 경로가 사라졌으면 기본 폴더로
+      fxSrvPath = ''; localStorage.removeItem('mworks_fx_path');
+      j = await (await fetch('/api/fs/list')).json();
+    }
+    fxSrv = j.error ? null : { home: j.home, first: j };
+  } catch { fxSrv = null; }
+  return fxSrv;
+}
+async function fxSrvOpen(p, reveal) {
+  try {
+    const j = await (await fetch('/api/fs/open?path=' + encodeURIComponent(p) + (reveal ? '&reveal=1' : ''))).json();
+    if (j.error) toast(j.error, 5000);
+    else toast(reveal ? 'Finder에서 보여 드립니다.' : '💻 원본 프로그램으로 열었습니다.');
+  } catch (e) { toast('열기 실패: ' + e.message, 5000); }
+}
+const fxSize = n => n > 1e6 ? (n / 1e6).toFixed(1) + 'MB' : n > 1e3 ? Math.round(n / 1e3) + 'KB' : n + 'B';
+async function fxSrvRender(body) {
+  let j;
+  try {
+    j = await (await fetch('/api/fs/list' + (fxSrvPath ? '?path=' + encodeURIComponent(fxSrvPath) : ''))).json();
+  } catch { body.innerHTML = '<div class="card"><p>서버와 연결이 끊겼습니다. 앱을 다시 열어 주세요.</p></div>'; return; }
+  if (j.error) { fxSrvPath = ''; localStorage.removeItem('mworks_fx_path'); j = await (await fetch('/api/fs/list')).json(); }
+  fxSrvPath = j.path; localStorage.setItem('mworks_fx_path', j.path);
+  const co = new Intl.Collator('ko');
+  j.dirs.sort((a, b) => co.compare(a.name, b.name));
+  j.files.sort((a, b) => co.compare(a.name, b.name));
+  const q = fsQuery.trim().toLowerCase();
+  const shown = q ? j.files.filter(f => f.name.toLowerCase().includes(q)) : j.files;
+  // 빵부스러기 — 홈부터 현재 폴더까지
+  const rel = j.path === j.home ? [] : j.path.slice(j.home.length + 1).split('/');
+  let acc = j.home;
+  const crumbs = [`<button class="chip" data-fx-go="${esc(j.home)}">🏠 홈</button>`]
+    .concat(rel.map(seg => { acc += '/' + seg; return `<button class="chip" data-fx-go="${esc(acc)}">${esc(seg)}</button>`; }))
+    .join('<span style="opacity:.5"> › </span>');
+  body.innerHTML = `
+    <div class="proj-toolbar" style="align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">${crumbs}</div>
+      <input id="fx-q" placeholder="🔍 파일 이름 검색" value="${esc(fsQuery)}" style="margin-left:auto;max-width:200px">
+      <button class="btn btn-ghost btn-sm" id="fx-finder" title="이 폴더를 Finder로 열기">Finder</button>
+    </div>
+    <div class="card" style="padding:8px 10px">
+      ${j.parent ? `<div class="fx-row" data-fx-go="${esc(j.parent)}"><span class="fx-ico">↩︎</span><span style="opacity:.7">상위 폴더로</span></div>` : ''}
+      ${j.dirs.map(d => `<div class="fx-row" data-fx-go="${esc(j.path + '/' + d.name)}"><span class="fx-ico">📁</span><b>${esc(d.name)}</b><span style="margin-left:auto;opacity:.5;font-size:.76rem">폴더</span></div>`).join('')}
+      ${shown.map(f => {
+        const full = j.path + '/' + f.name;
+        const ok = FS_OPENABLE.test(f.name);
+        return `<div class="fx-row" data-fx-open="${esc(full)}" title="누르면 원본 프로그램(한글·워드 등)으로 열립니다">
+          <span class="fx-ico">${/\.docx?$/i.test(f.name) ? '📄' : /\.(txt|md|markdown|text)$/i.test(f.name) ? '📝' : /\.hwpx?$/i.test(f.name) ? '🇰🇷' : /\.pdf$/i.test(f.name) ? '📕' : '📎'}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
+          <span style="margin-left:auto;opacity:.5;font-size:.72rem;flex-shrink:0">${fxSize(f.size)}</span>
+          ${ok ? `<button class="btn btn-ghost btn-sm" data-fx-pv="${esc(full)}" data-fx-nm="${esc(f.name)}" title="앱 안에서 읽어 원고에 골라 넣기·자료 서랍 담기" style="flex-shrink:0">🧩 골라넣기</button>` : ''}
+        </div>`;
+      }).join('') || '<p style="opacity:.6;font-size:.84rem;padding:8px 4px">' + (q ? '검색과 맞는 파일이 없습니다.' : '이 폴더에 파일이 없습니다.') + '</p>'}
+    </div>
+    <p class="ai-note">파일을 누르면 <b>💻 원본 프로그램</b>(한글·워드·미리보기)으로 바로 열립니다. 📄워드·📝텍스트는 <b>🧩 골라넣기</b>로 앱 안에서 읽어 원고에 넣거나 자료 서랍에 담을 수도 있습니다.</p>`;
+  body.querySelectorAll('[data-fx-go]').forEach(el => el.addEventListener('click', () => { fxSrvPath = el.dataset.fxGo; fsQuery = ''; render(); }));
+  body.querySelectorAll('[data-fx-open]').forEach(el => el.addEventListener('click', () => fxSrvOpen(el.dataset.fxOpen)));
+  body.querySelectorAll('[data-fx-pv]').forEach(b => b.addEventListener('click', async e => {
+    e.stopPropagation(); // 행 클릭(원본 열기)과 분리
+    try {
+      const r = await fetch('/api/fs/read?path=' + encodeURIComponent(b.dataset.fxPv));
+      if (!r.ok) throw new Error('읽기 실패');
+      const blob = await r.blob();
+      fsPreviewFile(b.dataset.fxNm, new File([blob], b.dataset.fxNm));
+    } catch (err) { toast('파일 읽기 실패: ' + err.message, 5000); }
+  }));
+  $('#fx-finder').addEventListener('click', () => fxSrvOpen(fxSrvPath, true));
+  const qEl = $('#fx-q');
+  let qt; qEl.addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { fsQuery = qEl.value; fxSrvRender(body).then(() => { const v = $('#fx-q'); if (v) { v.focus(); v.setSelectionRange(v.value.length, v.value.length); } }); }, 250); });
+}
 async function renderFilesView(m) {
   m.innerHTML = `
     <div class="step-head">FILES</div>
     <h1 class="step-title">설교 파일</h1>
-    <p class="step-desc">내 컴퓨터의 설교 저장 폴더를 앱 안에서 바로 엽니다. 파일을 열어 <b>원고에 골라 넣거나</b> <b>자료 서랍에 담을</b> 수 있습니다. 파일은 컴퓨터 밖으로 나가지 않습니다.</p>
+    <p class="step-desc">내 컴퓨터의 설교 저장 폴더를 앱 안에서 바로 엽니다. <b>파일을 누르면 원본 프로그램으로 열리고</b>, 워드·텍스트는 원고에 골라 넣거나 자료 서랍에 담을 수 있습니다.</p>
     <div id="fx-body"><p style="opacity:.6;font-size:.85rem">폴더를 여는 중…</p></div>`;
   const body = $('#fx-body');
+  const srv = await fxProbe();
+  if (srv) return fxSrvRender(body);
   if (!window.showDirectoryPicker) {
     body.innerHTML = `<div class="card"><p style="font-size:.9rem;line-height:1.8">이 브라우저는 폴더 직접 열기(File System Access)를 지원하지 않습니다.<br>
     <b>크롬(Chrome) 또는 엣지(Edge)</b>에서 앱을 열면 사용할 수 있습니다.<br>
@@ -6293,11 +6375,16 @@ async function fsRenderList(body) {
   const qEl = $('#fx-q');
   let qt; qEl.addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { fsQuery = qEl.value; fsRenderList(body).then(() => { const v = $('#fx-q'); v.focus(); v.setSelectionRange(v.value.length, v.value.length); }); }, 250); });
 }
-/* 파일 열기 — 미리보기 + 원고에 골라 넣기 + 자료 서랍에 담기 */
+/* 파일 열기(브라우저 모드) — 폴더 핸들에서 파일을 꺼내 미리보기로 */
 async function fsOpenFile(dir, name) {
   try {
     const fh = await dir.getFileHandle(name);
-    const f = await fh.getFile();
+    await fsPreviewFile(name, await fh.getFile());
+  } catch (e) { toast('파일 열기 실패: ' + e.message, 6000); }
+}
+/* 미리보기 + 원고에 골라 넣기 + 자료 서랍에 담기 (브라우저·서버 모드 공용) */
+async function fsPreviewFile(name, f) {
+  try {
     let text = /\.docx$/i.test(name) ? await readDocx(f) : await f.text();
     text = cleanExtractedText(String(text)).trim();
     if (!text) { toast('파일이 비어 있거나 내용을 읽지 못했습니다.'); return; }

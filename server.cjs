@@ -317,6 +317,54 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ---- API: 설교 파일 탐색 (로컬 전용 — 홈 폴더 안만) ----
+  const HOME = os.homedir();
+  const safePath = p => {
+    if (!p) return null;
+    const r = path.resolve(p);
+    return (r === HOME || r.startsWith(HOME + path.sep)) ? r : null;
+  };
+  if (url.pathname === '/api/fs/list') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    const p = safePath(url.searchParams.get('path') || path.join(HOME, 'Desktop'));
+    if (!p) return res.end(JSON.stringify({ error: '홈 폴더 안의 경로만 열 수 있습니다.' }));
+    try {
+      const items = fs.readdirSync(p, { withFileTypes: true }).filter(d => !d.name.startsWith('.'));
+      const dirs = [], files = [];
+      for (const d of items) {
+        if (d.isDirectory()) dirs.push({ name: d.name });
+        else if (d.isFile()) {
+          let size = 0, mtime = 0;
+          try { const st = fs.statSync(path.join(p, d.name)); size = st.size; mtime = st.mtimeMs; } catch {}
+          files.push({ name: d.name, size, mtime });
+        }
+      }
+      return res.end(JSON.stringify({ home: HOME, path: p, parent: p === HOME ? null : path.dirname(p), dirs, files }));
+    } catch (e) { return res.end(JSON.stringify({ error: '폴더를 읽지 못했습니다: ' + String(e.message).slice(0, 200) })); }
+  }
+  if (url.pathname === '/api/fs/open') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    const p = safePath(url.searchParams.get('path'));
+    if (!p || !fs.existsSync(p)) return res.end(JSON.stringify({ error: '파일을 찾을 수 없습니다.' }));
+    const reveal = url.searchParams.has('reveal'); // Finder에서 보기
+    try {
+      if (process.platform === 'darwin') spawn('open', reveal ? ['-R', p] : [p], { detached: true, stdio: 'ignore' }).unref();
+      else if (process.platform === 'win32') spawn('cmd', reveal ? ['/c', 'explorer', '/select,', p] : ['/c', 'start', '', p], { detached: true, stdio: 'ignore' }).unref();
+      else spawn('xdg-open', [p], { detached: true, stdio: 'ignore' }).unref();
+      return res.end(JSON.stringify({ ok: true }));
+    } catch (e) { return res.end(JSON.stringify({ error: String(e.message).slice(0, 200) })); }
+  }
+  if (url.pathname === '/api/fs/read') {
+    const p = safePath(url.searchParams.get('path'));
+    if (!p || !fs.existsSync(p)) { res.writeHead(404); return res.end(); }
+    try {
+      const st = fs.statSync(p);
+      if (st.size > 40e6) { res.writeHead(413); return res.end(); }
+      res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
+      return fs.createReadStream(p).pipe(res);
+    } catch { res.writeHead(500); return res.end(); }
+  }
+
   // ---- 정적 파일 ----
   let file = decodeURIComponent(url.pathname);
   if (file === '/') file = '/index.html';
