@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=89">
+<link rel="apple-touch-icon" href="icon-192.png?v=90">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1284,6 +1284,24 @@ const PROMPTS = {
 이 FCF가 중심사상 문장과 설교 적용에 어떻게 녹아야 하는지 2~3문장.`,
   },
   // 2단계: T-파싱 보완 — 설교자가 먼저 관찰하고, AI는 빠진 질문만 보탠다
+  illustPick: {
+    label: '예화 창고 · 예화 고르기',
+    maxTokens: 900,
+    system: BASE_SYSTEM + `
+너는 설교 예화 큐레이터다. 설교의 중심사상과 회중을 생각해, 창고의 예화 중 가장 힘 있는 하나만 고른다.` + JSON_RULE,
+    user: `이번 설교에 넣을 예화를 아래 후보 중에서 반드시 하나 골라 달라.
+
+[본문] {{ref}}
+[설교 주제·중심사상] {{theme}}
+[예화 후보 — 각 줄: 번호 | 제목 | 태그 | 앞부분]
+{{candidates}}
+
+고르는 기준: 중심사상과의 맞닿음 > 감정의 힘 > 신선함. 꼭 맞는 것이 없어도 가장 가까운 하나를 고른다.
+
+다음 JSON으로 답하라:
+{"pick": 후보 번호(숫자 하나), "place": "서론|1대지|2대지|3대지|적용|결론 중 이 예화가 가장 살 자리", "reason": "고른 이유 한 문장"}`,
+  },
+
   tparse: {
     label: '2단계 · T-파싱 질문 보완',
     maxTokens: 2500,
@@ -2216,6 +2234,8 @@ function normalize(d) {
   d.customForms = Array.isArray(d.customForms) ? d.customForms : [];
   d.materials = Array.isArray(d.materials) ? d.materials : [];
   d.materials.forEach(m0 => { if (m0 && typeof m0.content === 'string') m0.content = cleanExtractedText(m0.content); });
+  d.illustLib = Array.isArray(d.illustLib) ? d.illustLib : []; // 예화 창고 — 자동 사용, 서랍 개수·확인창에 안 잡힘
+  d.illustLib.forEach(m0 => { if (m0 && typeof m0.content === 'string') m0.content = cleanExtractedText(m0.content); });
   d.reports = Array.isArray(d.reports) ? d.reports : [];
   d.refPrompts = Array.isArray(d.refPrompts) && d.refPrompts.length ? d.refPrompts : defaultRefPrompts();
   d.promptOverrides = d.promptOverrides || {};
@@ -2720,6 +2740,7 @@ const SPEED_TIERS = {
   titleSuggest:  { effort: 'low' },
   centralRefine: { effort: 'low' },
   tparse:        { effort: 'low' },   // 관찰 보완 — 본문 지식 필요, 궁리는 얕게
+  illustPick:    { effort: 'low' },   // 예화 창고 선별 — 고르기만, 빠르게
   insertBlock:   { effort: 'low' },   // 골라 넣기 이음새 — 빠르게
   formOutline:   { effort: 'low' },   // 개요만 — 빠르게
   introFive:     { effort: 'low' },   // 첫 세 줄 후보 — 빠르게
@@ -2904,7 +2925,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v89 · 2026-07-24';
+const APP_VERSION = 'v90 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -3494,7 +3515,7 @@ async function ingestEnex(f) {
   const notes = [...doc.querySelectorAll('note')];
   if (!notes.length) { toast('⚠ 에버노트 파일에서 노트를 찾지 못했습니다.', 5000); return; }
   let added = 0;
-  for (const n of notes.slice(0, 300)) {
+  for (const n of notes.slice(0, 500)) {
     const title = (n.querySelector('title') || {}).textContent || '에버노트 노트';
     const raw = (n.querySelector('content') || {}).textContent || '';
     // ENML(노트 본문 HTML)을 텍스트로
@@ -3502,12 +3523,12 @@ async function ingestEnex(f) {
     const text = cleanExtractedText((inner.body ? inner.body.innerText || inner.body.textContent : '') || '');
     if (text.trim().length < 3) continue;
     const tags = [...n.querySelectorAll('tag')].map(t => t.textContent).join(', ');
-    DB.materials.unshift({ id: uid(), type: '메모', title: cleanExtractedText(title).slice(0, 60), content: text.slice(0, 12000), tags, createdAt: Date.now() });
+    DB.illustLib.unshift({ id: uid(), type: '예화', title: cleanExtractedText(title).slice(0, 60), content: text.slice(0, 8000), tags, createdAt: Date.now() });
     added++;
   }
   save(true);
   if (curView === 'materials') render();
-  toast('🐘 에버노트에서 노트 ' + added + '개를 자료 서랍에 담았습니다.' + (notes.length > 300 ? ' (최대 300개까지)' : ''), 6000);
+  toast('🏛 에버노트 노트 ' + added + '편을 예화 창고에 담았습니다 — 설교문을 쓸 때마다 앱이 알아서 골라 씁니다.' + (notes.length > 500 ? ' (한 번에 최대 500편)' : ''), 7000);
 }
 async function ingestRefFile(f) {
   const name = f.name.replace(/\.[^.]+$/, '');
@@ -4419,7 +4440,14 @@ function confirmMaterialPlaces(p, regen, ids) {
   body.querySelector('#mp-cancel').addEventListener('click', closeModal);
 }
 async function generateSermonRun(p, regen, matIds) {
-  toast('자료 서랍에 넣어둔 내용들을 활용해 설교문을 작성합니다.', 4500);
+  // 예화 창고 — 앱이 주제를 읽고 예화 한 편을 스스로 골라 넣는다 (묻지 않음)
+  let libIll = null;
+  if (DB.illustLib.length) {
+    toast('🏛 예화 창고에서 이번 설교 주제에 맞는 예화를 고르는 중…', 4000);
+    try { libIll = await pickIllustFromLib(p); } catch (e) { libIll = null; }
+    if (libIll) toast('🏛 예화 창고에서 「' + libIll.note.title + '」을(를) 골라 ' + libIll.place + '에 넣습니다.' + (libIll.reason ? ' — ' + libIll.reason : ''), 7000);
+  }
+  if (matIds.length || libIll) toast('자료 서랍에 넣어둔 내용들을 활용해 설교문을 작성합니다.', 4500);
   const c = p.central, i = p.inputs;
   const targetMin = $('#s3-min') ? (+$('#s3-min').value || i.targetMin) : i.targetMin;
   i.targetMin = targetMin;
@@ -4442,7 +4470,11 @@ async function generateSermonRun(p, regen, matIds) {
       reason: i.reason, needs: i.needs, audience: i.audience, purpose: i.purpose,
       emphasis: i.emphasis, avoid: i.avoid, personal: i.personal,
       style: ($('#s3-style') ? $('#s3-style').value : DB.settings.style),
-      materials: matIds.length ? materialsSlot(matIds) : '(없음)',
+      materials: (() => {
+        const base = matIds.length ? materialsSlot(matIds) : '';
+        const ill = libIll ? '- [예화] ' + libIll.note.title + ': ' + libIll.note.content.slice(0, 4000) + ' 【넣을 자리: ' + libIll.place + '】 (예화 창고에서 자동 선별 — 반드시 이 예화를 해당 자리에 자연스럽게 녹여 넣어라)' : '';
+        return [base, ill].filter(Boolean).join('\n') || '(없음)';
+      })(),
       rules: DB.settings.rules,
       formContext: formContextSlot(p), // 3단계에서 확정한 그릇과 움직임
       targetMin, cpm: DB.settings.cpm, targetChars: targetMin * DB.settings.cpm,
@@ -6588,6 +6620,16 @@ function renderMaterials(m) {
     ${DB.materials.length > 3 ? '<div class="proj-toolbar"><input id="mat-q" placeholder="🔍 자료 검색 (제목·내용·태그)"></div>' : '<div style="display:none"><input id="mat-q"></div>'}
     <div id="mat-list">${renderMatList('')}</div>
     <div class="card" style="margin-top:22px">
+      <h3>🏛 예화 창고 <span class="badge" style="background:var(--lilac);font-weight:700">${DB.illustLib.length}편</span> <span class="badge" style="background:var(--mint)">자동 사용</span></h3>
+      <p class="ai-note" style="margin-top:6px">여기 담긴 예화는 <b>위 자료 개수에 잡히지 않고, 작성 전 확인창에도 나오지 않습니다.</b> 설교문을 쓸 때마다 앱이 설교 주제를 읽고 창고에서 가장 어울리는 예화 <b>한 편</b>을 스스로 골라 알맞은 자리에 넣습니다. 에버노트 내보내기(.enex) 파일을 아래 자료 담기 칸에 끌어다 놓으면 이 창고로 들어옵니다.</p>
+      ${DB.illustLib.length ? `
+      <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">창고 열어 보기</summary>
+        <div class="proj-toolbar" style="margin-top:10px"><input id="ilib-q" placeholder="🔍 예화 검색 (제목·내용·태그)"></div>
+        <div id="ilib-list">${renderIlibList('')}</div>
+        <div class="btn-row" style="margin-top:10px"><button class="btn btn-danger btn-sm" id="ilib-clear">창고 비우기</button></div>
+      </details>` : ''}
+    </div>
+    <div class="card" style="margin-top:22px">
       <h3>＋ 자료 담기 — 끌어다 놓기 · 붙여넣기</h3>
       <div id="ref-drop" class="dropzone">
         <svg class="nav-ico" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M12 3v10m0 0l-4-4m4 4l4-4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>
@@ -6620,6 +6662,53 @@ function renderMaterials(m) {
   bindMatList();
   bindMatPlace(); // 서랍 안에서도 넣을 자리 지정
   bindRefDrop();
+  if ($('#ilib-q')) $('#ilib-q').addEventListener('input', e => { $('#ilib-list').innerHTML = renderIlibList(e.target.value); bindIlibList(); });
+  bindIlibList();
+  if ($('#ilib-clear')) $('#ilib-clear').addEventListener('click', () => {
+    if (confirm('예화 창고를 모두 비울까요? (' + DB.illustLib.length + '편)')) { DB.illustLib = []; save(true); render(); }
+  });
+}
+function renderIlibList(q) {
+  let list = DB.illustLib;
+  if (q) { const s = q.toLowerCase(); list = list.filter(x => (x.title + x.content + (x.tags || '')).toLowerCase().includes(s)); }
+  if (!list.length) return '<p style="opacity:.8;font-size:.86rem">해당하는 예화가 없습니다.</p>';
+  const shown = list.slice(0, 30);
+  return shown.map(x => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 4px;border-bottom:1px solid var(--hairline-soft)">
+      <div style="flex:1;min-width:0"><b style="font-size:.88rem">${esc(x.title)}</b>${x.tags ? ` <span style="font-size:.7rem;opacity:.8">${esc(x.tags)}</span>` : ''}
+        <div style="font-size:.8rem;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.content.slice(0, 90))}</div></div>
+      <button class="btn btn-danger btn-sm" data-ilibdel="${x.id}">삭제</button>
+    </div>`).join('') + (list.length > 30 ? `<p style="font-size:.76rem;opacity:.75;margin-top:6px">${list.length}편 중 30편만 표시 — 검색으로 좁혀 보세요.</p>` : '');
+}
+function bindIlibList() {
+  $$('#ilib-list [data-ilibdel]').forEach(b => b.addEventListener('click', () => {
+    DB.illustLib = DB.illustLib.filter(x => x.id !== b.dataset.ilibdel); save(true);
+    $('#ilib-list').innerHTML = renderIlibList($('#ilib-q') ? $('#ilib-q').value : ''); bindIlibList();
+  }));
+}
+/* 예화 창고 자동 선별 — 주제 키워드로 후보를 추리고, AI가 하나를 골라 자리까지 정한다 */
+async function pickIllustFromLib(p) {
+  const lib = DB.illustLib || []; if (!lib.length) return null;
+  const c = p.central || {};
+  const seed = [p.title, p.passage.ref, p.inputs.topic, c.homiletical, c.exegetical, c.subject, c.complement].filter(Boolean).join(' ');
+  const toks = [...new Set(((seed.toLowerCase().match(/[가-힣a-z]{2,}/g)) || []))];
+  const scoreOf = n => {
+    const t = (n.tags || '').toLowerCase(), ti = (n.title || '').toLowerCase(), co = (n.content || '').toLowerCase();
+    let s = 0; toks.forEach(w => { if (t.includes(w)) s += 3; if (ti.includes(w)) s += 2; if (co.includes(w)) s += 1; });
+    return s;
+  };
+  const ranked = lib.map(n => ({ n, s: scoreOf(n) })).sort((x, y) => y.s - x.s);
+  const cands = ranked.slice(0, 8).map(x => x.n);
+  const listTxt = cands.map((n, i) => (i + 1) + ' | ' + n.title + ' | ' + (n.tags || '-') + ' | ' + n.content.slice(0, 140).replace(/\n/g, ' ')).join('\n');
+  try {
+    const r = await callAIJson('illustPick', {
+      ref: p.passage.ref || '(미정)',
+      theme: [c.homiletical, p.inputs.topic, p.title].filter(Boolean).join(' / ') || p.passage.ref || '(미정)',
+      candidates: listTxt,
+    }, { silent: true });
+    const pick = cands[(+r.pick || 1) - 1] || cands[0];
+    return { note: pick, place: (MAT_PLACES.includes(r.place) ? r.place : '본론'), reason: r.reason || '' };
+  } catch (e) { return { note: cands[0], place: '본론', reason: '' }; }
 }
 function renderMatList(q) {
   let list = DB.materials;
