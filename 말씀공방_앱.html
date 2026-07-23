@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=90">
+<link rel="apple-touch-icon" href="icon-192.png?v=91">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -987,6 +987,11 @@ html { scroll-behavior: smooth; }
 .g-fig { width: 96px; height: 116px; }
 .g-art-sm .g-fig { width: 64px; height: 78px; }
 .g-art { background: linear-gradient(180deg, #fffdf7, #fff); }
+
+/* ─── 홈 최근 작업: 밀어서 삭제 ─── */
+.swipe-row { position: relative; overflow: hidden; border-bottom: 1px solid var(--cream-2); }
+.swipe-under { position: absolute; inset: 2px; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px; background: #e15b5b; color: #fff; font-weight: 700; font-size: .82rem; border-radius: 10px; }
+.swipe-face { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 0; background: var(--canvas); touch-action: pan-y; user-select: none; }
 
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ffffff'/><rect x='4' y='4' width='72' height='72' rx='18' fill='%23FFC000'/><text x='40' y='52' transform='scale(1 1.2)' font-size='44' font-weight='800' text-anchor='middle' fill='%23ffffff' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><rect x='48' y='42' width='44' height='44' rx='12' fill='%23FF5600' stroke='%23ffffff' stroke-width='3'/><text x='70' y='62.7' transform='scale(1 1.2)' font-size='26' font-weight='800' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>W</text></svg>">
@@ -2925,7 +2930,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v90 · 2026-07-24';
+const APP_VERSION = 'v91 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -3429,13 +3434,16 @@ function renderHome(m) {
           </div>`).join('')}
       </div>
     </div>
-    ${recent.length ? `<div class="card" style="margin-top:34px"><h3>최근 작업</h3>${recent.map(p => `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--cream-2)">
-        <span class="proj-title-cell" data-open="${p.id}" style="flex:1">${esc(p.title || p.inputs.topic || '제목 없음')}</span>
-        <span class="badge">${esc(p.passage.ref || '본문 미정')}</span>
-        <span class="mini-progress"><i style="width:${progressOf(p)}%"></i></span>
-        <button class="btn btn-ghost btn-sm" data-open="${p.id}">열기</button>
-        <button class="btn btn-ghost btn-sm" data-trash="${p.id}" title="휴지통으로 (보관함에서 복원 가능)">🗑</button>
+    ${recent.length ? `<div class="card" style="margin-top:34px"><h3>최근 작업 <span style="font-size:.7rem;font-weight:400;opacity:.6">— 줄을 왼쪽으로 밀면 휴지통으로 갑니다</span></h3>${recent.map(p => `
+      <div class="swipe-row" data-sid="${p.id}">
+        <div class="swipe-under"><span>🗑 휴지통으로</span></div>
+        <div class="swipe-face">
+          <span class="proj-title-cell" data-open="${p.id}" style="flex:1">${esc(p.title || p.inputs.topic || '제목 없음')}</span>
+          <span class="badge">${esc(p.passage.ref || '본문 미정')}</span>
+          <span class="mini-progress"><i style="width:${progressOf(p)}%"></i></span>
+          <button class="btn btn-ghost btn-sm" data-open="${p.id}">열기</button>
+          <button class="btn btn-ghost btn-sm" data-trash="${p.id}" title="휴지통으로 (보관함에서 복원 가능)">🗑</button>
+        </div>
       </div>`).join('')}</div>` : ''}`;
   $('#home-new').addEventListener('click', newProject);
   $('#home-import').addEventListener('click', openImport);
@@ -3446,6 +3454,48 @@ function renderHome(m) {
     const name = (p && (p.title || p.inputs.topic)) || '제목 없음';
     if (confirm(`"${name}" 설교를 휴지통으로 옮길까요?\n(보관함 하단 휴지통에서 복원할 수 있어요)`)) trashProject(b.dataset.trash);
   }));
+  bindSwipeDelete(m, id => trashProject(id)); // 밀어서 삭제 — 확인 없이 휴지통으로 (복원 가능)
+}
+/* 줄을 왼쪽으로 밀면 삭제 — 마우스·터치 공용(포인터 이벤트) */
+function bindSwipeDelete(scope, onDel) {
+  scope.querySelectorAll('.swipe-row').forEach(row => {
+    const face = row.querySelector('.swipe-face');
+    let sx = 0, sy = 0, dx = 0, active = false, swiping = false;
+    face.addEventListener('pointerdown', e => {
+      if (e.button) return;
+      sx = e.clientX; sy = e.clientY; dx = 0; active = true; swiping = false;
+    });
+    face.addEventListener('pointermove', e => {
+      if (!active) return;
+      const mx = e.clientX - sx, my = e.clientY - sy;
+      if (!swiping) {
+        if (mx < -10 && Math.abs(mx) > Math.abs(my) * 1.4) {
+          swiping = true; face.style.transition = 'none';
+          try { face.setPointerCapture(e.pointerId); } catch (_) {}
+        } else return;
+      }
+      dx = Math.min(0, mx);
+      face.style.transform = 'translateX(' + dx + 'px)';
+    });
+    const end = () => {
+      if (!active) return; active = false;
+      if (!swiping) return;
+      face.style.transition = 'transform .18s ease';
+      const th = Math.min(140, row.offsetWidth * 0.35);
+      if (-dx > th) {
+        face.style.transform = 'translateX(-110%)';
+        setTimeout(() => onDel(row.dataset.sid), 170);
+      } else { face.style.transform = ''; }
+      // 밀다 놓은 직후의 클릭 오발(열기 등) 방지
+      if (Math.abs(dx) > 10) {
+        const stop = ev => { ev.stopPropagation(); ev.preventDefault(); };
+        face.addEventListener('click', stop, { capture: true, once: true });
+        setTimeout(() => face.removeEventListener('click', stop, { capture: true }), 300);
+      }
+    };
+    face.addEventListener('pointerup', end);
+    face.addEventListener('pointercancel', end);
+  });
 }
 
 /* ═══════════════════ 0단계: 기본 정보 ═══════════════════ */
@@ -6619,16 +6669,14 @@ function renderMaterials(m) {
     <h3 style="margin:4px 0 10px">🗄 담긴 자료 <span class="badge" style="background:var(--lime);font-weight:700">${DB.materials.length}개</span></h3>
     ${DB.materials.length > 3 ? '<div class="proj-toolbar"><input id="mat-q" placeholder="🔍 자료 검색 (제목·내용·태그)"></div>' : '<div style="display:none"><input id="mat-q"></div>'}
     <div id="mat-list">${renderMatList('')}</div>
-    <div class="card" style="margin-top:22px">
-      <h3>🏛 예화 창고 <span class="badge" style="background:var(--lilac);font-weight:700">${DB.illustLib.length}편</span> <span class="badge" style="background:var(--mint)">자동 사용</span></h3>
-      <p class="ai-note" style="margin-top:6px">여기 담긴 예화는 <b>위 자료 개수에 잡히지 않고, 작성 전 확인창에도 나오지 않습니다.</b> 설교문을 쓸 때마다 앱이 설교 주제를 읽고 창고에서 가장 어울리는 예화 <b>한 편</b>을 스스로 골라 알맞은 자리에 넣습니다. 에버노트 내보내기(.enex) 파일을 아래 자료 담기 칸에 끌어다 놓으면 이 창고로 들어옵니다.</p>
+    <details class="card" style="display:block;margin-top:22px;padding:16px 20px">
+      <summary style="cursor:pointer;font-weight:600">🏛 예화 창고 <span class="badge" style="background:var(--lilac);font-weight:700">${DB.illustLib.length}편</span> <span class="badge" style="background:var(--mint)">자동 사용</span></summary>
+      <p class="ai-note" style="margin-top:10px">여기 담긴 예화는 <b>위 자료 개수에 잡히지 않고, 작성 전 확인창에도 나오지 않습니다.</b> 설교문을 쓸 때마다 앱이 설교 주제를 읽고 창고에서 가장 어울리는 예화 <b>한 편</b>을 스스로 골라 알맞은 자리에 넣습니다. 에버노트 내보내기(.enex) 파일을 아래 자료 담기 칸에 끌어다 놓으면 이 창고로 들어옵니다.</p>
       ${DB.illustLib.length ? `
-      <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">창고 열어 보기</summary>
         <div class="proj-toolbar" style="margin-top:10px"><input id="ilib-q" placeholder="🔍 예화 검색 (제목·내용·태그)"></div>
         <div id="ilib-list">${renderIlibList('')}</div>
-        <div class="btn-row" style="margin-top:10px"><button class="btn btn-danger btn-sm" id="ilib-clear">창고 비우기</button></div>
-      </details>` : ''}
-    </div>
+        <div class="btn-row" style="margin-top:10px"><button class="btn btn-danger btn-sm" id="ilib-clear">창고 비우기</button></div>` : ''}
+    </details>
     <div class="card" style="margin-top:22px">
       <h3>＋ 자료 담기 — 끌어다 놓기 · 붙여넣기</h3>
       <div id="ref-drop" class="dropzone">
