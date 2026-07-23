@@ -808,7 +808,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v80 · 2026-07-23';
+const APP_VERSION = 'v81 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -1663,13 +1663,25 @@ function renderTparse(p) {
         <div style="font-size:.68rem;font-family:var(--mono);letter-spacing:.05em;opacity:.7;margin-bottom:8px">${esc(p.passage.ref)}</div>
         ${vh}
       </div>` : `<p class="ai-note">⚠ 본문 전문이 비어 있습니다. 1단계에서 본문을 붙여넣으면 여기에 절과 함께 표시되어 파싱하기 쉬워집니다. <button class="chip" onclick="gotoStep(1)" style="margin-left:6px">1단계로</button></p>`}
-      <div style="display:grid;grid-template-columns:1fr 1.4fr 34px;gap:6px;align-items:center">
+      <div style="display:grid;grid-template-columns:1fr 1.4fr 34px 34px;gap:6px;align-items:center">
         <div style="font-size:.7rem;font-family:var(--mono);opacity:.7">본문에서 멈춘 단어·표현</div>
-        <div style="font-size:.7rem;font-family:var(--mono);opacity:.7">질문·관찰</div><div></div>
+        <div style="font-size:.7rem;font-family:var(--mono);opacity:.7">질문·관찰</div>
+        <div style="font-size:.7rem;font-family:var(--mono);opacity:.7;text-align:center" title="단어 설명·주해">주해</div><div></div>
         ${rows.map((r, i) => `
           <input data-tp-w="${i}" value="${esc(r.word)}" placeholder="예: '즉시'"${r.ai ? ' style="background:var(--surface-soft)"' : ''}>
           <input data-tp-n="${i}" value="${esc(r.note)}" placeholder="왜 이 단어에서 멈췄는가?"${r.ai ? ' style="background:var(--surface-soft)"' : ''}>
-          <button class="icon-btn" data-tp-del="${i}" title="행 삭제">✕</button>`).join('')}
+          <button class="icon-btn" data-tp-ex="${i}" title="이 단어를 본문 안에서 설명·주해 (자료 서랍의 주석 발췌가 있으면 우선 인용)" ${aiConnected() ? '' : 'disabled'}>📖</button>
+          <button class="icon-btn" data-tp-del="${i}" title="행 삭제">✕</button>
+          ${r.exegesis ? `
+          <div class="tp-ex" style="grid-column:1/-1">
+            <div style="display:flex;align-items:baseline;gap:8px">
+              <b style="font-size:.9rem">📖 ${esc(r.word)}</b>
+              ${r.exegesis.fromDrawer ? `<span class="badge">🗄 ${esc(r.exegesis.fromDrawer)}</span>` : ''}
+              <button class="icon-btn" data-tp-exdel="${i}" title="주해 닫기" style="margin-left:auto">✕</button>
+            </div>
+            ${[['뜻·원어', r.exegesis.meaning], ['본문 속 쓰임', r.exegesis.inText], ['배경', r.exegesis.background], ['질문에 대한 답', r.exegesis.answer], ['설교 씨앗', r.exegesis.seed]]
+              .map(([k, v]) => v ? `<div style="font-size:.82rem;line-height:1.65;margin-top:4px"><b style="font-size:.72rem;font-family:var(--mono);opacity:.7">${k}</b><br>${esc(v)}</div>` : '').join('')}
+          </div>` : ''}`).join('')}
       </div>
       ${rows.some(r => r.ai) ? '<p style="font-size:.7rem;opacity:.6;margin-top:4px">회색 배경 = AI가 보완한 질문입니다. 자유롭게 고치거나 지우세요.</p>' : ''}
       <div class="btn-row" style="margin-top:10px">
@@ -1694,6 +1706,27 @@ function bindTparse(p) {
     grabTp(); p.tparse.splice(+b.dataset.tpDel, 1); touch(p); render();
   }));
   $('#tp-add').addEventListener('click', () => { grabTp(); p.tparse.push({ id: uid(), word: '', note: '' }); touch(p); render(); });
+  // 📖 단어 설명·주해 — 멈춘 단어를 그 자리에서 풀어 준다 (자료 서랍의 주석 발췌 우선 인용)
+  card.querySelectorAll('[data-tp-ex]').forEach(b => b.addEventListener('click', async () => {
+    grabTp();
+    const i = +b.dataset.tpEx;
+    const row = p.tparse[i];
+    if (!row || !row.word.trim()) { toast('먼저 왼쪽 칸에 단어를 적어 주세요.'); return; }
+    try {
+      setProgressEta(35, ['"' + row.word.trim() + '"를 본문 안에서 읽는 중…', '자료 서랍을 살피는 중…', '주해를 정리하는 중…']);
+      const r = await callAIJson('tparseWord', {
+        ref: p.passage.ref, passageText: p.passage.text || '(본문 전문 없음 — 장절만으로 주해)',
+        word: row.word.trim(), note: row.note.trim() || '(질문 없음)',
+        materials: DB.materials.length ? materialsSlot(null) : '(없음)',
+      }, { label: '"' + row.word.trim() + '" 단어를 주해하는 중…' });
+      row.exegesis = r; touch(p); render();
+      const box = $$('#tparse-card .tp-ex')[[...p.tparse.slice(0, i + 1)].filter(x => x.exegesis).length - 1];
+      if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+  }));
+  card.querySelectorAll('[data-tp-exdel]').forEach(b => b.addEventListener('click', () => {
+    grabTp(); delete p.tparse[+b.dataset.tpExdel].exegesis; touch(p); render();
+  }));
   const tpAi = $('#tp-ai');
   if (tpAi) tpAi.addEventListener('click', async () => {
     grabTp();

@@ -337,6 +337,11 @@ h1, h2, h3, h4 { color: var(--ink); line-height: 1.15; font-weight: 600; letter-
 #editor p { margin: .55em 0; }
 /* 단락 시작(pgap) — 빈 줄로 구분된 단락 사이에 넉넉한 여백을 둬 눈으로 단락이 나뉘게 */
 #editor p.pgap, .stream-preview p.pgap, #rehearsal-text p.pgap { margin-top: 1.35em; }
+/* T-파싱 단어 주해 상자 — 해당 행 바로 아래에 펼쳐진다 */
+.tp-ex {
+  background: var(--surface-soft); border-left: 3px solid var(--ink);
+  border-radius: var(--r-md); padding: 10px 14px; margin: 2px 0 8px;
+}
 /* 왼쪽 메뉴 자료 서랍 개수 배지 */
 .nav-count {
   margin-left: auto; flex-shrink: 0;
