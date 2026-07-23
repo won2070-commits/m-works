@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=87">
+<link rel="apple-touch-icon" href="icon-192.png?v=88">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2900,7 +2900,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v87 · 2026-07-23';
+const APP_VERSION = 'v88 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -5515,24 +5515,6 @@ function renderStep5(m, p) {
     </div>
     ${renderSongCard(p)}
     <div class="card">
-      <h3>⏱ 시간·분량 조정 <span class="opt" style="font-weight:400;font-size:.78rem">— 어느 대목을 늘리고 줄일지, 그 자리에서 바로 누르세요</span></h3>
-      ${(() => {
-        const total = readingMinutes(htmlToText(p.draft.html));
-        const diff = total - p.inputs.targetMin;
-        const div = document.createElement('div'); div.innerHTML = p.draft.html;
-        const heads = [...div.querySelectorAll('h2')].map(h => h.textContent.trim()).filter(t => t && !/추천 도서/.test(t));
-        return `
-        <p style="font-size:.9rem;margin-bottom:10px">현재 예상 <b>${fmtMin(total)}</b> / 목표 <b>${p.inputs.targetMin}분</b> —
-          <span style="color:${Math.abs(diff) < 1.5 ? 'var(--success)' : 'var(--red)'};font-weight:700">${Math.abs(diff) < 1.5 ? '목표에 맞음 👍' : (diff > 0 ? fmtMin(diff) + ' 초과 → 줄일 대목을 고르세요' : fmtMin(-diff) + ' 여유 → 늘릴 대목을 고르세요')}</span></p>
-        ${heads.length ? heads.map(h => `
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--hairline-soft)">
-            <b style="flex:1;font-size:.9rem">${esc(h)}</b>
-            <button class="btn btn-ghost btn-sm" data-rs-grow="${esc(h)}" ${aiConnected() ? '' : 'disabled'}>＋ 늘리기 ${AI_ICO}</button>
-            <button class="btn btn-ghost btn-sm" data-rs-cut="${esc(h)}" ${aiConnected() ? '' : 'disabled'}>－ 줄이기 ${AI_ICO}</button>
-          </div>`).join('') : '<p style="font-size:.84rem;opacity:.7">원고에 소제목(서론·본론·결론 등)이 있어야 대목별 조정이 가능합니다.</p>'}
-      `; })()}
-    </div>
-    <div class="card">
       <h3>연습 기록 <span class="opt" style="font-weight:400;font-size:.78rem">— 원고를 말로 바꾸고 말씀을 내면화합니다</span></h3>
       <details style="margin-bottom:12px"><summary style="cursor:pointer;font-size:.8rem;opacity:.75">리허설 순서 여덟 가지</summary>
         <p style="font-size:.8rem;line-height:1.9;margin-top:6px;opacity:.85">① 설교의 전체 지도를 한 문장씩 정리한다 ② 각 단락의 핵심어만 남긴다 ③ 원고를 소리 내어 읽는다 ④ 입에서 걸리는 문장을 표시한다 ⑤ 강세·속도·어미·멈춤을 점검한다 ⑥ 실제 시간을 기록한다 ⑦ 시선과 제스처를 점검한다 ⑧ 마지막에는 핵심어만으로 설교한다</p>
@@ -5568,13 +5550,13 @@ function renderStep5(m, p) {
     </details>`;
   $('#s5-feedback').addEventListener('click', () => getFeedback(p));
   $('#s5-bs').addEventListener('click', () => getBreathsStress(p));
+  const fbBack = $('#fb-goback');
+  if (fbBack) fbBack.addEventListener('click', () => { gotoStep(3); toast('설교 작성으로 돌아왔습니다. 아래 세부 버튼(부분 재작성·분량 조절 등)으로 고치세요.', 5000); });
   const fbCmp = $('#fb-compare');
   if (fbCmp) fbCmp.addEventListener('click', () => {
     const fb = p.rehearsal.feedback;
     openCompareFix(p, fb ? renderFeedback(fb, p).replace('id="fb-compare"', 'style="display:none"') : '<p>피드백이 없습니다.</p>');
   });
-  $$('#main [data-rs-grow]').forEach(b => b.addEventListener('click', () => resizeSection(p, b.dataset.rsGrow, +1)));
-  $$('#main [data-rs-cut]').forEach(b => b.addEventListener('click', () => resizeSection(p, b.dataset.rsCut, -1)));
   $('#s5-genius').addEventListener('click', () => getGenius(p));
   bindSongCard(p);
   const stIns = $('#s5-st-insert');
@@ -5652,6 +5634,7 @@ function renderFeedback(fb, p) {
   return `
     <div class="btn-row" style="margin-top:14px">
       <button class="btn btn-primary btn-sm" id="fb-compare">📄 지적 사항 보며 원고 바로 고치기 (나란히 보기)</button>
+      <button class="btn btn-ghost btn-sm" id="fb-goback">✍ 4단계 설교 작성으로 돌아가 고치기 (세부 버튼 사용)</button>
     </div>
     <h4 style="margin-top:18px">A. 내용 피드백</h4>
     <div class="fb-section">
