@@ -960,3 +960,17 @@ html { scroll-behavior: smooth; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   html { scroll-behavior: auto; }
 }
+
+/* 원고 화면 타이포 — 소제목(서론·본론·결론)은 조금 작게, 단락 사이는 한 줄 간격 */
+#editor h2 { font-size: 1.08rem; }
+#editor h3 { font-size: 1rem; }
+#editor p { margin: .95em 0; }
+.stream-preview h2, #cf-edit h2 { font-size: 1.06rem; font-weight: 700; margin: 1.1em 0 .4em; }
+.stream-preview h3, #cf-edit h3 { font-size: .98rem; margin: .9em 0 .3em; }
+.stream-preview p, #cf-edit p { margin: 0 0 .95em; }
+#rehearsal-text h2 { font-size: 1.35rem; }
+
+/* 제스처 그림 — 더 또렷하게 */
+.g-fig { width: 96px; height: 116px; }
+.g-art-sm .g-fig { width: 64px; height: 78px; }
+.g-art { background: linear-gradient(180deg, #fffdf7, #fff); }

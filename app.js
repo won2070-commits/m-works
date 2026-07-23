@@ -808,7 +808,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v86 · 2026-07-23';
+const APP_VERSION = 'v87 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -3403,17 +3403,20 @@ function renderStep5(m, p) {
     <p class="step-desc">문어체 원고를 구어체 설교로 바꾸는 유일한 방법은 소리 내어 읽는 것입니다. 입에서 걸리는 문장은 잘못된 문장입니다.</p>
     <div class="card">
       <h3>원고 점검</h3>
+      <p style="font-size:.82rem;line-height:1.7;margin:0 0 10px;opacity:.9">
+        낭독 표시는 한 번에 세 가지를 찾아 원고 위에 색으로 표시합니다 —
+        <span class="gmark bmark" style="pointer-events:none">∕ ⏸</span> <b>쉼·멈춤</b>(남색) ·
+        <span class="smark smark-strong" style="pointer-events:none">강약</span> <b>강약</b>(형광) ·
+        <span class="gmark" style="pointer-events:none">🖐</span> <b>제스처</b>(주황).
+        표시를 누르면 오른쪽에 자세한 설명이 나옵니다.</p>
       <div class="btn-row" style="margin-top:0">
         <button class="btn btn-primary" id="s5-feedback" ${aiConnected() ? '' : 'disabled'}>내용 + 전달 피드백 받기 ${AI_ICO}</button>
-        <button class="btn btn-ghost" id="s5-unity" ${aiConnected() ? '' : 'disabled'}>전진·순서·통일 점검 (곽안련) ${AI_ICO}</button>
-        <button class="btn btn-ghost" id="s5-gestures" ${aiConnected() ? '' : 'disabled'}>제스처 5~10개 제안 ${AI_ICO}</button>
-        <button class="btn btn-ghost" id="s5-bs" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 + 강약 자리 찾기 ${AI_ICO}</button>
-        <button class="btn btn-ai" id="s5-genius" ${aiConnected() ? '' : 'disabled'}>💎 천재화 — 평가와 아이디어 ${AI_ICO}</button>
+        <button class="btn btn-ghost" id="s5-bs" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 + 강약 + 제스처 — 위치 찾기 ${AI_ICO}</button>
+        <button class="btn btn-ai" id="s5-genius" ${aiConnected() ? '' : 'disabled'}>대가의 피드백 — 평가와 아이디어 ${AI_ICO}</button>
         <button class="btn btn-gold" id="s5-rehearse">🎤 리허설 모드 시작</button>
       </div>
       <div id="s5-br">${r.breaths ? renderBreaths(r.breaths) : ''}</div>
       <div id="s5-st">${r.stress ? renderStress(r.stress) : ''}</div>
-      <div id="s5-un">${r.unity3 ? renderUnity3(r.unity3) : ''}</div>
       <div id="s5-fb">${r.feedback ? renderFeedback(r.feedback, p) : ''}</div>
       <div id="s5-gs">${r.gestures ? renderGestures(r.gestures) : ''}</div>
       <div id="s5-gn">${r.genius ? renderGenius(p, r.genius) : ''}</div>
@@ -3472,10 +3475,7 @@ function renderStep5(m, p) {
       </div>
     </details>`;
   $('#s5-feedback').addEventListener('click', () => getFeedback(p));
-  $('#s5-gestures').addEventListener('click', () => getGestures(p));
   $('#s5-bs').addEventListener('click', () => getBreathsStress(p));
-  const unBtn = $('#s5-unity');
-  if (unBtn) unBtn.addEventListener('click', () => getUnity3(p));
   const fbCmp = $('#fb-compare');
   if (fbCmp) fbCmp.addEventListener('click', () => {
     const fb = p.rehearsal.feedback;
@@ -3585,8 +3585,10 @@ function renderFeedback(fb, p) {
 /* 앱 안에 직접 그린 선화 — 인터넷 없이도 즉시 표시된다 */
 function gestureFigure(arms, extra) {
   return `<svg viewBox="0 0 120 145" class="g-fig" xmlns="http://www.w3.org/2000/svg">
-    <g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="60" cy="24" r="12.5"/>
+    <circle cx="60" cy="74" r="58" fill="#f4ecd6" opacity=".6"/>
+    <g fill="none" stroke="#141414" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="60" cy="23" r="10.5" fill="#141414" stroke="none"/>
+      <path d="M60 34v3"/>
       <path d="M60 37v58"/>
       <path d="M46 52h28"/>
       <path d="M60 95l-13 34M60 95l13 34"/>
@@ -3595,7 +3597,7 @@ function gestureFigure(arms, extra) {
     ${extra || ''}
   </svg>`;
 }
-const HAND = (x, y) => `<circle cx="${x}" cy="${y}" r="5" fill="currentColor" stroke="none"/>`;
+const HAND = (x, y) => `<circle cx="${x}" cy="${y}" r="6.5" fill="#ff5600" stroke="#fff" stroke-width="2"/>`;
 const GESTURE_ART = {
   open:    { label: '양팔 벌리기', tip: '품는 동작 — 초대·환영·모두를 향할 때',
              svg: () => gestureFigure(`<path d="M46 52L26 44"/><path d="M74 52l20-8"/>` + HAND(22, 43) + HAND(98, 43)) },
@@ -3767,12 +3769,14 @@ function insertStressMarks(p) {
 async function getBreathsStress(p) {
   syncEditor();
   try {
-    setProgressEta(105, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '힘이 실릴 낱말을 고르는 중…', '흘려보낼 대목을 찾는 중…', '한 화면에 정리하는 중…']);
+    setProgressEta(160, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '힘이 실릴 낱말을 고르는 중…', '몸짓이 필요한 자리를 찾는 중…', '한 화면에 정리하는 중…']);
     const b = await callAIJson('breaths', { draft: htmlToText(p.draft.html) }, { label: '① 낭독 호흡(쉼·멈춤)을 분석하는 중…' });
     p.rehearsal.breaths = b; touch(p);
     const s = await callAIJson('stress', { draft: htmlToText(p.draft.html).slice(0, 16000) }, { label: '② 강약을 줄 자리를 찾는 중…' });
-    p.rehearsal.stress = s; touch(p); render();
-    openMarkedScript(p, 'bs'); // 쉼·멈춤과 강약을 한 원고 위에 함께 표시
+    p.rehearsal.stress = s; touch(p);
+    const g = await callAIJson('gestures', { draft: htmlToText(p.draft.html) }, { label: '③ 제스처 지점을 찾는 중…' });
+    p.rehearsal.gestures = g; touch(p); render();
+    openMarkedScript(p, 'all'); // 쉼·멈춤 + 강약 + 제스처를 한 원고 위에 함께 표시
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
 }
 async function getBreaths(p) {
@@ -3909,10 +3913,15 @@ function openMarkedScript(p, type) {
     html = d.innerHTML;
   }
   const titles = { all: '낭독 표시 원고 — 제스처 · 쉼멈춤 · 강약', bs: '쉼·멈춤 + 강약 위치 — 설교 원고', gestures: '제스처 위치 — 설교 원고', breaths: '쉼·멈춤 위치 — 설교 원고', stress: '강약 위치 — 설교 원고' };
+  const LG_INFO = {
+    gestures: '<div class="fb-item" style="background:rgba(255,86,0,.08);margin:0"><b>🖐 제스처 (주황)</b>말이 아니라 몸으로 의미를 보여주는 자리입니다. 본문 속 🖐① 표시를 누르면 오른쪽에 동작 그림과 함께 손·몸·시선·표정·속도, 동작을 시작하고 거두는 법까지 나옵니다. 연극처럼 과장하지 말고, 의미를 돕는 동작만 골라 쓰세요.</div>',
+    breaths: '<div class="fb-item" style="background:var(--lilac);margin:0"><b>∕ ⏸ 쉼·멈춤 (남색·보라)</b>∕는 반 박자 쉬는 곳, ⏸는 몇 초를 세며 완전히 멈추는 곳입니다. 침묵은 가장 강한 말 — 결정적 문장 앞뒤의 멈춤이 그 문장을 회중의 마음에 박아 넣습니다. 표시를 누르면 왜 그 자리인지, 몇 초를 멈출지가 나옵니다.</div>',
+    stress: '<div class="fb-item" style="background:var(--lime);margin:0"><b>강약 (형광 라임·골드)</b>힘을 실을 낱말입니다. 라임은 중간 강세, 골드는 가장 힘 있는 강세 — 높여서·낮춰서·늘려서·끊어서 네 가지 방법 중 무엇으로 힘을 줄지 표시를 누르면 나옵니다. 모든 낱말에 힘을 주면 아무 낱말에도 힘이 없습니다.</div>',
+  };
   const legend = [
-    want.includes('gestures') && G.length ? '<span class="lg"><b class="gmark" style="pointer-events:none">🖐</b> 제스처</span>' : '',
-    want.includes('breaths') && B.length ? '<span class="lg"><b class="gmark bmark" style="pointer-events:none">∕ ⏸</b> 쉼·멈춤</span>' : '',
-    want.includes('stress') && S.length ? '<span class="lg"><b class="smark smark-strong" style="pointer-events:none">강약</b> 힘주는 낱말</span>' : '',
+    want.includes('gestures') && G.length ? '<button class="lg" data-lginfo="gestures" style="background:none;border:1px solid var(--hairline);border-radius:var(--r-pill);padding:3px 10px;cursor:pointer" title="누르면 기능 설명"><b class="gmark" style="pointer-events:none">🖐</b> 제스처</button>' : '',
+    want.includes('breaths') && B.length ? '<button class="lg" data-lginfo="breaths" style="background:none;border:1px solid var(--hairline);border-radius:var(--r-pill);padding:3px 10px;cursor:pointer" title="누르면 기능 설명"><b class="gmark bmark" style="pointer-events:none">∕ ⏸</b> 쉼·멈춤</button>' : '',
+    want.includes('stress') && S.length ? '<button class="lg" data-lginfo="stress" style="background:none;border:1px solid var(--hairline);border-radius:var(--r-pill);padding:3px 10px;cursor:pointer" title="누르면 기능 설명"><b class="smark smark-strong" style="pointer-events:none">강약</b> 강약</button>' : '',
   ].filter(Boolean).join('');
   const body = modal(titles[type] || titles.all, `
     <div class="ms-legend">${legend}<span style="opacity:.75;font-size:.76rem">본문의 표시를 누르면 오른쪽에 그림과 설명이 나옵니다 · ${res.found + stressFound}곳 표시됨</span></div>
@@ -3921,6 +3930,9 @@ function openMarkedScript(p, type) {
       <div id="ms-side" style="flex:1;min-width:230px;position:sticky;top:0;max-height:62vh;overflow-y:auto"><p style="font-size:.84rem;color:var(--ink-soft)">👈 본문의 표시를 눌러 보세요.</p></div>
     </div>`);
   $('#modal').style.maxWidth = '1100px'; // 본문 + 우측 여백을 나란히 넉넉하게
+  body.querySelectorAll('[data-lginfo]').forEach(el => el.addEventListener('click', () => {
+    $('#ms-side').innerHTML = LG_INFO[el.dataset.lginfo] || '';
+  }));
   body.querySelectorAll('.gmark,.smark').forEach(el => el.addEventListener('click', () => {
     body.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
     el.classList.add('on');
