@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=77">
+<link rel="apple-touch-icon" href="icon-192.png?v=78">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2830,8 +2830,28 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v77 · 2026-07-22';
+const APP_VERSION = 'v78 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
+/* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
+   페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
+   앱이 body/html 최상위에 두는 요소는 아래 목록이 전부이므로, 그 밖의 요소는 모두 외부 주입이다. ── */
+(() => {
+  const APP_ROOTS = new Set(['topbar', 'layout', 'modal-backdrop', 'toast', 'ai-progress', 'bright-ov', 'app-lock', 'rehearsal']);
+  const OK_TAGS = new Set(['HEAD', 'BODY', 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'NOSCRIPT']);
+  const sweep = () => {
+    [document.documentElement, document.body].forEach(root => {
+      if (!root) return;
+      [...root.children].forEach(el => {
+        if (OK_TAGS.has(el.tagName) || APP_ROOTS.has(el.id)) return;
+        try { el.remove(); } catch (e) { /* 확장이 지우기를 막아도 앱은 계속 */ }
+      });
+    });
+  };
+  sweep();
+  const mo = new MutationObserver(sweep);
+  mo.observe(document.documentElement, { childList: true });
+  if (document.body) mo.observe(document.body, { childList: true });
+})();
 /* ── 화면 글자 크기·글자체 ── */
 function applyDisplay() {
   document.documentElement.style.fontSize = Math.round(17 * (DB.settings.fontScale || 100) / 100) + 'px';
