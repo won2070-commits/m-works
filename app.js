@@ -808,7 +808,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v78 · 2026-07-23';
+const APP_VERSION = 'v79 · 2026-07-23';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -1688,13 +1688,23 @@ function tparseSlot(p) {
   const rows = p.tparse.filter(r => r.word || r.note);
   return rows.length ? rows.map(r => '- ' + r.word + (r.note ? ' — ' + r.note : '')).join('\n') : '(없음)';
 }
+/* 중심사상 점검표 — 각 알약(✓/✕)의 뜻. 알약을 누르면 이 설명이 나온다 */
+const CHECK_MEANING = {
+  oneSentence: '한 문장 — 중심사상이 두세 문장이 아니라 단 한 문장으로 서 있는가 (한 문장으로 말할 수 없으면 아직 캐지 못한 것)',
+  oneIdea: '한 가지 생각 — 여러 주제를 겹쳐 담지 않고 하나의 생각만 담았는가 (한 편의 설교에는 한 가지 생각만)',
+  textSpecific: '이 본문에서만 — 아무 본문에나 붙일 수 있는 일반론이 아니라, 이 본문에서만 나올 수 있는 문장인가',
+  reflectsStructure: '구조 반영 — 본문의 흐름과 구조(갈등→전환→해결 등)가 문장에 배어 있는가',
+  godAndResponse: '하나님+응답 — 하나님이 하신 일과 우리의 응답이 함께 담겼는가 (사람의 결심만 남으면 설교가 훈화가 됩니다)',
+  meaningfulToday: '오늘 의미 — 그때 그들만이 아니라 지금 이 회중에게 실제로 의미 있는 문장인가',
+  completeClaim: '완결된 주장 — 제목이나 구절 조각이 아니라 그 자체로 완결된 주장(주어+서술)인가',
+};
 function renderCentral(c) {
   const fcf = c.fcf || {};
   const checks = c.checks || {};
   const pills = [
     ['oneSentence', '한 문장'], ['oneIdea', '한 가지 생각'], ['textSpecific', '이 본문에서만'],
     ['reflectsStructure', '구조 반영'], ['godAndResponse', '하나님+응답'], ['meaningfulToday', '오늘 의미'], ['completeClaim', '완결된 주장'],
-  ].map(([k, l]) => `<span class="check-pill ${checks[k] ? 'ok' : 'no'}">${checks[k] ? '✓' : '✕'} ${l}</span>`).join('');
+  ].map(([k, l]) => `<span class="check-pill ${checks[k] ? 'ok' : 'no'}" data-ck="${k}" title="${esc(CHECK_MEANING[k])}" style="cursor:help">${checks[k] ? '✓' : '✕'} ${l}</span>`).join('');
   return `
     <div class="card">
       <h3>본문 관찰</h3>
@@ -1718,6 +1728,7 @@ function renderCentral(c) {
         <div class="sent-box hom"><span class="tag">③ 청중의 문장 — 지금·여기·우리에게 (설교적 중심사상)</span><textarea id="c-homiletical">${esc(c.homiletical)}</textarea></div>
       </div>
       <div class="checks">${pills}</div>
+      <p style="font-size:.72rem;color:var(--ink-soft);margin-top:6px">위 표시는 버튼이 아니라 <b>점검표</b>입니다 — ③ 청중의 문장이 로빈슨의 일곱 기준을 통과했는지 AI가 진단한 결과(✓ 통과 · ✕ 보완 필요)입니다. 각 항목을 누르면 뜻이 나옵니다.</p>
       ${checks.comment ? `<p style="font-size:.82rem;color:var(--ink-soft);margin-top:6px">${esc(checks.comment)}</p>` : ''}
       <div class="chip-row" style="margin-top:14px">
         ${['더 간결하게', '더 본문 중심으로', '더 설교적으로', '신학적으로 점검', '다른 중심사상 제안', '원래 의미와 오늘의 적용 비교'].map(r => `<button class="chip" data-refine="${r}">${r} ${AI_ICO}</button>`).join('')}
@@ -1753,6 +1764,10 @@ function bindCentral(p) {
     touch(p);
   };
   $$('#main textarea').forEach(el => el.addEventListener('change', grab));
+  $$('#main .check-pill[data-ck]').forEach(el => el.addEventListener('click', () => {
+    const meaning = CHECK_MEANING[el.dataset.ck];
+    if (meaning) toast((el.classList.contains('ok') ? '✓ 통과 · ' : '✕ 보완 필요 · ') + meaning, 8000);
+  }));
   $$('#main [data-refine]').forEach(b => b.addEventListener('click', async () => {
     grab();
     try {
@@ -1928,6 +1943,13 @@ function renderStep3(m, p) {
       <div class="card">
         <h3>부분 재작성 <span class="opt" style="font-weight:400;font-size:.78rem">— 누르면 그 부분이 원고 안 제자리에 바로 반영됩니다. 되돌리기도 한 번에 됩니다.</span></h3>
         <div class="chip-row">${PARTIAL_REQUESTS.map(r => `<button class="chip" data-partial="${esc(r)}">${esc(r)}</button>`).join('')}</div>
+      </div>
+      <div class="card">
+        <h3>형식 바꾸기 <span class="opt" style="font-weight:400;font-size:.78rem">— 쓴 원고를 다른 형식(그릇)에 옮겨 봅니다. 변환 전 원고는 버전에 보관되고, 비교 후 승인해야만 반영됩니다</span></h3>
+        <div class="btn-row" style="margin-top:0">
+          <button class="btn btn-primary" id="s3-reform" ${aiConnected() ? '' : 'disabled'}>🍶 다른 형식 적용해 보기 ${AI_ICO}</button>
+          <span style="font-size:.76rem;opacity:.8">현재 형식: <b>${esc(formName(p.form.selected) || '미정')}</b></span>
+        </div>
       </div>
       ${renderSongCard(p)}
       <div class="card">
@@ -2377,6 +2399,8 @@ function bindEditor(p) {
   bindSongCard(p);
   const titleBtn = $('#s3-title');
   if (titleBtn) titleBtn.addEventListener('click', () => suggestTitles(p));
+  const reformBtn = $('#s3-reform');
+  if (reformBtn) reformBtn.addEventListener('click', () => { syncEditor(); openConvertPicker(p); });
   const regenBtn = $('#s3-regen');
   if (regenBtn) regenBtn.addEventListener('click', () => {
     if (confirm('원고 전체를 다시 생성할까요? 현재 원고는 버전으로 보관됩니다.')) generateSermon(p, true);
@@ -2446,20 +2470,22 @@ async function suggestTitles(p) {
     const list = (r.titles || []).filter(t => t && t.title);
     if (!list.length) { toast('제목을 만들지 못했습니다. 다시 시도해 주세요.'); return; }
     const body = modal('제목 추천 — ' + esc(p.passage.ref), `
-      ${r.best ? `<div class="rec-best" style="margin-bottom:14px">
+      <p style="font-size:.8rem;color:var(--ink-soft);margin-top:0">마음에 드는 제목을 <b>누르면 바로 원고 제목이 됩니다</b>. (현재 제목은 버전 기록에 남습니다)</p>
+      ${r.best ? `<div class="rec-best" data-ttbest="1" style="margin-bottom:14px;cursor:pointer" title="누르면 이 제목이 원고 제목이 됩니다">
         <div class="rec-name">첫손 — ${esc(r.best)}</div>
         ${r.bestWhy ? `<p>${esc(r.bestWhy)}</p>` : ''}
         ${r.subtitle ? `<div class="meta"><b>부제 제안</b> ${esc(r.subtitle)}</div>` : ''}
+        <div class="btn-row" style="margin-top:8px"><button class="btn btn-primary btn-sm" style="pointer-events:none">✓ 이 제목 쓰기</button></div>
       </div>` : ''}
       <div id="tt-list">
         ${list.map((t, i) => `
-          <div class="fb-item" style="background:var(--surface-soft);display:flex;gap:10px;align-items:flex-start">
+          <div class="fb-item" data-tt="${i}" style="background:var(--surface-soft);display:flex;gap:10px;align-items:flex-start;cursor:pointer" title="누르면 이 제목이 원고 제목이 됩니다">
             <div style="flex:1">
               <div style="font-size:1rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:3px">${esc(t.title)}</div>
               <div style="font-size:.76rem;opacity:.85">${esc(t.technique || '')}${t.why ? ' — ' + esc(t.why) : ''}</div>
               ${t.borrowed ? `<div style="font-size:.74rem;opacity:.75;margin-top:3px">📎 빌려온 구절: ${esc(t.borrowed)}</div>` : ''}
             </div>
-            <button class="btn btn-primary btn-sm" data-tt="${i}" style="flex-shrink:0">이 제목 쓰기</button>
+            <button class="btn btn-primary btn-sm" style="flex-shrink:0;pointer-events:none">✓ 이 제목 쓰기</button>
           </div>`).join('')}
       </div>
       <div class="btn-row"><button class="btn btn-ghost btn-sm" id="tt-again" ${aiConnected() ? '' : 'disabled'}>다시 추천받기 ${AI_ICO}</button>
@@ -2467,6 +2493,8 @@ async function suggestTitles(p) {
     body.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => {
       applyTitle(p, list[+b.dataset.tt].title);
     }));
+    const bestEl = body.querySelector('[data-ttbest]');
+    if (bestEl) bestEl.addEventListener('click', () => applyTitle(p, r.best));
     body.querySelector('#tt-again').addEventListener('click', () => { closeModal(); suggestTitles(p); });
     body.querySelector('#tt-copy').addEventListener('click', () => {
       navigator.clipboard.writeText(list.map(t => t.title + '  (' + (t.technique || '') + ')').join('\n'));
@@ -2475,6 +2503,7 @@ async function suggestTitles(p) {
   } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
 }
 function applyTitle(p, title) {
+  snapshot(p, '제목 변경 전'); // 이전 제목이 담긴 원고를 버전으로 보관
   p.title = title;
   const div = document.createElement('div');
   div.innerHTML = p.draft.html;
@@ -2881,6 +2910,10 @@ function renderStep4(m, p) {
         <button class="btn btn-ghost" id="s4-other">다른 형식 적용해 보기</button>
         ${!aiConnected() ? '<span style="font-size:.8rem;color:var(--red)">AI 미연결 — 아래에서 직접 고를 수 있습니다</span>' : ''}
       </div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--hairline)">
+        <div style="font-size:.72rem;font-family:var(--mono);letter-spacing:.03em;opacity:.7;margin-bottom:6px">형식 종류 한눈에 보기 — 누르면 설명과 함께 고를 수 있습니다${p.form.selected ? ` · 현재: <b>${esc(formName(p.form.selected))}</b>` : ''}</div>
+        <div class="chip-row">${allForms().map(f => `<button class="chip" data-formchip="${esc(f.key)}" title="${esc(f.desc)}" ${p.form.selected === f.key ? 'style="border-color:var(--ink);font-weight:700"' : ''}>${esc(f.name)}</button>`).join('')}</div>
+      </div>
     </div>
     <div id="s4-rec2">${p.form.rec2 ? renderRec2(p, p.form.rec2) : ''}</div>
     ${p.form.selected ? `
@@ -2920,6 +2953,7 @@ function renderStep4(m, p) {
   }));
   $('#s4-pick').addEventListener('click', () => recommendForm2(p));
   $('#s4-other').addEventListener('click', () => openFormPicker(p));
+  $$('#main [data-formchip]').forEach(b => b.addEventListener('click', () => openFormPicker(p, b.dataset.formchip)));
   const mapEl = $('#s4-map');
   if (mapEl) { let mt; mapEl.addEventListener('input', () => { clearTimeout(mt); mt = setTimeout(() => { p.form.map = mapEl.value; touch(p); }, 700); }); }
   const goW = $('#s4-go-write');
@@ -3019,19 +3053,28 @@ function pickForm(p, key, outlineLines) {
   touch(p); render();
   toast(formName(key) + ' 형식을 선택했습니다. 설교 지도를 다듬고 4단계로 가세요.');
 }
-/* 다른 형식 적용해 보기 — 목록에서 골라 개요를 만들고 나란히 비교 */
-function openFormPicker(p) {
+/* 다른 형식 적용해 보기 — 목록에서 골라 개요를 만들고 나란히 비교
+ * focusKey를 주면 그 형식 카드로 스크롤해 잠깐 강조한다 (형식 한눈에 보기 칩에서 진입) */
+function openFormPicker(p, focusKey) {
   const body = modal('다른 형식 적용해 보기', `
     <p style="font-size:.84rem;color:var(--ink-soft)">형식을 고르면 <b>현재 중심사상을 보존한 채 그 형식의 개요만</b> 만듭니다. 설교문 전체를 생성하지 않습니다.</p>
     <div class="form-cards" style="grid-template-columns:1fr 1fr">
       ${allForms().map(f => `
-        <div class="fcard">
+        <div class="fcard" data-fkey="${esc(f.key)}">
           <h4>${esc(f.name)}${p.form.selected === f.key ? ' <span class="badge">현재</span>' : ''}</h4>
           <p>${esc(f.desc)}</p>
           <button class="btn btn-primary btn-sm" data-try="${esc(f.key)}" ${aiConnected() ? '' : 'disabled'}>개요 만들어 비교 ${AI_ICO}</button>
           <button class="btn btn-ghost btn-sm" data-justpick="${esc(f.key)}">개요 없이 이 형식 선택</button>
         </div>`).join('')}
     </div>`);
+  if (focusKey) {
+    const card = body.querySelector(`.fcard[data-fkey="${CSS.escape(focusKey)}"]`);
+    if (card) {
+      card.style.outline = '2px solid var(--ink)';
+      setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+      setTimeout(() => { card.style.outline = ''; }, 2600);
+    }
+  }
   body.querySelectorAll('[data-justpick]').forEach(b => b.addEventListener('click', () => { closeModal(); pickForm(p, b.dataset.justpick, null); }));
   body.querySelectorAll('[data-try]').forEach(b => b.addEventListener('click', async () => {
     const key = b.dataset.try;
@@ -3139,6 +3182,20 @@ function renderFormGroups(p, fits) {
       </div>
       <div class="form-cards">${forms.map(fcard).join('')}</div>`;
   }).join('');
+}
+/* 형식 바꾸기(4단계 다듬기 도구) — 목록에서 골라 지금 원고를 안전 변환 */
+function openConvertPicker(p) {
+  const body = modal('형식 바꾸기 — 다른 형식을 적용해 보기', `
+    <p style="font-size:.84rem;color:var(--ink-soft)">형식을 고르면 <b>지금 원고를 그 형식으로 변환해 미리 보여</b> 줍니다. 중심사상·본문 의미·주요 예화는 보존되고, 변환 전 원고는 자동으로 버전에 보관되며 <b>비교 후 승인해야만</b> 반영됩니다.</p>
+    <div class="form-cards" style="grid-template-columns:1fr 1fr">
+      ${allForms().map(f => `
+        <div class="fcard">
+          <h4>${esc(f.name)}${p.form.selected === f.key ? ' <span class="badge">현재</span>' : ''}</h4>
+          <p>${esc(f.desc)}</p>
+          <button class="btn btn-primary btn-sm" data-cv="${esc(f.key)}" ${aiConnected() ? '' : 'disabled'}>이 형식으로 변환해 비교 ${AI_ICO}</button>
+        </div>`).join('')}
+    </div>`);
+  body.querySelectorAll('[data-cv]').forEach(b => b.addEventListener('click', () => { closeModal(); convertFormat(p, b.dataset.cv); }));
 }
 async function convertFormat(p, key) {
   const f = allForms().find(f => f.key === key);
@@ -3263,8 +3320,7 @@ function renderStep5(m, p) {
         <button class="btn btn-primary" id="s5-feedback" ${aiConnected() ? '' : 'disabled'}>내용 + 전달 피드백 받기 ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s5-unity" ${aiConnected() ? '' : 'disabled'}>전진·순서·통일 점검 (곽안련) ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s5-gestures" ${aiConnected() ? '' : 'disabled'}>제스처 5~10개 제안 ${AI_ICO}</button>
-        <button class="btn btn-ghost" id="s5-breaths" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 자리 찾기 ${AI_ICO}</button>
-        <button class="btn btn-ghost" id="s5-stress" ${aiConnected() ? '' : 'disabled'}>강약 자리 찾기 ${AI_ICO}</button>
+        <button class="btn btn-ghost" id="s5-bs" ${aiConnected() ? '' : 'disabled'}>쉼·멈춤 + 강약 자리 찾기 ${AI_ICO}</button>
         <button class="btn btn-ai" id="s5-genius" ${aiConnected() ? '' : 'disabled'}>💎 천재화 — 평가와 아이디어 ${AI_ICO}</button>
         <button class="btn btn-gold" id="s5-rehearse">🎤 리허설 모드 시작</button>
       </div>
@@ -3312,12 +3368,11 @@ function renderStep5(m, p) {
     </details>`;
   $('#s5-feedback').addEventListener('click', () => getFeedback(p));
   $('#s5-gestures').addEventListener('click', () => getGestures(p));
-  $('#s5-breaths').addEventListener('click', () => getBreaths(p));
+  $('#s5-bs').addEventListener('click', () => getBreathsStress(p));
   const unBtn = $('#s5-unity');
   if (unBtn) unBtn.addEventListener('click', () => getUnity3(p));
   $('#s5-genius').addEventListener('click', () => getGenius(p));
   bindSongCard(p);
-  $('#s5-stress').addEventListener('click', () => getStress(p));
   const stIns = $('#s5-st-insert');
   if (stIns) stIns.addEventListener('click', () => insertStressMarks(p));
   const stView = $('#s5-st-view');
@@ -3547,6 +3602,18 @@ function insertStressMarks(p) {
   touch(p); render();
   toast(ok + '곳에 강약 표시를 넣었습니다.' + (ok < marks.length ? ' (' + (marks.length - ok) + '곳은 문장을 찾지 못했습니다)' : ''));
 }
+/* 쉼·멈춤 + 강약을 한 번에 — 두 분석을 이어 받아 한 화면에 함께 표시 */
+async function getBreathsStress(p) {
+  syncEditor();
+  try {
+    setProgressEta(105, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '힘이 실릴 낱말을 고르는 중…', '흘려보낼 대목을 찾는 중…', '한 화면에 정리하는 중…']);
+    const b = await callAIJson('breaths', { draft: htmlToText(p.draft.html) }, { label: '① 낭독 호흡(쉼·멈춤)을 분석하는 중…' });
+    p.rehearsal.breaths = b; touch(p);
+    const s = await callAIJson('stress', { draft: htmlToText(p.draft.html).slice(0, 16000) }, { label: '② 강약을 줄 자리를 찾는 중…' });
+    p.rehearsal.stress = s; touch(p); render();
+    openMarkedScript(p, 'bs'); // 쉼·멈춤과 강약을 한 원고 위에 함께 표시
+  } catch (e) { if (e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+}
 async function getBreaths(p) {
   try {
     setProgressEta(45, ['문장을 소리로 재는 중…', '쉼과 멈춤 자리를 찾는 중…', '정리하는 중…']);
@@ -3630,6 +3697,7 @@ function openMarkedScript(p, type) {
   const S = (r.stress && r.stress.marks) || [];
   // 한 종류만 볼 때 / 세 가지를 함께 볼 때
   const want = type === 'all' ? ['gestures', 'breaths', 'stress']
+             : type === 'bs' ? ['breaths', 'stress']
              : type === 'gestures' ? ['gestures'] : type === 'stress' ? ['stress'] : ['breaths'];
   const pool = [];
   if (want.includes('gestures')) G.forEach((x, i) => pool.push({ kindType: 'gestures', it: x, n: i }));
@@ -3679,7 +3747,7 @@ function openMarkedScript(p, type) {
     }
     html = d.innerHTML;
   }
-  const titles = { all: '낭독 표시 원고 — 제스처 · 쉼멈춤 · 강약', gestures: '제스처 위치 — 설교 원고', breaths: '쉼·멈춤 위치 — 설교 원고', stress: '강약 위치 — 설교 원고' };
+  const titles = { all: '낭독 표시 원고 — 제스처 · 쉼멈춤 · 강약', bs: '쉼·멈춤 + 강약 위치 — 설교 원고', gestures: '제스처 위치 — 설교 원고', breaths: '쉼·멈춤 위치 — 설교 원고', stress: '강약 위치 — 설교 원고' };
   const legend = [
     want.includes('gestures') && G.length ? '<span class="lg"><b class="gmark" style="pointer-events:none">🖐</b> 제스처</span>' : '',
     want.includes('breaths') && B.length ? '<span class="lg"><b class="gmark bmark" style="pointer-events:none">∕ ⏸</b> 쉼·멈춤</span>' : '',
@@ -4606,9 +4674,12 @@ function openExport() {
       <button class="btn btn-ghost" data-ex="print">인쇄용 원고 🖨</button>
       <button class="btn btn-ghost" data-ex="print-large">강단용 큰 글씨 🖨</button>
     </div>
-    <p class="ai-note" style="margin-top:14px"><b>아래한글 안내</b> — .doc 파일은 아래한글에서 그대로 열립니다(파일 → 불러오기). .hwp 형식의 직접 생성은 지원하지 않으며, 정식 .hwpx 내보내기는 다음 버전에서 제공할 예정입니다.<br>
+    <p class="ai-note" style="margin-top:14px">💾 <b>앱 보관함 저장</b> — 내보내기와 상관없이, 이 설교는 지금 상태 그대로 앱 <b>보관함에 자동 저장</b>되어 있습니다. 파일로 내보내지 않아도 언제든 보관함에서 다시 열어 이어서 작업할 수 있습니다.
+    <button class="chip" id="ex-archive" style="margin-left:6px">보관함 열어 확인</button></p>
+    <p class="ai-note" style="margin-top:8px"><b>아래한글 안내</b> — .doc 파일은 아래한글에서 그대로 열립니다(파일 → 불러오기). .hwp 형식의 직접 생성은 지원하지 않으며, 정식 .hwpx 내보내기는 다음 버전에서 제공할 예정입니다.<br>
     <b>성경 저작권 안내</b> — 개역개정 등 번역본 전문을 포함해 배포할 경우 해당 번역본의 사용 허락 규정을 확인하세요.</p>`);
   body.querySelectorAll('[data-ex]').forEach(b => b.addEventListener('click', () => doExport(p, b.dataset.ex)));
+  body.querySelector('#ex-archive').addEventListener('click', () => { closeModal(); curView = 'archive'; render(); });
 }
 function buildExportHtml(p, opt) {
   const c = p.central || {};
