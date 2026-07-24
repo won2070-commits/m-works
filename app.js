@@ -811,7 +811,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v92 · 2026-07-24';
+const APP_VERSION = 'v93 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -4547,17 +4547,13 @@ function renderMaterials(m) {
     <div class="step-head">MATERIALS</div>
     <h1 class="step-title">자료 서랍</h1>
     <p class="step-desc">예화·통계·간증·인용·메모를 모아 두는 서랍입니다. 여기 담긴 자료는 설교문 작성 때 AI가 필요한 곳곳에 인용해 활용합니다.</p>
-    <h3 style="margin:4px 0 10px">🗄 담긴 자료 <span class="badge" style="background:var(--lime);font-weight:700">${DB.materials.length}개</span></h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:4px 0 10px">
+      <h3 style="margin:0">🗄 담긴 자료 <span class="badge" style="background:var(--lime);font-weight:700">${DB.materials.length}개</span></h3>
+      <button class="btn btn-ghost btn-sm" id="ilib-open">🏛 예화 창고</button>
+    </div>
     ${DB.materials.length > 3 ? '<div class="proj-toolbar"><input id="mat-q" placeholder="🔍 자료 검색 (제목·내용·태그)"></div>' : '<div style="display:none"><input id="mat-q"></div>'}
     <div id="mat-list">${renderMatList('')}</div>
-    <details class="card" style="display:block;margin-top:22px;padding:16px 20px">
-      <summary style="cursor:pointer;font-weight:600">🏛 예화 창고 <span class="badge" style="background:var(--lilac);font-weight:700">${DB.illustLib.length}편</span> <span class="badge" style="background:var(--mint)">자동 사용</span></summary>
-      <p class="ai-note" style="margin-top:10px">여기 담긴 예화는 <b>위 자료 개수에 잡히지 않고, 작성 전 확인창에도 나오지 않습니다.</b> 설교문을 쓸 때마다 앱이 설교 주제를 읽고 창고에서 가장 어울리는 예화 <b>한 편</b>을 스스로 골라 알맞은 자리에 넣습니다. 에버노트 내보내기(.enex) 파일을 아래 자료 담기 칸에 끌어다 놓으면 이 창고로 들어옵니다.</p>
-      ${DB.illustLib.length ? `
-        <div class="proj-toolbar" style="margin-top:10px"><input id="ilib-q" placeholder="🔍 예화 검색 (제목·내용·태그)"></div>
-        <div id="ilib-list">${renderIlibList('')}</div>
-        <div class="btn-row" style="margin-top:10px"><button class="btn btn-danger btn-sm" id="ilib-clear">창고 비우기</button></div>` : ''}
-    </details>
+
     <div class="card" style="margin-top:22px">
       <h3>＋ 자료 담기 — 끌어다 놓기 · 붙여넣기</h3>
       <div id="ref-drop" class="dropzone">
@@ -4591,11 +4587,32 @@ function renderMaterials(m) {
   bindMatList();
   bindMatPlace(); // 서랍 안에서도 넣을 자리 지정
   bindRefDrop();
-  if ($('#ilib-q')) $('#ilib-q').addEventListener('input', e => { $('#ilib-list').innerHTML = renderIlibList(e.target.value); bindIlibList(); });
+  $('#ilib-open').addEventListener('click', openIlibModal);
+}
+/* 예화 창고 창 — 버튼을 눌렀을 때만 전체 목록·검색이 보인다 */
+function openIlibModal() {
+  const body = modal('🏛 예화 창고', `
+    <p class="ai-note">설교문을 쓸 때마다 앱이 주제를 읽고 이 창고에서 가장 어울리는 예화 <b>한 편</b>을 스스로 골라 알맞은 자리에 넣습니다. 창고의 예화는 <b>자료 개수에 잡히지 않고, 작성 전 확인창에도 나오지 않습니다.</b> 에버노트(.enex) 파일을 자료 서랍에 끌어다 놓으면 이 창고로 들어옵니다.</p>
+    <div class="proj-toolbar" style="margin-top:12px"><input id="ilib-q" placeholder="🔍 예화 검색 (제목·내용·태그)"></div>
+    <div id="ilib-list" style="max-height:52vh;overflow:auto">${renderIlibList('')}</div>
+    <div class="btn-row" style="margin-top:14px">
+      ${DB.materials.length ? `<button class="btn btn-ghost btn-sm" id="ilib-movein">서랍의 일반 자료 ${DB.materials.length}개를 모두 창고로 옮기기</button>` : ''}
+      ${DB.illustLib.length ? `<button class="btn btn-danger btn-sm" id="ilib-clear">창고 비우기</button>` : ''}
+      <button class="btn btn-ghost btn-sm" id="ilib-close">닫기</button>
+    </div>`);
+  $('#ilib-q').addEventListener('input', e => { $('#ilib-list').innerHTML = renderIlibList(e.target.value); bindIlibList(); });
   bindIlibList();
-  if ($('#ilib-clear')) $('#ilib-clear').addEventListener('click', () => {
-    if (confirm('예화 창고를 모두 비울까요? (' + DB.illustLib.length + '편)')) { DB.illustLib = []; save(true); render(); }
+  if ($('#ilib-movein')) $('#ilib-movein').addEventListener('click', () => {
+    if (!confirm('서랍의 일반 자료 ' + DB.materials.length + '개를 모두 예화 창고로 옮길까요?\n(옮긴 뒤 서랍은 비고, 예화는 자동으로만 사용됩니다)')) return;
+    DB.illustLib = DB.materials.map(m0 => Object.assign({}, m0, { type: '예화' })).concat(DB.illustLib);
+    DB.materials = [];
+    save(true); closeModal(); render();
+    toast('🏛 모두 예화 창고로 옮겼습니다 — 설교문을 쓸 때마다 자동으로 골라 씁니다.', 6000);
   });
+  if ($('#ilib-clear')) $('#ilib-clear').addEventListener('click', () => {
+    if (confirm('예화 창고를 모두 비울까요? (' + DB.illustLib.length + '편)')) { DB.illustLib = []; save(true); closeModal(); render(); }
+  });
+  $('#ilib-close').addEventListener('click', closeModal);
 }
 function renderIlibList(q) {
   let list = DB.illustLib;
@@ -4651,6 +4668,7 @@ function renderMatList(q) {
         ${Date.now() - (x.createdAt || 0) < 180000 ? '<span class="badge" style="background:var(--lime);font-weight:700">✓ 방금 담김</span>' : ''}
         <label style="font-size:.7rem;opacity:.75">넣을 자리</label>${matPlaceSelect(x)}
         ${x.tags ? `<span style="font-size:.7rem;opacity:.858">${esc(x.tags)}</span>` : ''}
+        <button class="btn btn-ghost btn-sm" data-mat2lib="${x.id}" title="예화 창고로 옮기기 (자동 사용)">🏛 창고로</button>
         <button class="btn btn-danger btn-sm" data-matdel="${x.id}">삭제</button>
       </div>
       <div style="font-size:.86rem;margin-top:8px;white-space:pre-wrap">${esc(x.content)}</div>
@@ -4659,6 +4677,12 @@ function renderMatList(q) {
 function bindMatList() {
   $$('#mat-list [data-matdel]').forEach(b => b.addEventListener('click', () => {
     if (confirm('이 자료를 삭제할까요?')) { DB.materials = DB.materials.filter(x => x.id !== b.dataset.matdel); save(true); render(); }
+  }));
+  $$('#mat-list [data-mat2lib]').forEach(b => b.addEventListener('click', () => {
+    const m0 = DB.materials.find(x => x.id === b.dataset.mat2lib); if (!m0) return;
+    DB.materials = DB.materials.filter(x => x.id !== m0.id);
+    DB.illustLib.unshift(Object.assign({}, m0, { type: '예화' }));
+    save(true); render(); toast('「' + m0.title + '」을(를) 예화 창고로 옮겼습니다 — 이제 자동으로 사용됩니다.');
   }));
 }
 const MAT_PLACES = ['자동', '서론', '본론', '1대지', '2대지', '3대지', '적용', '결론', '마무리'];
