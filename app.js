@@ -649,6 +649,7 @@ const SPEED_TIERS = {
   centralRefine: { effort: 'low' },
   tparse:        { effort: 'low' },   // 관찰 보완 — 본문 지식 필요, 궁리는 얕게
   illustPick:    { effort: 'low' },   // 예화 창고 선별 — 고르기만, 빠르게
+  passageVersions:{ effort: 'low' },  // 쉬운 말·NIV 병기 — 옮기기만, 빠르게
   insertBlock:   { effort: 'low' },   // 골라 넣기 이음새 — 빠르게
   formOutline:   { effort: 'low' },   // 개요만 — 빠르게
   introFive:     { effort: 'low' },   // 첫 세 줄 후보 — 빠르게
@@ -833,7 +834,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v97 · 2026-07-24';
+const APP_VERSION = 'v98 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -1567,6 +1568,26 @@ function bindRefDrop() {
 }
 
 /* ═══════════════════ 1단계: 본문 찾기 ═══════════════════ */
+/* 확정 본문을 쉬운 말 풀이 + NIV로 함께 보여준다 (개역개정 아래 병기) */
+let versionsBusy = false;
+async function getPassageVersions(p, manual) {
+  if (versionsBusy || !p.passage.text) return;
+  versionsBusy = true;
+  p.passage.versionsTried = true;
+  try {
+    if (manual) setProgressEta(35, ['본문을 읽는 중…', '쉬운 말로 옮기는 중…', 'NIV를 찾는 중…']);
+    const r = await callAIJson('passageVersions', {
+      ref: p.passage.ref, passageText: p.passage.text,
+    }, manual ? { label: '쉬운 말·NIV 본문을 준비하는 중…' } : { silent: true });
+    if (r && (r.easy || r.niv)) {
+      p.passage.versions = { easy: r.easy || '', niv: r.niv || '' };
+      touch(p);
+      if (curStep === 1 && cur() && cur().id === p.id) render();
+      if (manual) toast('쉬운 말 풀이와 NIV를 본문 아래에 함께 넣었습니다.');
+    }
+  } catch (e) { if (manual && e.message !== 'no-ai') toast('오류: ' + e.message, 5000); }
+  versionsBusy = false;
+}
 function renderStep1(m, p) {
   const hasInput = !!p.inputs.passage;
   m.innerHTML = `
@@ -1585,8 +1606,20 @@ function renderStep1(m, p) {
         <label>본문 전문 (${esc(DB.settings.translation)}) <span class="opt">— 성경에서 복사해 붙여넣어 주세요. 정확한 인용을 위해 AI가 임의로 생성하지 않습니다.</span></label>
         <textarea id="s1-text" style="min-height:120px" placeholder="본문 전문을 붙여넣으면 2·3단계의 분석과 인용이 정확해집니다.">${esc(p.passage.text)}</textarea>
       </div>
+      <div id="s1-versions-box">
+        ${p.passage.versions ? `
+        <div class="field" style="margin-top:12px">
+          <label>쉬운 말로 <span class="opt">— AI가 현대어로 풀어 쓴 참고용 문장입니다</span></label>
+          <div class="verse-alt">${esc(p.passage.versions.easy || '')}</div>
+        </div>
+        <div class="field">
+          <label>영어 성경 (NIV) <span class="opt">— AI 회상본입니다. 설교에 인용하기 전에 성경과 대조해 주세요</span></label>
+          <div class="verse-alt">${esc(p.passage.versions.niv || '')}</div>
+        </div>` : ''}
+      </div>
       <div class="btn-row">
         <button class="btn btn-primary" id="s1-go2">2단계 중심사상으로 →</button>
+        <button class="btn btn-ghost" id="s1-versions" ${(aiConnected() && p.passage.text) ? '' : 'disabled'}>${p.passage.versions ? '쉬운 말·NIV 다시 불러오기' : '📖 쉬운 말·영어(NIV) 함께 보기'} ${AI_ICO}</button>
         <button class="btn btn-ghost" id="s1-unconfirm">본문 다시 정하기</button>
       </div>
     </div>` : '';
@@ -1627,15 +1660,18 @@ function renderStep1(m, p) {
   body.innerHTML = confirmedCard + inputCard + recommendCard;
 
   if (p.passage.confirmed) {
-    $('#s1-text').addEventListener('change', e => { p.passage.text = e.target.value; touch(p); });
+    $('#s1-text').addEventListener('change', e => { p.passage.text = e.target.value; p.passage.versions = null; p.passage.versionsTried = false; touch(p); });
     $('#s1-go2').addEventListener('click', () => { p.passage.text = $('#s1-text').value; touch(p); gotoStep(2); });
     $('#s1-unconfirm').addEventListener('click', () => { p.passage.confirmed = false; touch(p); render(); });
+    $('#s1-versions').addEventListener('click', () => getPassageVersions(p, true));
+    // 본문 전문이 있으면 쉬운 말·NIV를 자동으로 함께 준비 (실패해도 한 번만 시도)
+    if (aiConnected() && p.passage.text && !p.passage.versions && !p.passage.versionsTried) getPassageVersions(p, false);
     return;
   }
   $('#s1-confirm').addEventListener('click', () => {
     const ref = $('#s1-ref').value.trim();
     if (!ref) { toast('본문을 입력해 주세요.'); return; }
-    if (p.passage.ref && p.passage.ref !== ref) p.passage.text = '';   // 본문이 바뀌면 이전 전문 제거 (다른 구절이 남는 버그 방지)
+    if (p.passage.ref && p.passage.ref !== ref) { p.passage.text = ''; p.passage.versions = null; p.passage.versionsTried = false; }   // 본문이 바뀌면 이전 전문·병기 번역 제거 (다른 구절이 남는 버그 방지)
     p.passage.ref = ref; p.passage.confirmed = true; touch(p); render();
     autoFillPassage(p);
   });
@@ -1701,7 +1737,7 @@ function bindCands(p) {
   }));
   $$('#s1-cands [data-pick]').forEach(b => b.addEventListener('click', () => {
     const c = p.passage.candidates[+b.dataset.pick];
-    if (p.passage.ref && p.passage.ref !== c.ref) p.passage.text = '';   // 본문이 바뀌면 이전 전문 제거
+    if (p.passage.ref && p.passage.ref !== c.ref) { p.passage.text = ''; p.passage.versions = null; p.passage.versionsTried = false; }   // 본문이 바뀌면 이전 전문·병기 번역 제거
     p.passage.ref = c.ref; p.passage.genre = c.genre || ''; p.passage.confirmed = true;
     touch(p); render();
     autoFillPassage(p);
