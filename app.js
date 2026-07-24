@@ -811,7 +811,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v94 · 2026-07-24';
+const APP_VERSION = 'v95 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -2991,6 +2991,18 @@ async function partialRewrite(p, request, customInstr) {
       '지킬 것: 본문 해석과 신학적 주장, 중심사상, 대지 구조, 인용한 성경 구절, 설교자 개인의 경험과 목소리는 **바꾸지 마라**. 새 내용을 지어 넣지 마라. 분량은 원래와 비슷하게 유지하라.\n' +
       '원고 맨 끝에 "---" 한 줄을 두고 그 아래 "### 손본 곳"이라는 제목으로, 무엇을 왜 바꿨는지 5~8줄로 정리하라(예: "「~하는 바입니다」 → 「~합니다」 · 문어투 정리").';
   }
+  if (request.includes('예화')) {
+    const cands = illustCandsFor(p, 5);
+    if (cands.length) {
+      toast('🏛 예화 창고에서 이번 설교 주제에 맞는 예화를 찾는 중… (' + DB.illustLib.length + '편 중)', 5000);
+      fullRequest = (customInstr || request) +
+        '\n\n[설교자의 예화 창고에서 주제와 가까운 순으로 고른 후보들]\n' +
+        cands.map((n, i) => (i + 1) + '. 「' + n.title + '」' + (n.tags ? ' (태그: ' + n.tags + ')' : '') + '\n' + n.content.slice(0, 1200)).join('\n\n') +
+        '\n\n규칙: 예화를 지어내지 말고, 위 후보 중 이 설교의 중심사상과 가장 맞닿는 것을 골라 원고의 문맥에 맞게 다듬어 쓰라. 어떤 것을 골랐는지 표시하지 말고 자연스럽게 녹여라. 후보가 하나도 어울리지 않을 때만 새로 쓰되 반드시 "(가상 예시)"를 붙여라.';
+    } else {
+      toast('예화 창고가 비어 있어 AI가 새로 짓습니다 — 창고에 예화를 담아 두면 그중에서 골라 씁니다.', 5000);
+    }
+  }
   if (request.includes('유머')) {
     fullRequest = '이 설교의 알맞은 자리에 넣을 유머를 만들라. 규칙: ①회중을 웃기려고 설교를 멈추지 말 것 — 유머는 메시지로 가는 다리여야 하고, 웃음 직후 반드시 본론으로 이어지는 한 문장이 따라붙어야 한다 ②설교자 자신을 낮추는 자기 비하형이나, 누구나 겪는 일상의 관찰형으로 할 것 ③특정 인물·직업·세대·성별·지역·외모를 웃음거리로 삼지 말 것 ④정치·시사 풍자 금지 ⑤성경 인물이나 하나님을 가볍게 만들지 말 것 ⑥한국 강단의 품위를 지킬 것 — 억지 개그·유행어 남용 금지 ⑦지어낸 실화를 설교자의 경험처럼 쓰지 말 것(가상 예시는 "(가상 예시)" 표시). 서로 다른 자리에 쓸 유머 2~3개를 제안하되, 각각 ⓐ들어갈 위치(어느 대목 뒤) ⓑ그대로 읽을 수 있는 완성된 문장 ⓒ이어지는 연결 문장 ⓓ웃음이 안 터졌을 때의 대비책 한 줄을 함께 쓰라.';
   }
@@ -4631,9 +4643,9 @@ function bindIlibList() {
     $('#ilib-list').innerHTML = renderIlibList($('#ilib-q') ? $('#ilib-q').value : ''); bindIlibList();
   }));
 }
-/* 예화 창고 자동 선별 — 주제 키워드로 후보를 추리고, AI가 하나를 골라 자리까지 정한다 */
-async function pickIllustFromLib(p) {
-  const lib = DB.illustLib || []; if (!lib.length) return null;
+/* 예화 창고 — 설교 주제와 가까운 순으로 후보를 추린다 (태그 3점·제목 2점·본문 1점) */
+function illustCandsFor(p, count) {
+  const lib = DB.illustLib || []; if (!lib.length) return [];
   const c = p.central || {};
   const seed = [p.title, p.passage.ref, p.inputs.topic, c.homiletical, c.exegetical, c.subject, c.complement].filter(Boolean).join(' ');
   const toks = [...new Set(((seed.toLowerCase().match(/[가-힣a-z]{2,}/g)) || []))];
@@ -4642,8 +4654,12 @@ async function pickIllustFromLib(p) {
     let s = 0; toks.forEach(w => { if (t.includes(w)) s += 3; if (ti.includes(w)) s += 2; if (co.includes(w)) s += 1; });
     return s;
   };
-  const ranked = lib.map(n => ({ n, s: scoreOf(n) })).sort((x, y) => y.s - x.s);
-  const cands = ranked.slice(0, 8).map(x => x.n);
+  return lib.map(n => ({ n, s: scoreOf(n) })).sort((x, y) => y.s - x.s).slice(0, count).map(x => x.n);
+}
+/* 예화 창고 자동 선별 — 후보를 추리고, AI가 하나를 골라 자리까지 정한다 */
+async function pickIllustFromLib(p) {
+  const cands = illustCandsFor(p, 8);
+  if (!cands.length) return null;
   const listTxt = cands.map((n, i) => (i + 1) + ' | ' + n.title + ' | ' + (n.tags || '-') + ' | ' + n.content.slice(0, 140).replace(/\n/g, ' ')).join('\n');
   try {
     const r = await callAIJson('illustPick', {
