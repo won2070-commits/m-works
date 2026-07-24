@@ -983,3 +983,6 @@ html { scroll-behavior: smooth; }
 /* 로고스 내 서재 결과 */
 .logos-lib-item { display: block; width: 100%; text-align: left; font-size: .76rem; padding: 6px 8px; margin-top: 4px; border: 1px solid var(--hairline); border-radius: 8px; background: var(--canvas); cursor: pointer; }
 .logos-lib-item:hover { border-color: var(--ink); }
+
+/* 보관함 표 행 — 밀어서 삭제 */
+.proj-table tr.ar-row { touch-action: pan-y; }
