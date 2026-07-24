@@ -811,7 +811,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v93 · 2026-07-24';
+const APP_VERSION = 'v94 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -1168,7 +1168,6 @@ $('#btn-nav-exit').addEventListener('click', () => {
 });
 $('#top-settings').addEventListener('click', openSettings);
 $('#btn-back').addEventListener('click', goBack);
-$('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);
 $$('#step-nav li').forEach(li => li.addEventListener('click', () => {
   const s = +li.dataset.step;

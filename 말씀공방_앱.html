@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=93">
+<link rel="apple-touch-icon" href="icon-192.png?v=94">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -1038,7 +1038,6 @@ html { scroll-behavior: smooth; }
     <div class="nav-progress"><div class="nav-progress-bar" id="nav-progress-bar"></div></div>
     <div class="nav-progress-label" id="nav-progress-label">진행률 0%</div>
     <div class="nav-footer">
-      <button class="nav-link" id="btn-save"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>저장</button>
       <button class="nav-link" id="btn-export"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>내보내기</button>
       <button class="nav-link" id="btn-nav-materials"><svg class="nav-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 7h6"/></svg>자료 서랍<span id="nav-mat-count" class="nav-count hidden"></span></button>
       <button class="nav-link" id="btn-nav-files"><svg class="nav-ico" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>파일 보기</button>
@@ -2935,7 +2934,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v93 · 2026-07-24';
+const APP_VERSION = 'v94 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -3292,7 +3291,6 @@ $('#btn-nav-exit').addEventListener('click', () => {
 });
 $('#top-settings').addEventListener('click', openSettings);
 $('#btn-back').addEventListener('click', goBack);
-$('#btn-save').addEventListener('click', () => { syncEditor(); save(true); toast('저장했습니다.'); });
 $('#btn-export').addEventListener('click', openExport);
 $$('#step-nav li').forEach(li => li.addEventListener('click', () => {
   const s = +li.dataset.step;
