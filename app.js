@@ -811,7 +811,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v91 · 2026-07-24';
+const APP_VERSION = 'v92 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -5638,6 +5638,28 @@ function looksLikeRef(q) {
   if ($('#tool-logos-go')) $('#tool-logos-go').addEventListener('click', lGo);
   if ($('#tool-logos-in')) $('#tool-logos-in').addEventListener('keydown', e => { if (e.key === 'Enter') lGo(); });
   if ($('#tool-logos-web')) $('#tool-logos-web').addEventListener('click', lWeb);
+  // 내 서재 확인 — 이 컴퓨터의 로고스 카탈로그에서 책이 있는지 조회 (로컬 실행 전용)
+  const lLib = async () => {
+    const q = logosQ(); if (!q) { toast('책 제목·주제·저자를 넣어 주세요.'); return; }
+    const out = $('#tool-logos-out'); if (!out) return;
+    out.innerHTML = '<div class="tool-hint">내 로고스 서재를 살펴보는 중…</div>';
+    try {
+      const r = await fetch('/api/logos-lib?q=' + encodeURIComponent(q)).then(x => x.json());
+      if (!r.ok) {
+        out.innerHTML = '<div class="tool-hint">' + (r.reason === 'no-logos' ? '이 컴퓨터에서 로고스를 찾지 못했습니다.' : esc(r.reason || '조회 실패')) + '</div>';
+        return;
+      }
+      if (!r.items.length) { out.innerHTML = '<div class="tool-hint">「' + esc(q) + '」 — 내 서재에는 <b>없습니다</b>.</div>'; return; }
+      out.innerHTML = '<div class="tool-hint" style="margin-bottom:4px">「' + esc(q) + '」 — 내 서재에 <b>' + r.items.length + '권 있습니다</b> (누르면 로고스에서 열립니다)</div>'
+        + r.items.map(x => '<button class="logos-lib-item" data-lgopen="' + esc(x.title) + '"><span class="badge" style="font-size:.62rem">' + x.type + '</span> ' + esc(x.title) + (x.authors ? ' <small style="opacity:.7">— ' + esc(x.authors) + '</small>' : '') + '</button>').join('');
+      out.querySelectorAll('[data-lgopen]').forEach(b => b.addEventListener('click', () => {
+        location.href = 'logos4:Search;kind=LibrarySearch;q=' + encodeURIComponent(b.dataset.lgopen);
+      }));
+    } catch (e) {
+      out.innerHTML = '<div class="tool-hint">서재 확인은 로고스가 설치된 이 컴퓨터에서 <b>로컬 실행</b>(M-WORKS.app 또는 node server.cjs)할 때만 동작합니다.</div>';
+    }
+  };
+  if ($('#tool-logos-lib')) $('#tool-logos-lib').addEventListener('click', lLib);
   $('#tool-verse-in').addEventListener('keydown', e => { if (e.key === 'Enter') vGo(); });
   $('#tool-syn-in').addEventListener('keydown', e => { if (e.key === 'Enter') sGo(); });
 })();

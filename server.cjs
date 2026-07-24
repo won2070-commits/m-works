@@ -317,6 +317,29 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ---- API: 로고스 서재 확인 (로컬 전용 — 이 컴퓨터의 Logos 카탈로그를 읽기 전용으로) ----
+  if (url.pathname === '/api/logos-lib') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
+    if (!q) return res.end(JSON.stringify({ ok: false, reason: '검색어가 없습니다.' }));
+    const base = path.join(os.homedir(), 'Library', 'Application Support', 'Logos4', 'Data');
+    let dbPath = null;
+    try {
+      for (const d of fs.readdirSync(base)) {
+        const c = path.join(base, d, 'LibraryCatalog', 'catalog.db');
+        if (fs.existsSync(c)) { dbPath = c; break; }
+      }
+    } catch {}
+    if (!dbPath) return res.end(JSON.stringify({ ok: false, reason: 'no-logos' }));
+    const esc = q.replace(/'/g, "''").replace(/[%_]/g, '');
+    const sql = `SELECT Title, Authors, Type FROM Records WHERE Availability >= 1 AND IsDataset = 0 AND (Title LIKE '%${esc}%' OR Subjects LIKE '%${esc}%' OR Authors LIKE '%${esc}%') ORDER BY UseCount DESC LIMIT 15;`;
+    return require('child_process').execFile('/usr/bin/sqlite3', ['-readonly', '-json', dbPath, sql], { timeout: 8000 }, (err, out) => {
+      if (err) return res.end(JSON.stringify({ ok: false, reason: '카탈로그를 읽지 못했습니다: ' + String(err.message).slice(0, 120) }));
+      let items = [];
+      try { items = JSON.parse(out || '[]'); } catch {}
+      res.end(JSON.stringify({ ok: true, items: items.map(r => ({ title: r.Title, authors: (r.Authors || '').split('\t')[0], type: /commentary/.test(r.Type || '') ? '주석' : (/bible/.test(r.Type || '') ? '성경' : '단행본') })) }));
+    });
+  }
   // ---- API: 설교 파일 탐색 (로컬 전용 — 홈 폴더 안만) ----
   const HOME = os.homedir();
   const safePath = p => {

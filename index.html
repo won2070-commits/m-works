@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=91">
-<link rel="stylesheet" href="style.css?v=91">
+<link rel="apple-touch-icon" href="icon-192.png?v=92">
+<link rel="stylesheet" href="style.css?v=92">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ffffff'/><rect x='4' y='4' width='72' height='72' rx='18' fill='%23FFC000'/><text x='40' y='52' transform='scale(1 1.2)' font-size='44' font-weight='800' text-anchor='middle' fill='%23ffffff' font-family='-apple-system,Helvetica,Arial,sans-serif'>M</text><rect x='48' y='42' width='44' height='44' rx='12' fill='%23FF5600' stroke='%23ffffff' stroke-width='3'/><text x='70' y='62.7' transform='scale(1 1.2)' font-size='26' font-weight='800' text-anchor='middle' fill='%23000000' font-family='-apple-system,Helvetica,Arial,sans-serif'>W</text></svg>">
 </head>
 <body>
@@ -82,7 +82,8 @@
       <h3 class="tool-h" style="margin-top:18px"><svg class="tool-ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20V4a2 2 0 00-2-2H6.5A2.5 2.5 0 004 4.5v15z"/><path d="M4 19.5A2.5 2.5 0 006.5 22H20v-5"/><circle cx="11.5" cy="9" r="2.6"/><path d="M13.4 10.9l2.6 2.6"/></svg>로고스 바이블 검색</h3>
       <div class="tool-row"><input id="tool-logos-in" placeholder="원어·주석·설교 자료 검색어"><button class="btn btn-primary btn-sm" id="tool-logos-go">검색</button></div>
       <div class="tool-hint">로고스를 쓰시는 분용 — <b>[검색]</b>은 컴퓨터의 로고스 앱을 바로 엽니다. 앱이 없으면 아래 웹으로.</div>
-      <div class="tool-mode"><button id="tool-logos-web">로고스 웹(app.logos.com)에서 검색</button></div>
+      <div class="tool-mode"><button id="tool-logos-web">로고스 웹(app.logos.com)에서 검색</button> · <button id="tool-logos-lib">내 서재에 있나 확인</button></div>
+    <div id="tool-logos-out"></div>
     </div>
   </aside>
 </div>
@@ -121,8 +122,8 @@
   </div>
 </div>
 
-<script src="prompts.js?v=91"></script>
-<script src="app.js?v=91"></script>
+<script src="prompts.js?v=92"></script>
+<script src="app.js?v=92"></script>
 <script>
 // PWA 설치 지원 — http/https에서만 (file:// 단일 파일에서는 건너뜀)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

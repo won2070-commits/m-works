@@ -979,3 +979,7 @@ html { scroll-behavior: smooth; }
 .swipe-row { position: relative; overflow: hidden; border-bottom: 1px solid var(--cream-2); }
 .swipe-under { position: absolute; inset: 2px; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px; background: #e15b5b; color: #fff; font-weight: 700; font-size: .82rem; border-radius: 10px; }
 .swipe-face { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 0; background: var(--canvas); touch-action: pan-y; user-select: none; }
+
+/* 로고스 내 서재 결과 */
+.logos-lib-item { display: block; width: 100%; text-align: left; font-size: .76rem; padding: 6px 8px; margin-top: 4px; border: 1px solid var(--hairline); border-radius: 8px; background: var(--canvas); cursor: pointer; }
+.logos-lib-item:hover { border-color: var(--ink); }
