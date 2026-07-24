@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="M.Works">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png?v=96">
+<link rel="apple-touch-icon" href="icon-192.png?v=97">
 <style>
 /* ─────────────────────────────────────────────
    M-WORKS — Figma 디자인 언어
@@ -2252,6 +2252,7 @@ function normalize(d) {
   d.refPrompts = Array.isArray(d.refPrompts) && d.refPrompts.length ? d.refPrompts : defaultRefPrompts();
   d.promptOverrides = d.promptOverrides || {};
   d.trash = Array.isArray(d.trash) ? d.trash : [];
+  d.tombs = (d.tombs && typeof d.tombs === 'object') ? d.tombs : {}; // 삭제 묘비 — 동기화 병합 때 부활 방지 {kind: {id: 삭제시각}}
   d.projects.forEach(normProject);
   return d;
 }
@@ -2307,11 +2308,21 @@ function setSyncStatus(t) {
   const badge = document.querySelector('#save-status');
   if (badge && syncOn() && t) badge.title = '동기화: ' + t.replace(/<[^>]+>/g, '');
 }
+// 삭제 묘비 — 지운 자료의 id·시각을 남겨, 다른 기기·서버 사본이 병합 때 되살아나지 않게 한다
+function tomb(kind, id) {
+  if (!id) return;
+  DB.tombs = DB.tombs || {};
+  const t = DB.tombs[kind] = DB.tombs[kind] || {};
+  t[id] = Date.now();
+  const keys = Object.keys(t);
+  if (keys.length > 3000) keys.sort((x, y) => t[x] - t[y]).slice(0, keys.length - 3000).forEach(k => delete t[k]);
+}
 // 동기화할 부분만 추린다(설정·AI키 제외)
 function syncSubset() {
   const o = {};
   SYNC_ARRAYS.forEach(k => { o[k] = Array.isArray(DB[k]) ? DB[k] : []; });
   o.promptOverrides = DB.promptOverrides || {};
+  o.tombs = DB.tombs || {}; // 삭제 묘비도 함께 — 삭제가 기기 간 전파된다
   o.apiKey = DB.settings.apiKey || ''; // AI 키도 함께 동기화(한 기기에서만 넣으면 됨)
   o.rules = DB.settings.rules || '';   // 나의 작성 규칙도 함께
   return o;
@@ -2343,6 +2354,17 @@ function mergeRemote(remote) {
   DB.projects = DB.projects.filter(p => !(trashAt.has(p.id) && trashAt.get(p.id) >= (p.updatedAt || 0)));
   const liveAt = new Map(DB.projects.map(p => [p.id, p.updatedAt || 0]));
   DB.trash = DB.trash.filter(t => !(t && liveAt.has(t.id) && liveAt.get(t.id) > (t._trashedAt || 0)));
+  // 삭제 묘비 정합: 어느 기기에서든 지운 자료는 병합 후에도 살아나지 않는다
+  DB.tombs = DB.tombs || {};
+  const rt = remote.tombs || {};
+  Object.keys(rt).forEach(k => {
+    DB.tombs[k] = DB.tombs[k] || {};
+    Object.entries(rt[k] || {}).forEach(([id, ts]) => { if ((ts || 0) > (DB.tombs[k][id] || 0)) DB.tombs[k][id] = ts; });
+  });
+  const alive = kind => { const t = DB.tombs[kind] || {}; return x => !(x && x.id && t[x.id] && t[x.id] >= (x.updatedAt || x.createdAt || 0)); };
+  DB.materials = DB.materials.filter(alive('materials'));
+  DB.reports = DB.reports.filter(alive('reports'));
+  DB.refPrompts = DB.refPrompts.filter(alive('refPrompts'));
   DB.promptOverrides = Object.assign({}, remote.promptOverrides || {}, DB.promptOverrides || {});
   // AI 키: 이 기기에 아직 없으면 다른 기기에서 넣은 키를 받아 자동 연결
   if (remote.apiKey && !DB.settings.apiKey) { DB.settings.apiKey = remote.apiKey; syncAdoptedKey = true; }
@@ -2937,7 +2959,7 @@ async function callAIJson(key, slots, opts = {}) {
 /* ═══════════════════ 브랜드 ═══════════════════ */
 /* AI 표시 — 요즘 쓰는 반짝임(sparkle) 아이콘 */
 const AI_ICO = '<svg class="ai-spark" viewBox="0 0 24 24" aria-label="AI"><path d="M11.4 2.6l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6L5.1 8.9l4.6-1.7 1.7-4.6z"/><path d="M18.2 14.4l.85 2.3 2.3.85-2.3.85-.85 2.3-.85-2.3-2.3-.85 2.3-.85.85-2.3z"/></svg>';
-const APP_VERSION = 'v96 · 2026-07-24';
+const APP_VERSION = 'v97 · 2026-07-24';
 (() => { const av = document.getElementById('app-ver'); if (av) av.textContent = 'M.Works ' + APP_VERSION; })();
 /* ── 외부 주입 청소: 브라우저 확장(번역·AI 도우미 등)이 텍스트를 블럭 지정할 때
    페이지에 끼워 넣는 플로팅 툴바·아이콘 뭉치를 나타나는 즉시 제거한다.
@@ -6776,6 +6798,7 @@ function openIlibModal() {
   bindIlibList();
   if ($('#ilib-movein')) $('#ilib-movein').addEventListener('click', () => {
     if (!confirm('서랍의 일반 자료 ' + DB.materials.length + '개를 모두 예화 창고로 옮길까요?\n(옮긴 뒤 서랍은 비고, 예화는 자동으로만 사용됩니다)')) return;
+    DB.materials.forEach(m0 => tomb('materials', m0.id));
     DB.illustLib = DB.materials.map(m0 => Object.assign({}, m0, { type: '예화' })).concat(DB.illustLib);
     DB.materials = [];
     save(true); closeModal(); render();
@@ -6852,10 +6875,11 @@ function renderMatList(q) {
 }
 function bindMatList() {
   $$('#mat-list [data-matdel]').forEach(b => b.addEventListener('click', () => {
-    if (confirm('이 자료를 삭제할까요?')) { DB.materials = DB.materials.filter(x => x.id !== b.dataset.matdel); save(true); render(); }
+    if (confirm('이 자료를 삭제할까요?')) { tomb('materials', b.dataset.matdel); DB.materials = DB.materials.filter(x => x.id !== b.dataset.matdel); save(true); render(); }
   }));
   $$('#mat-list [data-mat2lib]').forEach(b => b.addEventListener('click', () => {
     const m0 = DB.materials.find(x => x.id === b.dataset.mat2lib); if (!m0) return;
+    tomb('materials', m0.id); // 서랍에서는 삭제로 기록(창고는 기기별 보관)
     DB.materials = DB.materials.filter(x => x.id !== m0.id);
     DB.illustLib.unshift(Object.assign({}, m0, { type: '예화' }));
     save(true); render(); toast('「' + m0.title + '」을(를) 예화 창고로 옮겼습니다 — 이제 자동으로 사용됩니다.');
@@ -6977,7 +7001,7 @@ function renderClinic(m) {
     saveFileAs('설교피드백_' + r.title.replace(/[\\/:*?"<>|]/g, '') + '.doc', doc, 'application/msword', 'Word 문서');
   }));
   m.querySelectorAll('[data-rdel]').forEach(b => b.addEventListener('click', () => {
-    if (confirm('이 리포트를 삭제할까요?')) { DB.reports.splice(+b.dataset.rdel, 1); save(true); render(); }
+    if (confirm('이 리포트를 삭제할까요?')) { const r0 = DB.reports[+b.dataset.rdel]; if (r0) tomb('reports', r0.id); DB.reports.splice(+b.dataset.rdel, 1); save(true); render(); }
   }));
 }
 
@@ -7038,7 +7062,7 @@ function renderPromptLibrary(m) {
   $('#pl-refsave').addEventListener('click', () => { grabRefs(); save(true); toast('세부작성 프롬프트를 저장했습니다. 지정한 단계에 적용됩니다.'); });
   $('#pl-refadd').addEventListener('click', () => { grabRefs(); DB.refPrompts.push({ id: uid(), name: '새 프롬프트', target: '', text: '' }); save(true); render(); });
   m.querySelectorAll('[data-rpdel]').forEach(b => b.addEventListener('click', () => {
-    if (confirm('이 세부작성 프롬프트를 삭제할까요?')) { grabRefs(); DB.refPrompts.splice(+b.dataset.rpdel, 1); save(true); render(); }
+    if (confirm('이 세부작성 프롬프트를 삭제할까요?')) { grabRefs(); const rp = DB.refPrompts[+b.dataset.rpdel]; if (rp) tomb('refPrompts', rp.id); DB.refPrompts.splice(+b.dataset.rpdel, 1); save(true); render(); }
   }));
   const loadK = () => {
     const k = $('#pl-key').value;
